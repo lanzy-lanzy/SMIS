@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Teacher Assignments{% endblock %}
+{% block page_title %}Teacher Assignments{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <h1 class="text-xl font-bold">Teacher Assignments</h1>
+        <a href="{% url 'academics:assignment_create' %}" class="bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition">Add Assignment</a>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+        <div class="overflow-x-auto">
+            {% include 'academics/partials/assignment_table.html' %}
+        </div>
+    </div>
+</div>
+{% endblock %}

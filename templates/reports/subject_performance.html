@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Subject Performance{% endblock %}
+{% block page_title %}Subject Performance{% endblock %}
+{% block content %}
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-slate-700">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium">Subject</th>
+                    <th class="px-4 py-3 text-left font-medium">Code</th>
+                    <th class="px-4 py-3 text-left font-medium">Grade Level</th>
+                    <th class="px-4 py-3 text-left font-medium">Average Grade</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+                {% for item in subject_data %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                    <td class="px-4 py-3">{{ item.subject.name }}</td>
+                    <td class="px-4 py-3">{{ item.subject.code }}</td>
+                    <td class="px-4 py-3">{{ item.subject.grade_level }}</td>
+                    <td class="px-4 py-3 font-medium">{{ item.average }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">No data available</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

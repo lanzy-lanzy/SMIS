@@ -1,0 +1,141 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full" x-data="{ sidebarOpen: true }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SMIS{% endblock %} - Paquito S. Yu Memorial NHS</title>
+    <link rel="stylesheet" href="{% static 'css/output.css' %}">
+    <script src="{% static 'js/htmx.min.js' %}"></script>
+    <script defer src="{% static 'js/alpine.min.js' %}"></script>
+    <script src="{% static 'js/app.js' %}"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .sidebar-transition { transition: transform 0.3s ease, width 0.3s ease; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white !important; }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="h-full bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100">
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
+    
+    {% if messages %}
+    {% for message in messages %}
+    <div data-toast="{{ message.tags }}" hidden>{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+    
+    {% if user.is_authenticated %}
+    <div class="flex h-full">
+        <!-- Sidebar -->
+        <aside class="no-print fixed inset-y-0 left-0 z-30 w-64 bg-primary dark:bg-slate-800 text-white sidebar-transition lg:translate-x-0"
+               :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+               x-cloak>
+            <div class="flex items-center justify-center h-16 border-b border-blue-800">
+                <div class="text-center">
+                    <h1 class="text-lg font-bold leading-tight">SMIS</h1>
+                    <p class="text-xs text-blue-200">Paquito S. Yu Memorial NHS</p>
+                </div>
+            </div>
+            <nav class="mt-4 px-3 space-y-1 overflow-y-auto" style="max-height: calc(100vh - 4rem);">
+                <a href="{% url 'dashboard:index' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-blue-700 transition {% if request.resolver_match.app_name == 'dashboard' %}bg-blue-700{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    <span>Dashboard</span>
+                </a>
+                
+                {% if user.is_admin or user.is_teacher or user.is_registrar %}
+                <a href="{% url 'students:student_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-blue-700 transition {% if request.resolver_match.app_name == 'students' %}bg-blue-700{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <span>Students</span>
+                </a>
+                {% endif %}
+                
+                {% if user.is_admin %}
+                <a href="{% url 'academics:index' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-blue-700 transition {% if request.resolver_match.app_name == 'academics' %}bg-blue-700{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    <span>Academics</span>
+                </a>
+                {% endif %}
+                
+                {% if user.is_admin or user.is_teacher or user.is_registrar %}
+                <a href="{% url 'grades:grade_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-blue-700 transition {% if request.resolver_match.app_name == 'grades' %}bg-blue-700{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                    <span>Grades</span>
+                </a>
+                {% endif %}
+                
+                {% if user.is_admin or user.is_registrar %}
+                <a href="{% url 'form137:form137_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-blue-700 transition {% if request.resolver_match.app_name == 'form137' %}bg-blue-700{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span>Form 137</span>
+                </a>
+                {% endif %}
+                
+                {% if user.is_admin or user.is_principal %}
+                <a href="{% url 'reports:index' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-blue-700 transition {% if request.resolver_match.app_name == 'reports' %}bg-blue-700{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    <span>Reports</span>
+                </a>
+                {% endif %}
+                
+                {% if user.is_admin %}
+                <a href="{% url 'accounts:user_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-blue-700 transition {% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name != 'profile' %}bg-blue-700{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <span>Settings</span>
+                </a>
+                {% endif %}
+            </nav>
+        </aside>
+
+        <!-- Main content -->
+        <div class="flex-1 lg:ml-64 sidebar-transition" :class="sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'">
+            <!-- Top Navbar -->
+            <header class="no-print sticky top-0 z-20 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 h-16 flex items-center justify-between px-4 lg:px-6">
+                <div class="flex items-center gap-4">
+                    <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                    <h2 class="text-lg font-semibold">{% block page_title %}{% endblock %}</h2>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button id="theme-toggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
+                        <svg x-show="!document.documentElement.classList.contains('dark')" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                        <svg x-show="document.documentElement.classList.contains('dark')" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    </button>
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
+                            <div class="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-white text-sm font-bold">
+                                {{ user.first_name|first }}{{ user.last_name|first }}
+                            </div>
+                            <span class="hidden md:block text-sm">{{ user.get_full_name }}</span>
+                        </button>
+                        <div x-show="open" @click.away="open = false" x-cloak
+                             class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 py-1">
+                            <div class="px-4 py-2 border-b border-gray-200 dark:border-slate-700">
+                                <p class="text-sm font-medium">{{ user.get_full_name }}</p>
+                                <p class="text-xs text-gray-500">{{ user.get_role_display }}</p>
+                            </div>
+                            <a href="{% url 'accounts:profile' %}" class="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700">Profile</a>
+                            <a href="{% url 'accounts:change_password' %}" class="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700">Change Password</a>
+                            <hr class="border-gray-200 dark:border-slate-700">
+                            <a href="{% url 'accounts:logout' %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-slate-700">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="p-4 lg:p-6">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    {% else %}
+    {% block fullpage %}{% endblock %}
+    {% endif %}
+</body>
+</html>

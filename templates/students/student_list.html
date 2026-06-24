@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Students{% endblock %}
+{% block page_title %}Student Management{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold">Students</h1>
+            <p class="text-sm text-gray-500">Manage student records</p>
+        </div>
+        <a href="{% url 'students:student_create' %}" class="inline-flex items-center gap-2 bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Add Student
+        </a>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+        <div class="p-4 border-b border-gray-100 dark:border-slate-700">
+            <form method="get" class="flex flex-col sm:flex-row gap-3" hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="change delay:300ms">
+                <input type="text" name="q" value="{{ query }}" placeholder="Search students..."
+                       class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                       hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="keyup changed delay:300ms" hx-include="form">
+                <select name="grade" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                        hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="change">
+                    <option value="">All Grade Levels</option>
+                    {% for gl in grade_levels %}
+                    <option value="{{ gl.id }}" {% if grade_filter == gl.id|stringformat:"d" %}selected{% endif %}>{{ gl.name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="status" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                        hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="change">
+                    <option value="">All Status</option>
+                    {% for val, label in status_choices %}
+                    <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <div class="overflow-x-auto" id="student-table">
+            {% include 'students/partials/student_table.html' %}
+        </div>
+    </div>
+</div>
+{% endblock %}

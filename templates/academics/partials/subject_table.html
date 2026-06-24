@@ -1,0 +1,27 @@
+<table class="w-full text-sm">
+    <thead class="bg-gray-50 dark:bg-slate-700">
+        <tr>
+            <th class="px-4 py-3 text-left font-medium">Code</th>
+            <th class="px-4 py-3 text-left font-medium">Name</th>
+            <th class="px-4 py-3 text-left font-medium">Grade Level</th>
+            <th class="px-4 py-3 text-left font-medium">Active</th>
+            <th class="px-4 py-3 text-right font-medium">Actions</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+        {% for subj in subjects %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+            <td class="px-4 py-3">{{ subj.code }}</td>
+            <td class="px-4 py-3">{{ subj.name }}</td>
+            <td class="px-4 py-3">{{ subj.grade_level }}</td>
+            <td class="px-4 py-3">{% if subj.is_active %}<span class="text-green-600">Yes</span>{% else %}No{% endif %}</td>
+            <td class="px-4 py-3 text-right">
+                <a href="{% url 'academics:subject_edit' subj.pk %}" class="text-blue-600 hover:underline mr-2">Edit</a>
+                <a href="{% url 'academics:subject_delete' subj.pk %}" class="text-red-600 hover:underline">Delete</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No subjects found</td></tr>
+        {% endfor %}
+    </tbody>
+</table>

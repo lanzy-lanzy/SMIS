@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            {% for field in form %}
+            <div>
+                <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>{% endif %}
+            </div>
+            {% endfor %}
+            <div class="flex gap-3 pt-4 border-t">
+                <button type="submit" class="bg-primary hover:bg-blue-800 text-white px-6 py-2 rounded-lg transition">Save</button>
+                <a href="{% url 'accounts:user_list' %}" class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

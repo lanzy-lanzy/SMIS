@@ -1,0 +1,57 @@
+<table class="w-full text-sm">
+    <thead class="bg-gray-50 dark:bg-slate-700">
+        <tr>
+            <th class="px-4 py-3 text-left font-medium">LRN</th>
+            <th class="px-4 py-3 text-left font-medium">Name</th>
+            <th class="px-4 py-3 text-left font-medium">Sex</th>
+            <th class="px-4 py-3 text-left font-medium">Grade Level</th>
+            <th class="px-4 py-3 text-left font-medium">Section</th>
+            <th class="px-4 py-3 text-left font-medium">Status</th>
+            <th class="px-4 py-3 text-right font-medium">Actions</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+        {% for student in students %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+            <td class="px-4 py-3">{{ student.lrn }}</td>
+            <td class="px-4 py-3">
+                <a href="{% url 'students:student_detail' student.pk %}" class="text-blue-600 hover:underline">{{ student.full_name }}</a>
+            </td>
+            <td class="px-4 py-3">{{ student.get_sex_display }}</td>
+            <td class="px-4 py-3">{{ student.grade_level }}</td>
+            <td class="px-4 py-3">{{ student.section }}</td>
+            <td class="px-4 py-3">
+                <span class="px-2 py-1 text-xs rounded-full {% if student.status == 'active' %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400{% elif student.status == 'inactive' %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400{% endif %}">
+                    {{ student.get_status_display }}
+                </span>
+            </td>
+            <td class="px-4 py-3 text-right">
+                <div class="flex items-center justify-end gap-2">
+                    <a href="{% url 'students:student_edit' student.pk %}" class="text-blue-600 hover:text-blue-800">Edit</a>
+                    <a href="{% url 'students:student_delete' student.pk %}" class="text-red-600 hover:text-red-800">Delete</a>
+                </div>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" class="px-4 py-8 text-center text-gray-500">No students found</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% if students.has_other_pages %}
+<div class="px-4 py-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+    <p class="text-sm text-gray-500">Showing {{ students.start_index }}-{{ students.end_index }} of {{ students.paginator.count }}</p>
+    <div class="flex gap-1">
+        {% if students.has_previous %}
+        <a href="?page={{ students.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+        {% endif %}
+        {% for num in students.paginator.page_range %}
+        <a href="?page={{ num }}" class="px-3 py-1 border rounded {% if students.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+        {% endfor %}
+        {% if students.has_next %}
+        <a href="?page={{ students.next_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

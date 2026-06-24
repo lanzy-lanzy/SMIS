@@ -1,0 +1,27 @@
+<table class="w-full text-sm">
+    <thead class="bg-gray-50 dark:bg-slate-700">
+        <tr>
+            <th class="px-4 py-3 text-left font-medium">Teacher</th>
+            <th class="px-4 py-3 text-left font-medium">Subject</th>
+            <th class="px-4 py-3 text-left font-medium">Section</th>
+            <th class="px-4 py-3 text-left font-medium">School Year</th>
+            <th class="px-4 py-3 text-right font-medium">Actions</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+        {% for a in assignments %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+            <td class="px-4 py-3">{{ a.teacher }}</td>
+            <td class="px-4 py-3">{{ a.subject }}</td>
+            <td class="px-4 py-3">{{ a.section }}</td>
+            <td class="px-4 py-3">{{ a.school_year }}</td>
+            <td class="px-4 py-3 text-right">
+                <a href="{% url 'academics:assignment_edit' a.pk %}" class="text-blue-600 hover:underline mr-2">Edit</a>
+                <a href="{% url 'academics:assignment_delete' a.pk %}" class="text-red-600 hover:underline">Delete</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No assignments found</td></tr>
+        {% endfor %}
+    </tbody>
+</table>

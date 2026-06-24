@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Validate Grades{% endblock %}
+{% block page_title %}Validate Grades{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="font-semibold">{{ submission.subject }} - {{ submission.section }}</h3>
+                <p class="text-sm text-gray-500">Submitted by {{ submission.teacher.get_full_name }} | {{ submission.grading_period }}</p>
+            </div>
+            <a href="{% url 'grades:submission_list' %}" class="border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition text-sm">Back</a>
+        </div>
+        
+        <div class="overflow-x-auto mb-6">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-slate-700">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-medium">Student</th>
+                        <th class="px-4 py-3 text-left font-medium">Written</th>
+                        <th class="px-4 py-3 text-left font-medium">Performance</th>
+                        <th class="px-4 py-3 text-left font-medium">Assessment</th>
+                        <th class="px-4 py-3 text-left font-medium">Grade</th>
+                        <th class="px-4 py-3 text-left font-medium">Remarks</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+                    {% for grade in grades %}
+                    <tr>
+                        <td class="px-4 py-3">{{ grade.student.full_name }}</td>
+                        <td class="px-4 py-3">{{ grade.written_work }}</td>
+                        <td class="px-4 py-3">{{ grade.performance_task }}</td>
+                        <td class="px-4 py-3">{{ grade.assessment }}</td>
+                        <td class="px-4 py-3 font-medium">{{ grade.quarter_grade }}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs rounded-full {% if grade.remarks == 'Passed' %}bg-green-100 text-green-800{% elif grade.remarks == 'Failed' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ grade.remarks }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium mb-1">Remarks (optional)</label>
+                <textarea name="remarks" rows="3" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white" placeholder="Add any remarks..."></textarea>
+            </div>
+            <div class="flex gap-3">
+                <button type="submit" name="action" value="validate" class="bg-accent hover:bg-green-600 text-white px-6 py-2 rounded-lg transition font-semibold">Validate & Approve</button>
+                <button type="submit" name="action" value="return" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition">Return for Correction</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

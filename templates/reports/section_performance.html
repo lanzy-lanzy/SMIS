@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Section Performance{% endblock %}
+{% block page_title %}Section Performance{% endblock %}
+{% block content %}
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-slate-700">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium">Section</th>
+                    <th class="px-4 py-3 text-left font-medium">Grade Level</th>
+                    <th class="px-4 py-3 text-left font-medium">School Year</th>
+                    <th class="px-4 py-3 text-left font-medium">Students</th>
+                    <th class="px-4 py-3 text-left font-medium">Average</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+                {% for item in section_data %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                    <td class="px-4 py-3">{{ item.section.name }}</td>
+                    <td class="px-4 py-3">{{ item.section.grade_level }}</td>
+                    <td class="px-4 py-3">{{ item.section.school_year }}</td>
+                    <td class="px-4 py-3">{{ item.student_count }}</td>
+                    <td class="px-4 py-3 font-medium">{{ item.average }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No data available</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

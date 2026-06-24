@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Student History - {{ student.full_name }}{% endblock %}
+{% block page_title %}Student Performance History{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5">
+        <h3 class="font-semibold">{{ student.full_name }} ({{ student.lrn }})</h3>
+        <p class="text-sm text-gray-500">{{ student.grade_level }} - {{ student.section }}</p>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-slate-700">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-medium">School Year</th>
+                        <th class="px-4 py-3 text-left font-medium">Subject</th>
+                        <th class="px-4 py-3 text-left font-medium">Period</th>
+                        <th class="px-4 py-3 text-left font-medium">Grade</th>
+                        <th class="px-4 py-3 text-left font-medium">Remarks</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+                    {% for grade in grades %}
+                    <tr>
+                        <td class="px-4 py-3">{{ grade.school_year }}</td>
+                        <td class="px-4 py-3">{{ grade.subject }}</td>
+                        <td class="px-4 py-3">{{ grade.grading_period }}</td>
+                        <td class="px-4 py-3 font-medium">{{ grade.quarter_grade }}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs rounded-full {% if grade.remarks == 'Passed' %}bg-green-100 text-green-800{% elif grade.remarks == 'Failed' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ grade.remarks }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No grades recorded</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

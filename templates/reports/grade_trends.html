@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Grade Trends{% endblock %}
+{% block page_title %}Grade Trend Analysis{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <form method="get" class="flex gap-3">
+        <select name="sy" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+            <option value="">All School Years</option>
+            {% for sy in school_years %}<option value="{{ sy.id }}" {% if sy_filter == sy.id|stringformat:"d" %}selected{% endif %}>{{ sy.name }}</option>{% endfor %}
+        </select>
+        <select name="gl" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+            <option value="">All Grade Levels</option>
+            {% for gl in grade_levels %}<option value="{{ gl.id }}" {% if gl_filter == gl.id|stringformat:"d" %}selected{% endif %}>{{ gl.name }}</option>{% endfor %}
+        </select>
+        <button type="submit" class="bg-secondary hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition">Filter</button>
+    </form>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5">
+            <h3 class="font-semibold mb-4">Average Grades by Subject</h3>
+            {% for item in subject_averages %}
+            <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700 last:border-0">
+                <span class="text-sm">{{ item.subject__name }}</span>
+                <div class="flex items-center gap-2">
+                    <div class="w-32 bg-gray-200 dark:bg-slate-700 rounded-full h-2">
+                        <div class="bg-secondary h-2 rounded-full" style="width: {{ item.avg_grade }}%"></div>
+                    </div>
+                    <span class="text-sm font-medium w-12 text-right">{{ item.avg_grade|floatformat:1 }}</span>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-sm text-gray-500 text-center py-4">No data available</p>
+            {% endfor %}
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5">
+            <h3 class="font-semibold mb-4">Average Grades by Period</h3>
+            {% for item in period_averages %}
+            <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700 last:border-0">
+                <span class="text-sm">{{ item.grading_period__name }}</span>
+                <div class="flex items-center gap-2">
+                    <div class="w-32 bg-gray-200 dark:bg-slate-700 rounded-full h-2">
+                        <div class="bg-accent h-2 rounded-full" style="width: {{ item.avg_grade }}%"></div>
+                    </div>
+                    <span class="text-sm font-medium w-12 text-right">{{ item.avg_grade|floatformat:1 }}</span>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-sm text-gray-500 text-center py-4">No data available</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

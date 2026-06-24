@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Reports & Analytics{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <a href="{% url 'reports:grade_trends' %}" class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 hover:shadow-md transition">
+        <h3 class="font-semibold">Grade Trend Analysis</h3>
+        <p class="text-sm text-gray-500">View grade trends by subject and period</p>
+    </a>
+    <a href="{% url 'reports:section_performance' %}" class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 hover:shadow-md transition">
+        <h3 class="font-semibold">Section Performance</h3>
+        <p class="text-sm text-gray-500">Compare section performance</p>
+    </a>
+    <a href="{% url 'reports:subject_performance' %}" class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 hover:shadow-md transition">
+        <h3 class="font-semibold">Subject Performance</h3>
+        <p class="text-sm text-gray-500">View subject averages</p>
+    </a>
+    <a href="{% url 'reports:at_risk_students' %}" class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 hover:shadow-md transition">
+        <h3 class="font-semibold">At-Risk Students</h3>
+        <p class="text-sm text-gray-500">Identify students with failing grades</p>
+    </a>
+</div>
+{% endblock %}

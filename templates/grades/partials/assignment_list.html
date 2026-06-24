@@ -1,0 +1,22 @@
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for assignment in assignments %}
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5 hover:shadow-md transition">
+        <div class="flex items-start justify-between mb-3">
+            <div>
+                <h3 class="font-semibold">{{ assignment.subject.name }}</h3>
+                <p class="text-sm text-gray-500">{{ assignment.subject.code }}</p>
+            </div>
+            <span class="text-xs bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded">{{ assignment.section }}</span>
+        </div>
+        <p class="text-sm text-gray-500 mb-4">Teacher: {{ assignment.teacher.get_full_name }}</p>
+        <a href="{% url 'grades:grade_encode' assignment.pk %}" class="block w-full text-center bg-secondary hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition text-sm">
+            Encode Grades
+        </a>
+    </div>
+    {% empty %}
+    <div class="col-span-full text-center py-12 text-gray-500">
+        <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+        <p>No assignments found</p>
+    </div>
+    {% endfor %}
+</div>
