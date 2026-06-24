@@ -9,4 +9,5 @@ urlpatterns = [
     path('save/<int:assignment_pk>/', views.grade_save, name='grade_save'),
     path('submissions/', views.submission_list, name='submission_list'),
     path('submissions/<int:pk>/validate/', views.submission_validate, name='submission_validate'),
+    path('export/', views.grade_export, name='grade_export'),
 ]

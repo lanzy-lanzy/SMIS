@@ -13,35 +13,81 @@ from accounts.models import AuditLog
 
 @login_required
 def grade_list(request):
+    from django.db.models import Count, Q
+    
     teacher = request.user
     current_sy = SchoolYear.objects.filter(is_current=True).first()
     current_period = GradingPeriod.objects.filter(is_current=True).first()
     
+    query = request.GET.get('q', '')
+    subject_filter = request.GET.get('subject', '')
+    section_filter = request.GET.get('section', '')
+    view_type = request.GET.get('view', 'grid')
+    
     if request.user.is_teacher:
         assignments = TeacherAssignment.objects.filter(
             teacher=teacher, school_year=current_sy
-        ).select_related('subject', 'section')
+        ).select_related('subject', 'section', 'section__grade_level')
     else:
         assignments = TeacherAssignment.objects.filter(
             school_year=current_sy
-        ).select_related('teacher', 'subject', 'section')
+        ).select_related('teacher', 'subject', 'section', 'section__grade_level')
     
-    subject_filter = request.GET.get('subject', '')
-    section_filter = request.GET.get('section', '')
+    if query:
+        assignments = assignments.filter(
+            Q(teacher__first_name__icontains=query)
+            | Q(teacher__last_name__icontains=query)
+            | Q(subject__name__icontains=query)
+            | Q(subject__code__icontains=query)
+        )
     
     if subject_filter:
         assignments = assignments.filter(subject_id=subject_filter)
     if section_filter:
         assignments = assignments.filter(section_id=section_filter)
     
+    # Get latest submission status for each assignment
+    submissions_status = {}
+    if current_sy:
+        # Fetch all relevant submissions at once
+        all_submissions = GradeSubmission.objects.filter(
+            school_year=current_sy
+        ).order_by('-submitted_at')
+        
+        # Build a lookup: (teacher_id, subject_id, section_id) -> status
+        for sub in all_submissions:
+            key = (sub.teacher_id, sub.subject_id, sub.section_id)
+            if key not in submissions_status:
+                submissions_status[key] = sub.status
+    
+    # Map to assignment pks
+    submission_status_by_pk = {}
+    for assignment in assignments:
+        key = (assignment.teacher_id, assignment.subject_id, assignment.section_id)
+        submission_status_by_pk[assignment.pk] = submissions_status.get(key)
+    
+    # Stats
+    total_assignments = assignments.count()
+    pending_submissions = GradeSubmission.objects.filter(
+        status='pending', school_year=current_sy
+    ).count() if current_sy else 0
+    validated_grades = Grade.objects.filter(
+        status='validated', school_year=current_sy
+    ).count() if current_sy else 0
+    at_risk_count = Grade.objects.filter(
+        status='validated', quarter_grade__lt=75, school_year=current_sy
+    ).values('student').distinct().count() if current_sy else 0
+    
     if request.headers.get('HX-Request'):
-        return render(request, 'grades/partials/assignment_list.html', {
+        template = 'grades/partials/assignment_table.html' if view_type == 'table' else 'grades/partials/assignment_list.html'
+        return render(request, template, {
             'assignments': assignments,
-            'current_period': current_period
+            'current_period': current_period,
+            'submissions_status': submission_status_by_pk
         })
     
     subjects = Subject.objects.all()
-    sections = Section.objects.all()
+    sections = Section.objects.filter(school_year=current_sy) if current_sy else Section.objects.all()
     
     return render(request, 'grades/grade_list.html', {
         'assignments': assignments,
@@ -50,7 +96,13 @@ def grade_list(request):
         'subjects': subjects,
         'sections': sections,
         'subject_filter': subject_filter,
-        'section_filter': section_filter
+        'section_filter': section_filter,
+        'query': query,
+        'total_assignments': total_assignments,
+        'pending_submissions': pending_submissions,
+        'validated_grades': validated_grades,
+        'at_risk_count': at_risk_count,
+        'submissions_status': submission_status_by_pk,
     })
 
 
@@ -173,8 +225,8 @@ def grade_save(request, assignment_pk):
                 'final_grade': quarter_grade,
                 'remarks': remarks,
                 'status': status,
-                'encoded_by': existing_grade.encoded_by if existing_grade and not created else request.user,
-                'updated_by': request.user if not created else None,
+                'encoded_by': existing_grade.encoded_by if existing_grade else request.user,
+                'updated_by': request.user,
             }
         )
         
@@ -339,3 +391,39 @@ def submission_validate(request, pk):
         'submission': submission,
         'grades': grades
     })
+
+
+@login_required
+def grade_export(request):
+    import csv
+    from django.http import HttpResponse
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="grades_export.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Student', 'LRN', 'Subject', 'Section', 'Grade Level', 'School Year', 'Grading Period', 'Written Work', 'Performance Task', 'Assessment', 'Quarter Grade', 'Final Grade', 'Remarks', 'Status'])
+    
+    grades = Grade.objects.select_related(
+        'student', 'subject', 'section', 'section__grade_level', 'school_year', 'grading_period'
+    ).all()
+    
+    for grade in grades:
+        writer.writerow([
+            grade.student.full_name,
+            grade.student.lrn,
+            grade.subject.name,
+            grade.section.name,
+            grade.section.grade_level,
+            grade.school_year.name,
+            grade.grading_period.name,
+            grade.written_work,
+            grade.performance_task,
+            grade.assessment,
+            grade.quarter_grade,
+            grade.final_grade,
+            grade.remarks,
+            grade.status,
+        ])
+    
+    return response

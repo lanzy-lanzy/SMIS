@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, Avg
 from students.models import Student
@@ -6,6 +6,12 @@ from grades.models import Grade, GradeSubmission
 from academics.models import SchoolYear, GradeLevel, Section, TeacherAssignment
 from accounts.models import User
 from form137.models import Form137Record
+
+
+def landing(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard:index')
+    return render(request, 'landing.html')
 
 
 @login_required

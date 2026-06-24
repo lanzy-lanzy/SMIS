@@ -483,17 +483,89 @@ def subject_delete(request, pk):
 
 @login_required
 def assignment_list(request):
+    from django.core.paginator import Paginator
+    from django.db.models import Q, Count
+    from accounts.models import User
+    
+    query = request.GET.get("q", "")
+    subject_filter = request.GET.get("subject", "")
+    section_filter = request.GET.get("section", "")
+    school_year_filter = request.GET.get("school_year", "")
+    view_type = request.GET.get("view", "teacher")
+    
     assignments = TeacherAssignment.objects.select_related(
-        "teacher", "subject", "section", "school_year"
+        "teacher", "subject", "section", "section__grade_level", "school_year"
     ).all()
+    
+    if query:
+        assignments = assignments.filter(
+            Q(teacher__first_name__icontains=query)
+            | Q(teacher__last_name__icontains=query)
+            | Q(teacher__email__icontains=query)
+        )
+    
+    if subject_filter:
+        assignments = assignments.filter(subject_id=subject_filter)
+    
+    if section_filter:
+        assignments = assignments.filter(section_id=section_filter)
+    
+    if school_year_filter:
+        assignments = assignments.filter(school_year_id=school_year_filter)
+    
+    # Stats
+    current_sy = SchoolYear.objects.filter(is_current=True).first()
+    total_assignments = assignments.count()
+    active_teachers = User.objects.filter(role='teacher', is_active=True).count()
+    assigned_teacher_ids = assignments.values_list('teacher_id', flat=True).distinct()
+    unassigned_teachers = active_teachers - len(assigned_teacher_ids)
+    sections_covered = assignments.values_list('section_id', flat=True).distinct().count()
+    
+    # Teacher workloads
+    teacher_workloads = User.objects.filter(role='teacher', is_active=True).annotate(
+        assignment_count=Count('assignments')
+    ).order_by('-assignment_count')
+    
+    # Sections with teachers for section view
+    sections = Section.objects.filter(school_year=current_sy).prefetch_related('assignments__teacher', 'assignments__subject') if current_sy else Section.objects.none()
+    
+    # Filter options
+    all_subjects = Subject.objects.filter(is_active=True)
+    all_sections = Section.objects.filter(school_year=current_sy) if current_sy else Section.objects.none()
+    all_school_years = SchoolYear.objects.all()
+    
     if request.headers.get("HX-Request"):
+        if view_type == "section":
+            return render(
+                request,
+                "academics/partials/section_table.html",
+                {"sections_with_teachers": sections},
+            )
         return render(
             request,
             "academics/partials/assignment_table.html",
             {"assignments": assignments},
         )
+    
     return render(
-        request, "academics/assignment_list.html", {"assignments": assignments}
+        request,
+        "academics/assignment_list.html",
+        {
+            "assignments": assignments,
+            "query": query,
+            "subject_filter": subject_filter,
+            "section_filter": section_filter,
+            "school_year_filter": school_year_filter,
+            "total_assignments": total_assignments,
+            "active_teachers": active_teachers,
+            "unassigned_teachers": unassigned_teachers,
+            "sections_covered": sections_covered,
+            "teacher_workloads": teacher_workloads,
+            "sections_with_teachers": sections,
+            "subjects": all_subjects,
+            "sections": all_sections,
+            "school_years": all_school_years,
+        },
     )
 
 
@@ -532,6 +604,130 @@ def assignment_create(request):
         "academics/assignment_form.html",
         {"form": form, "title": "Add Teacher Assignment"},
     )
+
+
+@login_required
+def assignment_edit(request, pk):
+    assignment = get_object_or_404(TeacherAssignment, pk=pk)
+    if request.method == "POST":
+        form = TeacherAssignmentForm(request.POST, instance=assignment)
+        if form.is_valid():
+            assignment = form.save()
+            AuditLog.objects.create(
+                user=request.user,
+                action="update",
+                model_name="TeacherAssignment",
+                object_id=str(assignment.id),
+                description=f"Updated assignment for {assignment.teacher.get_full_name()}",
+            )
+            messages.success(
+                request, f"Assignment updated for {assignment.teacher.get_full_name()}."
+            )
+            if request.headers.get("HX-Request"):
+                return HttpResponse(
+                    '<script>closeModal(); htmx.trigger("#assignment-table", "refresh");</script>',
+                    headers={"HX-Trigger": "closeModal,refreshTable"},
+                )
+            return redirect("academics:assignment_list")
+    else:
+        form = TeacherAssignmentForm(instance=assignment)
+    if request.headers.get("HX-Request"):
+        return render(
+            request,
+            "academics/partials/assignment_form.html",
+            {"form": form, "title": "Edit Teacher Assignment"},
+        )
+    return render(
+        request,
+        "academics/assignment_form.html",
+        {"form": form, "title": "Edit Teacher Assignment"},
+    )
+
+
+@login_required
+def assignment_bulk_create(request):
+    from accounts.models import User
+    
+    if request.method == "POST":
+        teacher_id = request.POST.get("teacher")
+        subject_ids = request.POST.getlist("subjects")
+        section_ids = request.POST.getlist("sections")
+        school_year_id = request.POST.get("school_year")
+        
+        teacher = get_object_or_404(User, pk=teacher_id)
+        school_year = get_object_or_404(SchoolYear, pk=school_year_id)
+        
+        created_count = 0
+        for subject_id in subject_ids:
+            for section_id in section_ids:
+                _, created = TeacherAssignment.objects.get_or_create(
+                    teacher=teacher,
+                    subject_id=subject_id,
+                    section_id=section_id,
+                    school_year=school_year,
+                )
+                if created:
+                    created_count += 1
+        
+        AuditLog.objects.create(
+            user=request.user,
+            action="create",
+            model_name="TeacherAssignment",
+            description=f"Bulk created {created_count} assignments for {teacher.get_full_name()}",
+        )
+        messages.success(request, f"{created_count} assignments created for {teacher.get_full_name()}.")
+        if request.headers.get("HX-Request"):
+            return HttpResponse(
+                '<script>closeModal(); htmx.trigger("#assignment-table", "refresh");</script>',
+                headers={"HX-Trigger": "closeModal,refreshTable"},
+            )
+        return redirect("academics:assignment_list")
+    
+    context = {
+        "teachers": User.objects.filter(role='teacher', is_active=True),
+        "subjects": Subject.objects.filter(is_active=True),
+        "sections": Section.objects.filter(school_year=SchoolYear.objects.filter(is_current=True).first()),
+        "school_years": SchoolYear.objects.all(),
+    }
+    if request.headers.get("HX-Request"):
+        return render(
+            request,
+            "academics/partials/assignment_bulk_form.html",
+            context,
+        )
+    return render(
+        request,
+        "academics/assignment_bulk_form.html",
+        context,
+    )
+
+
+@login_required
+def assignment_export(request):
+    import csv
+    from django.http import HttpResponse
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="teacher_assignments.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Teacher', 'Email', 'Subject', 'Section', 'Grade Level', 'School Year'])
+    
+    assignments = TeacherAssignment.objects.select_related(
+        "teacher", "subject", "section", "section__grade_level", "school_year"
+    ).all()
+    
+    for assignment in assignments:
+        writer.writerow([
+            assignment.teacher.get_full_name(),
+            assignment.teacher.email,
+            assignment.subject.name,
+            assignment.section.name,
+            assignment.section.grade_level,
+            assignment.school_year.name,
+        ])
+    
+    return response
 
 
 @login_required

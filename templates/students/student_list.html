@@ -2,42 +2,128 @@
 {% block title %}Students{% endblock %}
 {% block page_title %}Student Management{% endblock %}
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-6" x-data="{ view: 'table', showStats: true }">
+    <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="text-xl font-bold">Students</h1>
             <p class="text-sm text-gray-500">Manage student records</p>
         </div>
-        <button onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'students:student_create' %}' } }))" class="inline-flex items-center gap-2 bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-            Add Student
-        </button>
+        <div class="flex gap-2">
+            {% if user.is_admin or user.is_registrar %}
+            <a href="{% url 'students:student_export' %}" class="inline-flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Export
+            </a>
+            <button onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'students:student_create' %}' } }))" class="inline-flex items-center gap-2 bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Add Student
+            </button>
+            {% endif %}
+        </div>
     </div>
 
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
-        <div class="p-4 border-b border-gray-100 dark:border-slate-700">
-            <form method="get" class="flex flex-col sm:flex-row gap-3" hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="change delay:300ms">
-                <input type="text" name="q" value="{{ query }}" placeholder="Search students..."
-                       class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                       hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="keyup changed delay:300ms" hx-include="form">
-                <select name="grade" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-                        hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="change">
+    <!-- Stats Cards -->
+    <div x-show="showStats" x-transition class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Total Students</div>
+            <div class="text-2xl font-bold text-primary">{{ total_students }}</div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Active</div>
+            <div class="text-2xl font-bold text-emerald-600">{{ active_students }}</div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Inactive</div>
+            <div class="text-2xl font-bold text-orange-500">{{ inactive_students }}</div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Transferred</div>
+            <div class="text-2xl font-bold text-red-600">{{ transferred_students }}</div>
+        </div>
+    </div>
+
+    <!-- View Toggle & Filters -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
+        <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+            <!-- View Toggle -->
+            <div class="flex items-center gap-2 bg-gray-100 dark:bg-slate-700 rounded-lg p-1">
+                <button type="button" @click="view = 'table'" :class="view === 'table' ? 'bg-white dark:bg-slate-600 shadow' : ''" 
+                        class="px-4 py-2 rounded-md text-sm font-medium transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                    Table
+                </button>
+                <button type="button" @click="view = 'grid'" :class="view === 'grid' ? 'bg-white dark:bg-slate-600 shadow' : ''" 
+                        class="px-4 py-2 rounded-md text-sm font-medium transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    Grid
+                </button>
+            </div>
+
+            <!-- Search & Filters -->
+            <form id="student-filters" class="flex-1 flex flex-wrap gap-3">
+                <input type="hidden" name="view" :value="view">
+                <input type="text" name="q" value="{{ query }}" placeholder="Search by name or LRN..."
+                       class="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                       hx-get="{% url 'students:student_list' %}" :hx-target="view === 'grid' ? '#student-grid' : '#student-table'" hx-trigger="keyup changed delay:300ms" hx-include="#student-filters">
+                <select name="grade" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                        hx-get="{% url 'students:student_list' %}" :hx-target="view === 'grid' ? '#student-grid' : '#student-table'" hx-trigger="change" hx-include="#student-filters">
                     <option value="">All Grade Levels</option>
                     {% for gl in grade_levels %}
                     <option value="{{ gl.id }}" {% if grade_filter == gl.id|stringformat:"d" %}selected{% endif %}>{{ gl.name }}</option>
                     {% endfor %}
                 </select>
-                <select name="status" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-                        hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="change">
+                <select name="section" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                        hx-get="{% url 'students:student_list' %}" :hx-target="view === 'grid' ? '#student-grid' : '#student-table'" hx-trigger="change" hx-include="#student-filters">
+                    <option value="">All Sections</option>
+                    {% for sec in sections %}
+                    <option value="{{ sec.id }}" {% if section_filter == sec.id|stringformat:"d" %}selected{% endif %}>{{ sec.name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="status" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                        hx-get="{% url 'students:student_list' %}" :hx-target="view === 'grid' ? '#student-grid' : '#student-table'" hx-trigger="change" hx-include="#student-filters">
                     <option value="">All Status</option>
                     {% for val, label in status_choices %}
                     <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </form>
+
+            <!-- Toggle Stats -->
+            <button type="button" @click="showStats = !showStats" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition" title="Toggle Stats">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            </button>
         </div>
-        <div class="overflow-x-auto" id="student-table" hx-get="{% url 'students:student_list' %}" hx-trigger="refreshTable from:body">
-            {% include 'students/partials/student_table.html' %}
+    </div>
+
+    <!-- Table View (Default) -->
+    <div x-show="view === 'table'" x-transition>
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+            <div class="overflow-x-auto" id="student-table">
+                {% include 'students/partials/student_table.html' %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid View -->
+    <div x-show="view === 'grid'" x-transition>
+        <div id="student-grid">
+            {% include 'students/partials/student_grid.html' %}
+        </div>
+    </div>
+
+    <!-- Quick Stats by Grade Level -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+        <h3 class="text-lg font-semibold mb-4">Students by Grade Level</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {% for stat in students_by_grade %}
+            <div class="text-center p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                <div class="text-2xl font-bold text-primary">{{ stat.count }}</div>
+                <div class="text-sm text-gray-500">{{ stat.grade_level__name }}</div>
+            </div>
+            {% empty %}
+            <p class="col-span-full text-gray-500 text-center">No data available</p>
+            {% endfor %}
         </div>
     </div>
 </div>

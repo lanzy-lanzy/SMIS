@@ -1,27 +1,52 @@
-<table id="section-table" class="w-full text-sm" hx-get="{% url 'academics:section_list' %}" hx-trigger="refresh" hx-target="this" hx-swap="outerHTML">
+<table id="section-table" class="w-full text-sm">
     <thead class="bg-gray-50 dark:bg-slate-700">
         <tr>
-            <th class="px-4 py-3 text-left font-medium">Name</th>
+            <th class="px-4 py-3 text-left font-medium">Section</th>
             <th class="px-4 py-3 text-left font-medium">Grade Level</th>
-            <th class="px-4 py-3 text-left font-medium">School Year</th>
             <th class="px-4 py-3 text-left font-medium">Adviser</th>
-            <th class="px-4 py-3 text-right font-medium">Actions</th>
+            <th class="px-4 py-3 text-left font-medium">Assigned Teachers</th>
+            <th class="px-4 py-3 text-left font-medium">School Year</th>
         </tr>
     </thead>
     <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
-        {% for sec in sections %}
+        {% for section in sections_with_teachers %}
         <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
-            <td class="px-4 py-3">{{ sec.name }}</td>
-            <td class="px-4 py-3">{{ sec.grade_level }}</td>
-            <td class="px-4 py-3">{{ sec.school_year }}</td>
-            <td class="px-4 py-3">{{ sec.adviser }}</td>
-            <td class="px-4 py-3 text-right">
-                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:section_edit' sec.pk %}' } }))" class="text-blue-600 hover:underline mr-2">Edit</button>
-                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:section_delete' sec.pk %}' } }))" class="text-red-600 hover:underline">Delete</button>
+            <td class="px-4 py-3 font-medium">{{ section.name }}</td>
+            <td class="px-4 py-3">{{ section.grade_level }}</td>
+            <td class="px-4 py-3">
+                {% if section.adviser %}
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">
+                        {{ section.adviser.first_name|first }}{{ section.adviser.last_name|first }}
+                    </div>
+                    <span>{{ section.adviser.get_full_name }}</span>
+                </div>
+                {% else %}
+                <span class="text-gray-400">Not assigned</span>
+                {% endif %}
             </td>
+            <td class="px-4 py-3">
+                <div class="flex flex-wrap gap-1">
+                    {% for assignment in section.assignments.all %}
+                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                        {{ assignment.teacher.last_name }} ({{ assignment.subject.code }})
+                    </span>
+                    {% empty %}
+                    <span class="text-gray-400 text-sm">No teachers assigned</span>
+                    {% endfor %}
+                </div>
+            </td>
+            <td class="px-4 py-3">{{ section.school_year }}</td>
         </tr>
         {% empty %}
-        <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No sections found</td></tr>
+        <tr>
+            <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                <div class="flex flex-col items-center gap-2">
+                    <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    <p>No sections found for the selected filters</p>
+                </div>
+            </td>
+        </tr>
         {% endfor %}
     </tbody>
 </table>

@@ -1,0 +1,74 @@
+{% load form137_filters %}
+<table class="w-full text-sm">
+    <thead class="bg-gray-50 dark:bg-slate-700">
+        <tr>
+            <th class="px-4 py-3 text-left font-medium">Subject</th>
+            <th class="px-4 py-3 text-left font-medium">Section</th>
+            <th class="px-4 py-3 text-left font-medium">Grade Level</th>
+            <th class="px-4 py-3 text-left font-medium">Teacher</th>
+            <th class="px-4 py-3 text-left font-medium">Status</th>
+            <th class="px-4 py-3 text-right font-medium">Action</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+        {% for assignment in assignments %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+            <td class="px-4 py-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white text-xs font-bold">
+                        {{ assignment.subject.code|truncatechars:3 }}
+                    </div>
+                    <div>
+                        <div class="font-medium">{{ assignment.subject.name }}</div>
+                        <div class="text-xs text-gray-500">{{ assignment.subject.code }}</div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-4 py-3">{{ assignment.section.name }}</td>
+            <td class="px-4 py-3">
+                <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                    {{ assignment.section.grade_level }}
+                </span>
+            </td>
+            <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">
+                        {{ assignment.teacher.first_name|first }}{{ assignment.teacher.last_name|first }}
+                    </div>
+                    <span>{{ assignment.teacher.get_full_name }}</span>
+                </div>
+            </td>
+            <td class="px-4 py-3">
+                {% with sub_status=submissions_status|getitem:assignment.pk %}
+                {% if sub_status %}
+                    {% if sub_status == 'validated' %}
+                    <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">Validated</span>
+                    {% elif sub_status == 'pending' %}
+                    <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">Pending</span>
+                    {% elif sub_status == 'returned' %}
+                    <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Returned</span>
+                    {% endif %}
+                {% else %}
+                <span class="text-xs text-gray-400">No submission</span>
+                {% endif %}
+                {% endwith %}
+            </td>
+            <td class="px-4 py-3 text-right">
+                <a href="{% url 'grades:grade_encode' assignment.pk %}" class="inline-flex items-center gap-1 bg-secondary hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg transition text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    Encode
+                </a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                <div class="flex flex-col items-center gap-2">
+                    <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                    <p>No assignments found</p>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

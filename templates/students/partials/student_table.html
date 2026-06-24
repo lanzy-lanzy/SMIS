@@ -7,7 +7,9 @@
             <th class="px-4 py-3 text-left font-medium">Grade Level</th>
             <th class="px-4 py-3 text-left font-medium">Section</th>
             <th class="px-4 py-3 text-left font-medium">Status</th>
+            {% if user.is_admin or user.is_registrar %}
             <th class="px-4 py-3 text-right font-medium">Actions</th>
+            {% endif %}
         </tr>
     </thead>
     <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
@@ -26,15 +28,17 @@
                 </span>
             </td>
             <td class="px-4 py-3 text-right">
+                {% if user.is_admin or user.is_registrar %}
                 <div class="flex items-center justify-end gap-2">
                     <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'students:student_edit' student.pk %}' } }))" class="text-blue-600 hover:text-blue-800">Edit</button>
                     <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'students:student_delete' student.pk %}' } }))" class="text-red-600 hover:text-red-800">Delete</button>
                 </div>
+                {% endif %}
             </td>
         </tr>
         {% empty %}
         <tr>
-            <td colspan="7" class="px-4 py-8 text-center text-gray-500">No students found</td>
+            <td colspan="{% if user.is_admin or user.is_registrar %}7{% else %}6{% endif %}" class="px-4 py-8 text-center text-gray-500">No students found</td>
         </tr>
         {% endfor %}
     </tbody>

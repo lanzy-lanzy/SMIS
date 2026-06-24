@@ -1,0 +1,91 @@
+<div class="p-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Bulk Assign Teacher</h3>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </div>
+    <p class="text-sm text-gray-500 mb-4">Assign a teacher to multiple subjects and sections at once.</p>
+    
+    <form method="post" hx-post="{{ request.path }}" hx-target="#modal-content" hx-swap="innerHTML" class="space-y-4">
+        {% csrf_token %}
+        
+        <!-- Teacher -->
+        <div>
+            <label class="block text-sm font-medium mb-1">Teacher *</label>
+            <select name="teacher" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+                <option value="">Select Teacher</option>
+                {% for teacher in teachers %}
+                <option value="{{ teacher.id }}">{{ teacher.get_full_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <!-- School Year -->
+        <div>
+            <label class="block text-sm font-medium mb-1">School Year *</label>
+            <select name="school_year" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+                <option value="">Select School Year</option>
+                {% for sy in school_years %}
+                <option value="{{ sy.id }}" {% if sy.is_current %}selected{% endif %}>{{ sy.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <!-- Subjects (Multiple) -->
+        <div>
+            <label class="block text-sm font-medium mb-1">Subjects * (Hold Ctrl/Cmd to select multiple)</label>
+            <select name="subjects" required multiple size="5" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+                {% for subject in subjects %}
+                <option value="{{ subject.id }}">{{ subject.code }} - {{ subject.name }} ({{ subject.grade_level }})</option>
+                {% endfor %}
+            </select>
+            <p class="text-xs text-gray-500 mt-1">Select one or more subjects</p>
+        </div>
+        
+        <!-- Sections (Multiple) -->
+        <div>
+            <label class="block text-sm font-medium mb-1">Sections * (Hold Ctrl/Cmd to select multiple)</label>
+            <select name="sections" required multiple size="5" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+                {% for section in sections %}
+                <option value="{{ section.id }}">{{ section.name }} - {{ section.grade_level }}</option>
+                {% endfor %}
+            </select>
+            <p class="text-xs text-gray-500 mt-1">Select one or more sections</p>
+        </div>
+        
+        <!-- Preview -->
+        <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4">
+            <div class="text-sm font-medium mb-2">Assignment Preview</div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                This will create <strong id="assignment-count">0</strong> new assignment(s):
+                <br>1 teacher x <span id="subject-count">0</span> subjects x <span id="section-count">0</span> sections
+            </p>
+        </div>
+        
+        <div class="flex gap-3 pt-4 border-t">
+            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg transition">Create Assignments</button>
+            <button type="button" onclick="closeModal()" class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition">Cancel</button>
+        </div>
+    </form>
+    
+    <script>
+        // Update preview count
+        const subjectSelect = document.querySelector('select[name="subjects"]');
+        const sectionSelect = document.querySelector('select[name="sections"]');
+        const subjectCount = document.getElementById('subject-count');
+        const sectionCount = document.getElementById('section-count');
+        const assignmentCount = document.getElementById('assignment-count');
+        
+        function updateCount() {
+            const subjects = subjectSelect.selectedOptions.length;
+            const sections = sectionSelect.selectedOptions.length;
+            subjectCount.textContent = subjects;
+            sectionCount.textContent = sections;
+            assignmentCount.textContent = subjects * sections;
+        }
+        
+        subjectSelect.addEventListener('change', updateCount);
+        sectionSelect.addEventListener('change', updateCount);
+    </script>
+</div>

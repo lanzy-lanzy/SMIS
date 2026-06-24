@@ -2,33 +2,137 @@
 {% block title %}Form 137{% endblock %}
 {% block page_title %}Form 137 Generation{% endblock %}
 {% block content %}
-<div class="space-y-6">
+<div x-data="{ view: 'table', search: '', showFilters: false }" class="space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="text-xl font-bold">Form 137 Records</h1>
-            <p class="text-sm text-gray-500">Generate and manage Form 137 records</p>
+            <p class="text-sm text-gray-500">Generate and manage student permanent records</p>
         </div>
-        <a href="{% url 'form137:form137_bulk_generate' %}" class="bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition">Bulk Generate</a>
+        <div class="flex gap-2">
+            <a href="{% url 'form137:form137_bulk_generate' %}" 
+               class="bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                Bulk Generate
+            </a>
+            <a href="{% url 'form137:form137_export' %}" 
+               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Export CSV
+            </a>
+        </div>
     </div>
 
+    <!-- Stats -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold">{{ total_records }}</p>
+                    <p class="text-xs text-gray-500">Total Records</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold">{{ printed_count }}</p>
+                    <p class="text-xs text-gray-500">Printed</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold">{{ unprinted_count }}</p>
+                    <p class="text-xs text-gray-500">Not Printed</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold">{{ this_month_count }}</p>
+                    <p class="text-xs text-gray-500">This Month</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & View Toggle -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
+        <div class="flex flex-col sm:flex-row gap-3">
+            <div class="flex-1 relative">
+                <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <input type="text" x-model="search" placeholder="Search by student name, LRN..."
+                       class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+            </div>
+            <div class="flex gap-2">
+                <button @click="view = 'table'" :class="view === 'table' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-slate-700'" 
+                        class="px-3 py-2 rounded-lg transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                </button>
+                <button @click="view = 'grid'" :class="view === 'grid' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-slate-700'"
+                        class="px-3 py-2 rounded-lg transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
-        <div class="p-4 border-b border-gray-100 dark:border-slate-700">
-            <form method="get" class="flex gap-3">
-                <select name="sy" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
-                    <option value="">All School Years</option>
-                    {% for sy in school_years %}
-                    <option value="{{ sy.id }}" {% if sy_filter == sy.id|stringformat:"d" %}selected{% endif %}>{{ sy.name }}</option>
-                    {% endfor %}
-                </select>
-                <select name="gl" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
-                    <option value="">All Grade Levels</option>
-                    {% for gl in grade_levels %}
-                    <option value="{{ gl.id }}" {% if gl_filter == gl.id|stringformat:"d" %}selected{% endif %}>{{ gl.name }}</option>
-                    {% endfor %}
-                </select>
-                <button type="submit" class="bg-secondary hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition">Filter</button>
+        <button @click="showFilters = !showFilters" class="w-full p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/50 transition">
+            <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                <span class="font-medium">Filters</span>
+                {% if sy_filter or gl_filter %}
+                <span class="px-2 py-1 text-xs bg-primary text-white rounded-full">Active</span>
+                {% endif %}
+            </div>
+            <svg class="w-5 h-5 text-gray-400 transition-transform" :class="showFilters ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+        <div x-show="showFilters" x-transition class="p-4 border-t border-gray-100 dark:border-slate-700">
+            <form method="get" id="form137-filters" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">School Year</label>
+                    <select name="sy" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+                        <option value="">All School Years</option>
+                        {% for sy in school_years %}
+                        <option value="{{ sy.id }}" {% if sy_filter == sy.id|stringformat:"d" %}selected{% endif %}>{{ sy.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Grade Level</label>
+                    <select name="gl" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+                        <option value="">All Grade Levels</option>
+                        {% for gl in grade_levels %}
+                        <option value="{{ gl.id }}" {% if gl_filter == gl.id|stringformat:"d" %}selected{% endif %}>{{ gl.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition">Apply</button>
+                    <a href="{% url 'form137:form137_list' %}" class="bg-gray-200 dark:bg-slate-600 hover:bg-gray-300 dark:hover:bg-slate-500 px-4 py-2 rounded-lg transition">Clear</a>
+                </div>
             </form>
         </div>
+    </div>
+
+    <!-- Table View -->
+    <div x-show="view === 'table'" class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-gray-50 dark:bg-slate-700">
@@ -39,30 +143,117 @@
                         <th class="px-4 py-3 text-left font-medium">Grade Level</th>
                         <th class="px-4 py-3 text-left font-medium">Generated By</th>
                         <th class="px-4 py-3 text-left font-medium">Date</th>
+                        <th class="px-4 py-3 text-center font-medium">Status</th>
                         <th class="px-4 py-3 text-right font-medium">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
                     {% for record in records %}
                     <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
-                        <td class="px-4 py-3">{{ record.student.full_name }}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">
+                                    {{ record.student.first_name|first }}{{ record.student.last_name|first }}
+                                </div>
+                                <div>
+                                    <a href="{% url 'students:student_detail' record.student.pk %}" class="font-medium text-blue-600 hover:underline">{{ record.student.full_name }}</a>
+                                </div>
+                            </div>
+                        </td>
                         <td class="px-4 py-3">{{ record.student.lrn }}</td>
-                        <td class="px-4 py-3">{{ record.school_year }}</td>
-                        <td class="px-4 py-3">{{ record.grade_level }}</td>
-                        <td class="px-4 py-3">{{ record.generated_by.get_full_name }}</td>
+                        <td class="px-4 py-3">{{ record.school_year.name }}</td>
+                        <td class="px-4 py-3">{{ record.grade_level.name }}</td>
+                        <td class="px-4 py-3">{{ record.generated_by.get_full_name|default:record.generated_by.username }}</td>
                         <td class="px-4 py-3">{{ record.date_generated|date:"M d, Y" }}</td>
+                        <td class="px-4 py-3 text-center">
+                            {% if record.is_printed %}
+                            <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Printed</span>
+                            {% else %}
+                            <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">Pending</span>
+                            {% endif %}
+                        </td>
                         <td class="px-4 py-3 text-right">
-                            <a href="{% url 'form137:form137_preview' record.pk %}" class="text-blue-600 hover:underline" target="_blank">Preview</a>
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="{% url 'form137:form137_preview' record.pk %}" class="text-blue-600 hover:text-blue-800 p-1" title="Preview" target="_blank">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                </a>
+                                <a href="{% url 'form137:form137_preview' record.pk %}" class="text-green-600 hover:text-green-800 p-1" title="Print" target="_blank">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">No Form 137 records found</td>
+                        <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+                            <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <p class="mb-2">No Form 137 records found</p>
+                            <a href="{% url 'form137:form137_bulk_generate' %}" class="text-primary hover:underline text-sm">Generate records for your students</a>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+    </div>
+
+    <!-- Grid View -->
+    <div x-show="view === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for record in records %}
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5 hover:shadow-md transition">
+            <div class="flex items-start justify-between mb-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-bold">
+                        {{ record.student.first_name|first }}{{ record.student.last_name|first }}
+                    </div>
+                    <div>
+                        <a href="{% url 'students:student_detail' record.student.pk %}" class="font-semibold text-blue-600 hover:underline">{{ record.student.full_name }}</a>
+                        <p class="text-sm text-gray-500">{{ record.student.lrn }}</p>
+                    </div>
+                </div>
+                {% if record.is_printed %}
+                <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Printed</span>
+                {% else %}
+                <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">Pending</span>
+                {% endif %}
+            </div>
+            
+            <div class="space-y-2 mb-4 text-sm">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    <span class="text-gray-600 dark:text-gray-400">{{ record.grade_level.name }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span class="text-gray-600 dark:text-gray-400">{{ record.school_year.name }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    <span class="text-gray-600 dark:text-gray-400">{{ record.generated_by.get_full_name|default:record.generated_by.username }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span class="text-gray-600 dark:text-gray-400">{{ record.date_generated|date:"M d, Y" }}</span>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <a href="{% url 'form137:form137_preview' record.pk %}" class="flex-1 text-center bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 px-3 py-2 rounded-lg transition text-sm">
+                    Preview
+                </a>
+                <a href="{% url 'form137:form137_preview' record.pk %}" target="_blank"
+                        class="flex-1 text-center bg-primary hover:bg-blue-800 text-white px-3 py-2 rounded-lg transition text-sm">
+                    Print
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full text-center py-12 text-gray-500">
+            <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <p class="mb-2">No Form 137 records found</p>
+            <a href="{% url 'form137:form137_bulk_generate' %}" class="text-primary hover:underline text-sm">Generate records for your students</a>
+        </div>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}

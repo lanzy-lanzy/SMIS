@@ -2,14 +2,152 @@
 {% block title %}Teacher Assignments{% endblock %}
 {% block page_title %}Teacher Assignments{% endblock %}
 {% block content %}
-<div class="space-y-6">
-    <div class="flex items-center justify-between">
-        <h1 class="text-xl font-bold">Teacher Assignments</h1>
-        <button onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:assignment_create' %}' } }))" class="bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition">Add Assignment</button>
+<div class="space-y-6" x-data="{ view: 'teacher', showStats: true }">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold">Teacher Assignments</h1>
+            <p class="text-sm text-gray-500">Manage teacher-subject-section assignments</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:assignment_bulk_create' %}' } }))" 
+                    class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                Bulk Assign
+            </button>
+            <a href="{% url 'academics:assignment_export' %}" 
+               class="inline-flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Export
+            </a>
+            <button onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:assignment_create' %}' } }))" 
+                    class="inline-flex items-center gap-2 bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Add Assignment
+            </button>
+        </div>
     </div>
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
-        <div class="overflow-x-auto">
-            {% include 'academics/partials/assignment_table.html' %}
+
+    <!-- Stats Cards -->
+    <div x-show="showStats" x-transition class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Total Assignments</div>
+            <div class="text-2xl font-bold text-primary" id="stat-total">{{ total_assignments }}</div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Active Teachers</div>
+            <div class="text-2xl font-bold text-emerald-600" id="stat-teachers">{{ active_teachers }}</div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Unassigned Teachers</div>
+            <div class="text-2xl font-bold text-orange-500" id="stat-unassigned">{{ unassigned_teachers }}</div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Sections Covered</div>
+            <div class="text-2xl font-bold text-purple-600" id="stat-sections">{{ sections_covered }}</div>
+        </div>
+    </div>
+
+    <!-- View Toggle & Filters -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
+        <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+            <!-- View Toggle -->
+            <div class="flex items-center gap-2 bg-gray-100 dark:bg-slate-700 rounded-lg p-1">
+                <button @click="view = 'teacher'" :class="view === 'teacher' ? 'bg-white dark:bg-slate-600 shadow' : ''" 
+                        class="px-4 py-2 rounded-md text-sm font-medium transition">
+                    By Teacher
+                </button>
+                <button @click="view = 'section'" :class="view === 'section' ? 'bg-white dark:bg-slate-600 shadow' : ''" 
+                        class="px-4 py-2 rounded-md text-sm font-medium transition">
+                    By Section
+                </button>
+            </div>
+
+            <!-- Search -->
+            <div class="flex-1">
+                <input type="text" name="q" value="{{ query }}" placeholder="Search by teacher name..."
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                       hx-get="{% url 'academics:assignment_list' %}" hx-target="#assignment-table" hx-trigger="keyup changed delay:300ms" hx-include="[name='q'], [name='subject'], [name='section'], [name='school_year']">
+            </div>
+
+            <!-- Filters -->
+            <div class="flex flex-wrap gap-2">
+                <select name="subject" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                        hx-get="{% url 'academics:assignment_list' %}" hx-target="#assignment-table" hx-trigger="change" hx-include="[name='q'], [name='subject'], [name='section'], [name='school_year']">
+                    <option value="">All Subjects</option>
+                    {% for subject in subjects %}
+                    <option value="{{ subject.id }}" {% if subject_filter == subject.id|stringformat:"d" %}selected{% endif %}>{{ subject.name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="section" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                        hx-get="{% url 'academics:assignment_list' %}" hx-target="#assignment-table" hx-trigger="change" hx-include="[name='q'], [name='subject'], [name='section'], [name='school_year']">
+                    <option value="">All Sections</option>
+                    {% for section in sections %}
+                    <option value="{{ section.id }}" {% if section_filter == section.id|stringformat:"d" %}selected{% endif %}>{{ section.name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="school_year" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                        hx-get="{% url 'academics:assignment_list' %}" hx-target="#assignment-table" hx-trigger="change" hx-include="[name='q'], [name='subject'], [name='section'], [name='school_year']">
+                    <option value="">All School Years</option>
+                    {% for sy in school_years %}
+                    <option value="{{ sy.id }}" {% if school_year_filter == sy.id|stringformat:"d" %}selected{% endif %}>{{ sy.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Toggle Stats -->
+            <button @click="showStats = !showStats" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition" title="Toggle Stats">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Teacher View -->
+    <div x-show="view === 'teacher'" x-transition>
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+            <div class="overflow-x-auto" id="assignment-table" hx-get="{% url 'academics:assignment_list' %}?view=teacher" hx-trigger="refreshTable from:body">
+                {% include 'academics/partials/assignment_table.html' %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Section View -->
+    <div x-show="view === 'section'" x-transition>
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+            <div class="overflow-x-auto" id="section-table">
+                {% include 'academics/partials/section_table.html' %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Teacher Workload -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+        <h3 class="text-lg font-semibold mb-4">Teacher Workload</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for teacher in teacher_workloads %}
+            <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold">
+                    {{ teacher.first_name|first }}{{ teacher.last_name|first }}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="font-medium truncate">{{ teacher.get_full_name }}</div>
+                    <div class="text-sm text-gray-500">{{ teacher.assignment_count }} section{{ teacher.assignment_count|pluralize }}</div>
+                </div>
+                <div class="flex-shrink-0">
+                    {% if teacher.assignment_count == 0 %}
+                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300">None</span>
+                    {% elif teacher.assignment_count <= 3 %}
+                    <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Light</span>
+                    {% elif teacher.assignment_count <= 5 %}
+                    <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">Medium</span>
+                    {% else %}
+                    <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Heavy</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-gray-500 col-span-3">No teachers found.</p>
+            {% endfor %}
         </div>
     </div>
 </div>

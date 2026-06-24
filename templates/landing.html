@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMIS - School Management Information System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Outfit', sans-serif; overflow-x: hidden; }
+        #three-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+        .content { position: relative; z-index: 1; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #0ea5e9, #22c55e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .cta-button {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            transition: all 0.3s ease;
+        }
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(249, 115, 22, 0.4);
+        }
+        .feature-card {
+            transition: all 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 60px rgba(14, 165, 233, 0.2);
+        }
+        .stat-number {
+            font-variant-numeric: tabular-nums;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        .floating { animation: float 6s ease-in-out infinite; }
+        .scroll-indicator {
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0) translateX(-50%); }
+            40% { transform: translateY(-10px) translateX(-50%); }
+            60% { transform: translateY(-5px) translateX(-50%); }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white">
+    <canvas id="three-canvas"></canvas>
+
+    <div class="content">
+        <!-- Navbar -->
+        <nav class="fixed top-0 left-0 right-0 z-50 px-6 py-4">
+            <div class="max-w-7xl mx-auto flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 to-emerald-400 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xl font-bold">SMIS</span>
+                </div>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-white/70 hover:text-white transition-colors">Features</a>
+                    <a href="#about" class="text-white/70 hover:text-white transition-colors">About</a>
+                    <a href="#stats" class="text-white/70 hover:text-white transition-colors">Stats</a>
+                </div>
+                <a href="{% url 'accounts:login' %}" class="cta-button px-6 py-2.5 rounded-full font-semibold text-white">
+                    Sign In
+                </a>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="min-h-screen flex items-center justify-center relative px-6">
+            <div class="max-w-5xl mx-auto text-center">
+                <div class="hero-content">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-8">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span class="text-sm text-white/80">School Management Reimagined</span>
+                    </div>
+                    <h1 class="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight">
+                        <span class="gradient-text">SMIS</span>
+                        <br>
+                        <span class="text-white/90">School Management</span>
+                        <br>
+                        <span class="text-white/60 text-4xl md:text-5xl lg:text-6xl">Information System</span>
+                    </h1>
+                    <p class="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10 leading-relaxed">
+                        Streamline your school operations with our comprehensive management system.
+                        From student records to grade management, everything you need in one place.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <a href="{% url 'accounts:login' %}" class="cta-button px-8 py-4 rounded-full font-semibold text-lg text-white">
+                            Get Started
+                            <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                            </svg>
+                        </a>
+                        <a href="#features" class="px-8 py-4 rounded-full font-semibold text-lg glass-card text-white hover:bg-white/20 transition-all">
+                            Learn More
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="scroll-indicator absolute bottom-10 left-1/2 transform -translate-x-1/2">
+                <svg class="w-6 h-6 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                </svg>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="py-32 px-6">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center mb-20">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-4">
+                        Powerful <span class="gradient-text">Features</span>
+                    </h2>
+                    <p class="text-white/60 text-lg max-w-2xl mx-auto">
+                        Everything you need to manage your school efficiently
+                    </p>
+                </div>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Feature 1 -->
+                    <div class="feature-card glass-card rounded-2xl p-8">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center mb-6">
+                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3">Student Management</h3>
+                        <p class="text-white/60 leading-relaxed">
+                            Complete student profiles, enrollment tracking, and academic records management.
+                        </p>
+                    </div>
+                    <!-- Feature 2 -->
+                    <div class="feature-card glass-card rounded-2xl p-8">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center mb-6">
+                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3">Grade Management</h3>
+                        <p class="text-white/60 leading-relaxed">
+                            Encode, validate, and track student grades across all subjects and grading periods.
+                        </p>
+                    </div>
+                    <!-- Feature 3 -->
+                    <div class="feature-card glass-card rounded-2xl p-8">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center mb-6">
+                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3">Form 137 Generation</h3>
+                        <p class="text-white/60 leading-relaxed">
+                            Automated generation and management of Form 137 permanent records.
+                        </p>
+                    </div>
+                    <!-- Feature 4 -->
+                    <div class="feature-card glass-card rounded-2xl p-8">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center mb-6">
+                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3">Analytics & Reports</h3>
+                        <p class="text-white/60 leading-relaxed">
+                            Comprehensive reports and analytics for data-driven decision making.
+                        </p>
+                    </div>
+                    <!-- Feature 5 -->
+                    <div class="feature-card glass-card rounded-2xl p-8">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center mb-6">
+                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3">Role-Based Access</h3>
+                        <p class="text-white/60 leading-relaxed">
+                            Secure access control for admin, teachers, registrars, and principals.
+                        </p>
+                    </div>
+                    <!-- Feature 6 -->
+                    <div class="feature-card glass-card rounded-2xl p-8">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center mb-6">
+                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3">Responsive Design</h3>
+                        <p class="text-white/60 leading-relaxed">
+                            Access from any device - desktop, tablet, or mobile phone.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section id="stats" class="py-32 px-6">
+            <div class="max-w-5xl mx-auto">
+                <div class="glass-card rounded-3xl p-12 md:p-16">
+                    <div class="grid md:grid-cols-4 gap-8 text-center">
+                        <div class="stat-item">
+                            <div class="text-4xl md:text-5xl font-bold gradient-text stat-number" data-target="500">0</div>
+                            <div class="text-white/60 mt-2">Students</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="text-4xl md:text-5xl font-bold gradient-text stat-number" data-target="50">0</div>
+                            <div class="text-white/60 mt-2">Teachers</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="text-4xl md:text-5xl font-bold gradient-text stat-number" data-target="20">0</div>
+                            <div class="text-white/60 mt-2">Sections</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="text-4xl md:text-5xl font-bold gradient-text stat-number" data-target="1000">0</div>
+                            <div class="text-white/60 mt-2">Records</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="py-32 px-6">
+            <div class="max-w-7xl mx-auto">
+                <div class="grid md:grid-cols-2 gap-16 items-center">
+                    <div>
+                        <h2 class="text-4xl md:text-5xl font-bold mb-6">
+                            Built for
+                            <span class="gradient-text">Modern Schools</span>
+                        </h2>
+                        <p class="text-white/60 text-lg leading-relaxed mb-6">
+                            SMIS is a comprehensive school management system designed to streamline
+                            administrative tasks and improve academic efficiency.
+                        </p>
+                        <p class="text-white/60 text-lg leading-relaxed mb-8">
+                            From student enrollment to grade management, Form 137 generation to
+                            analytics reporting - SMIS handles it all with ease.
+                        </p>
+                        <div class="flex flex-col gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-white/80">Easy to use interface</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-white/80">Secure data management</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-white/80">24/7 customer support</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative floating">
+                        <div class="glass-card rounded-3xl p-8">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-gradient-to-br from-sky-400/20 to-sky-600/20 rounded-2xl p-6 text-center">
+                                    <div class="text-3xl font-bold text-sky-400">99%</div>
+                                    <div class="text-white/60 text-sm mt-1">Uptime</div>
+                                </div>
+                                <div class="bg-gradient-to-br from-emerald-400/20 to-emerald-600/20 rounded-2xl p-6 text-center">
+                                    <div class="text-3xl font-bold text-emerald-400">24/7</div>
+                                    <div class="text-white/60 text-sm mt-1">Support</div>
+                                </div>
+                                <div class="bg-gradient-to-br from-orange-400/20 to-orange-600/20 rounded-2xl p-6 text-center">
+                                    <div class="text-3xl font-bold text-orange-400">50+</div>
+                                    <div class="text-white/60 text-sm mt-1">Schools</div>
+                                </div>
+                                <div class="bg-gradient-to-br from-purple-400/20 to-purple-600/20 rounded-2xl p-6 text-center">
+                                    <div class="text-3xl font-bold text-purple-400">10K+</div>
+                                    <div class="text-white/60 text-sm mt-1">Users</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="py-32 px-6">
+            <div class="max-w-4xl mx-auto text-center">
+                <h2 class="text-4xl md:text-6xl font-bold mb-6">
+                    Ready to <span class="gradient-text">Transform</span>
+                    <br>Your School?
+                </h2>
+                <p class="text-white/60 text-lg mb-10 max-w-2xl mx-auto">
+                    Join hundreds of schools already using SMIS to streamline their operations
+                    and improve academic outcomes.
+                </p>
+                <a href="{% url 'accounts:login' %}" class="cta-button px-10 py-5 rounded-full font-semibold text-xl text-white inline-flex items-center gap-3">
+                    Start Now
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                    </svg>
+                </a>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="py-12 px-6 border-t border-white/10">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-400 to-emerald-400 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                    </div>
+                    <span class="font-semibold">SMIS</span>
+                </div>
+                <div class="text-white/40 text-sm">
+                    Paquito S. Yu Memorial NHS - School Management Information System
+                </div>
+                <div class="text-white/40 text-sm">
+                    2026 SMIS. All rights reserved.
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Three.js Background
+        const canvas = document.getElementById('three-canvas');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // Create particles
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 2000;
+        const posArray = new Float32Array(particlesCount * 3);
+        const colorsArray = new Float32Array(particlesCount * 3);
+
+        for(let i = 0; i < particlesCount * 3; i += 3) {
+            posArray[i] = (Math.random() - 0.5) * 10;
+            posArray[i + 1] = (Math.random() - 0.5) * 10;
+            posArray[i + 2] = (Math.random() - 0.5) * 10;
+
+            // Sky blue to emerald gradient
+            const mixFactor = Math.random();
+            colorsArray[i] = 0.055 + mixFactor * 0.078;     // R
+            colorsArray[i + 1] = 0.647 + mixFactor * 0.235;  // G
+            colorsArray[i + 2] = 0.914 - mixFactor * 0.565;  // B
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorsArray, 3));
+
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.02,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
+        });
+
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+
+        // Create floating geometric shapes
+        const shapes = [];
+        const shapeMaterial = new THREE.MeshBasicMaterial({
+            color: 0x0ea5e9,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.1
+        });
+
+        for(let i = 0; i < 15; i++) {
+            let geometry;
+            const rand = Math.random();
+            if(rand < 0.33) {
+                geometry = new THREE.IcosahedronGeometry(Math.random() * 0.5 + 0.2, 0);
+            } else if(rand < 0.66) {
+                geometry = new THREE.OctahedronGeometry(Math.random() * 0.5 + 0.2, 0);
+            } else {
+                geometry = new THREE.TetrahedronGeometry(Math.random() * 0.5 + 0.2, 0);
+            }
+
+            const material = shapeMaterial.clone();
+            material.color = new THREE.Color(
+                Math.random() * 0.1 + 0.05,
+                Math.random() * 0.3 + 0.5,
+                Math.random() * 0.3 + 0.7
+            );
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(
+                (Math.random() - 0.5) * 8,
+                (Math.random() - 0.5) * 8,
+                (Math.random() - 0.5) * 8
+            );
+            mesh.rotation.set(
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+                Math.random() * Math.PI
+            );
+            scene.add(mesh);
+            shapes.push(mesh);
+        }
+
+        camera.position.z = 5;
+
+        // Mouse interaction
+        let mouseX = 0;
+        let mouseY = 0;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            particlesMesh.rotation.y += 0.001;
+            particlesMesh.rotation.x += 0.0005;
+
+            shapes.forEach((shape, i) => {
+                shape.rotation.x += 0.002 * (i % 2 === 0 ? 1 : -1);
+                shape.rotation.y += 0.003 * (i % 2 === 0 ? 1 : -1);
+                shape.position.y += Math.sin(Date.now() * 0.001 + i) * 0.001;
+            });
+
+            camera.position.x += (mouseX * 0.5 - camera.position.x) * 0.02;
+            camera.position.y += (mouseY * 0.5 - camera.position.y) * 0.02;
+            camera.lookAt(scene.position);
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Handle resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // GSAP Animations
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Hero animation
+        gsap.from('.hero-content', {
+            y: 100,
+            opacity: 0,
+            duration: 1.5,
+            ease: 'power3.out'
+        });
+
+        // Feature cards
+        gsap.utils.toArray('.feature-card').forEach((card, i) => {
+            gsap.from(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: 'top 85%',
+                    toggleActions: 'play none none reverse'
+                },
+                y: 60,
+                opacity: 0,
+                duration: 0.8,
+                delay: i * 0.1,
+                ease: 'power2.out'
+            });
+        });
+
+        // Stats counter animation
+        const statNumbers = document.querySelectorAll('.stat-number');
+        statNumbers.forEach(stat => {
+            const target = parseInt(stat.getAttribute('data-target'));
+            gsap.to(stat, {
+                scrollTrigger: {
+                    trigger: stat,
+                    start: 'top 85%',
+                    toggleActions: 'play none none reverse'
+                },
+                innerHTML: target,
+                duration: 2,
+                snap: { innerHTML: 1 },
+                ease: 'power2.out'
+            });
+        });
+
+        // About section
+        gsap.from('#about .grid > div:first-child', {
+            scrollTrigger: {
+                trigger: '#about',
+                start: 'top 70%'
+            },
+            x: -100,
+            opacity: 0,
+            duration: 1,
+            ease: 'power3.out'
+        });
+
+        gsap.from('#about .grid > div:last-child', {
+            scrollTrigger: {
+                trigger: '#about',
+                start: 'top 70%'
+            },
+            x: 100,
+            opacity: 0,
+            duration: 1,
+            delay: 0.3,
+            ease: 'power3.out'
+        });
+
+        // CTA section
+        gsap.from('.cta-button', {
+            scrollTrigger: {
+                trigger: '.cta-button',
+                start: 'top 85%'
+            },
+            scale: 0.8,
+            opacity: 0,
+            duration: 0.8,
+            ease: 'back.out(1.7)'
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if(target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

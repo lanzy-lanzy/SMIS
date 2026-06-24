@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Count
 from .models import Student
 from .forms import StudentForm
 from accounts.models import AuditLog
@@ -22,10 +22,22 @@ def student_list(request):
     grade_filter = request.GET.get("grade", "")
     section_filter = request.GET.get("section", "")
     status_filter = request.GET.get("status", "")
+    view_type = request.GET.get("view", "table")
 
     students = Student.objects.select_related(
         "grade_level", "section", "school_year"
     ).all()
+
+    # Filter students by teacher's assigned sections
+    if request.user.is_teacher:
+        from academics.models import TeacherAssignment, SchoolYear
+        current_sy = SchoolYear.objects.filter(is_current=True).first()
+        if current_sy:
+            assigned_sections = TeacherAssignment.objects.filter(
+                teacher=request.user,
+                school_year=current_sy
+            ).values_list('section_id', flat=True).distinct()
+            students = students.filter(section_id__in=assigned_sections)
 
     if query:
         students = students.filter(
@@ -44,6 +56,26 @@ def student_list(request):
     if status_filter:
         students = students.filter(status=status_filter)
 
+    # Stats
+    all_students = Student.objects.all()
+    if request.user.is_teacher:
+        from academics.models import TeacherAssignment, SchoolYear
+        current_sy = SchoolYear.objects.filter(is_current=True).first()
+        if current_sy:
+            assigned_sections = TeacherAssignment.objects.filter(
+                teacher=request.user,
+                school_year=current_sy
+            ).values_list('section_id', flat=True).distinct()
+            all_students = all_students.filter(section_id__in=assigned_sections)
+    
+    total_students = all_students.count()
+    active_students = all_students.filter(status='active').count()
+    inactive_students = all_students.filter(status='inactive').count()
+    transferred_students = all_students.filter(status='transferred').count()
+    
+    # Students by grade level
+    students_by_grade = all_students.values('grade_level__name').annotate(count=Count('id')).order_by('grade_level__name')
+
     paginator = Paginator(students, 20)
     page = request.GET.get("page", 1)
     students = paginator.get_page(page)
@@ -54,8 +86,9 @@ def student_list(request):
     sections = Section.objects.all()
 
     if request.headers.get("HX-Request"):
+        template = "students/partials/student_grid.html" if view_type == "grid" else "students/partials/student_table.html"
         return render(
-            request, "students/partials/student_table.html", {"students": students}
+            request, template, {"students": students}
         )
 
     return render(
@@ -70,6 +103,11 @@ def student_list(request):
             "grade_levels": grade_levels,
             "sections": sections,
             "status_choices": Student.STATUS_CHOICES,
+            "total_students": total_students,
+            "active_students": active_students,
+            "inactive_students": inactive_students,
+            "transferred_students": transferred_students,
+            "students_by_grade": students_by_grade,
         },
     )
 
@@ -215,6 +253,21 @@ def student_detail(request, pk):
         return redirect("dashboard:index")
 
     student = get_object_or_404(Student, pk=pk)
+    
+    # For teachers, check if they are assigned to the student's section
+    if request.user.is_teacher:
+        from academics.models import TeacherAssignment, SchoolYear
+        current_sy = SchoolYear.objects.filter(is_current=True).first()
+        if current_sy:
+            is_assigned = TeacherAssignment.objects.filter(
+                teacher=request.user,
+                school_year=current_sy,
+                section=student.section
+            ).exists()
+            if not is_assigned:
+                messages.error(request, "Access denied. You are not assigned to this section.")
+                return redirect("students:student_list")
+    
     grades = (
         Grade.objects.filter(student=student)
         .select_related("subject", "grading_period", "school_year")
@@ -224,3 +277,37 @@ def student_detail(request, pk):
     return render(
         request, "students/student_detail.html", {"student": student, "grades": grades}
     )
+
+
+@login_required
+def student_export(request):
+    import csv
+    from django.http import HttpResponse
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="students_export.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['LRN', 'First Name', 'Middle Name', 'Last Name', 'Suffix', 'Sex', 'Birthdate', 'Birthplace', 'Address', 'Grade Level', 'Section', 'Status', 'Parent Name', 'Parent Phone'])
+    
+    students = Student.objects.select_related('grade_level', 'section').all()
+    
+    for student in students:
+        writer.writerow([
+            student.lrn,
+            student.first_name,
+            student.middle_name,
+            student.last_name,
+            student.suffix,
+            student.get_sex_display(),
+            student.birthdate,
+            student.birthplace,
+            student.address,
+            student.grade_level,
+            student.section,
+            student.get_status_display(),
+            student.parent_name,
+            student.parent_phone,
+        ])
+    
+    return response

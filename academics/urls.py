@@ -23,7 +23,10 @@ urlpatterns = [
     path('subjects/<int:pk>/delete/', views.subject_delete, name='subject_delete'),
     path('assignments/', views.assignment_list, name='assignment_list'),
     path('assignments/create/', views.assignment_create, name='assignment_create'),
+    path('assignments/<int:pk>/edit/', views.assignment_edit, name='assignment_edit'),
     path('assignments/<int:pk>/delete/', views.assignment_delete, name='assignment_delete'),
+    path('assignments/bulk-create/', views.assignment_bulk_create, name='assignment_bulk_create'),
+    path('assignments/export/', views.assignment_export, name='assignment_export'),
     path('grading-periods/', views.grading_period_list, name='grading_period_list'),
     path('grading-periods/create/', views.grading_period_create, name='grading_period_create'),
 ]
