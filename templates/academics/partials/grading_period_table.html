@@ -1,0 +1,22 @@
+<table id="grading-period-table" class="w-full text-sm" hx-get="{% url 'academics:grading_period_list' %}" hx-trigger="refresh" hx-target="this" hx-swap="outerHTML">
+    <thead class="bg-gray-50 dark:bg-slate-700">
+        <tr>
+            <th class="px-4 py-3 text-left font-medium">Name</th>
+            <th class="px-4 py-3 text-left font-medium">School Year</th>
+            <th class="px-4 py-3 text-left font-medium">Start Date</th>
+            <th class="px-4 py-3 text-left font-medium">End Date</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+        {% for gp in periods %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+            <td class="px-4 py-3">{{ gp.name }}</td>
+            <td class="px-4 py-3">{{ gp.school_year }}</td>
+            <td class="px-4 py-3">{{ gp.start_date }}</td>
+            <td class="px-4 py-3">{{ gp.end_date }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">No grading periods found</td></tr>
+        {% endfor %}
+    </tbody>
+</table>

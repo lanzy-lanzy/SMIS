@@ -1,4 +1,4 @@
-<table class="w-full text-sm">
+<table id="grade-level-table" class="w-full text-sm" hx-get="{% url 'academics:grade_level_list' %}" hx-trigger="refresh" hx-target="this" hx-swap="outerHTML">
     <thead class="bg-gray-50 dark:bg-slate-700">
         <tr>
             <th class="px-4 py-3 text-left font-medium">Name</th>
@@ -14,8 +14,8 @@
             <td class="px-4 py-3">{{ gl.level }}</td>
             <td class="px-4 py-3">{{ gl.description }}</td>
             <td class="px-4 py-3 text-right">
-                <a href="{% url 'academics:grade_level_edit' gl.pk %}" class="text-blue-600 hover:underline mr-2">Edit</a>
-                <a href="{% url 'academics:grade_level_delete' gl.pk %}" class="text-red-600 hover:underline">Delete</a>
+                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:grade_level_edit' gl.pk %}' } }))" class="text-blue-600 hover:underline mr-2">Edit</button>
+                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:grade_level_delete' gl.pk %}' } }))" class="text-red-600 hover:underline">Delete</button>
             </td>
         </tr>
         {% empty %}

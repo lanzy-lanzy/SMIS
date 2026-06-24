@@ -5,37 +5,11 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <h1 class="text-xl font-bold">Grading Periods</h1>
-        <a href="{% url 'academics:grading_period_create' %}" class="bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition">Add Grading Period</a>
+        <button onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:grading_period_create' %}' } }))" class="bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition">Add Grading Period</button>
     </div>
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50 dark:bg-slate-700">
-                    <tr>
-                        <th class="px-4 py-3 text-left font-medium">Name</th>
-                        <th class="px-4 py-3 text-left font-medium">School Year</th>
-                        <th class="px-4 py-3 text-left font-medium">Start Date</th>
-                        <th class="px-4 py-3 text-left font-medium">End Date</th>
-                        <th class="px-4 py-3 text-right font-medium">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
-                    {% for gp in grading_periods %}
-                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
-                        <td class="px-4 py-3">{{ gp.name }}</td>
-                        <td class="px-4 py-3">{{ gp.school_year }}</td>
-                        <td class="px-4 py-3">{{ gp.start_date }}</td>
-                        <td class="px-4 py-3">{{ gp.end_date }}</td>
-                        <td class="px-4 py-3 text-right">
-                            <a href="{% url 'academics:grading_period_edit' gp.pk %}" class="text-blue-600 hover:underline mr-2">Edit</a>
-                            <a href="{% url 'academics:grading_period_delete' gp.pk %}" class="text-red-600 hover:underline">Delete</a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No grading periods found</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            {% include 'academics/partials/grading_period_table.html' %}
         </div>
     </div>
 </div>

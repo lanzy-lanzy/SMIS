@@ -1,4 +1,4 @@
-<table class="w-full text-sm">
+<table id="school-year-table" class="w-full text-sm" hx-get="{% url 'academics:school_year_list' %}" hx-trigger="refresh" hx-target="this" hx-swap="outerHTML">
     <thead class="bg-gray-50 dark:bg-slate-700">
         <tr>
             <th class="px-4 py-3 text-left font-medium">Name</th>
@@ -12,8 +12,8 @@
             <td class="px-4 py-3">{{ sy.name }}</td>
             <td class="px-4 py-3">{% if sy.is_current %}<span class="text-green-600">Yes</span>{% else %}No{% endif %}</td>
             <td class="px-4 py-3 text-right">
-                <a href="{% url 'academics:school_year_edit' sy.pk %}" class="text-blue-600 hover:underline mr-2">Edit</a>
-                <a href="{% url 'academics:school_year_delete' sy.pk %}" class="text-red-600 hover:underline">Delete</a>
+                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:school_year_edit' sy.pk %}' } }))" class="text-blue-600 hover:underline mr-2">Edit</button>
+                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:school_year_delete' sy.pk %}' } }))" class="text-red-600 hover:underline">Delete</button>
             </td>
         </tr>
         {% empty %}

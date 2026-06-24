@@ -12,6 +12,10 @@
     <style>
         [x-cloak] { display: none !important; }
         .sidebar-transition { transition: transform 0.3s ease, width 0.3s ease; }
+        .modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 50; }
+        .modal-panel { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+        .modal-card { background: white; border-radius: 0.75rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); max-width: 42rem; width: 100%; max-height: 90vh; overflow-y: auto; }
+        .dark .modal-card { background: #1e293b; }
         @media print {
             .no-print { display: none !important; }
             .print-only { display: block !important; }
@@ -22,6 +26,27 @@
 </head>
 <body class="h-full bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100">
     <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <!-- Modal Container -->
+    <div id="modal-container" x-data="modal()" x-on:open-modal.window="openModal($event.detail.url)"
+         x-on:close-modal.window="closeModal()" x-on:keydown.escape.window="closeModal()">
+        <!-- Backdrop -->
+        <div x-show="isOpen" x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+             class="modal-backdrop" x-cloak @click="closeModal()"></div>
+        <!-- Modal Panel -->
+        <div x-show="isOpen" x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+             class="modal-panel" x-cloak>
+            <div class="modal-card" @click.outside="closeModal()">
+                <div id="modal-content"></div>
+            </div>
+        </div>
+    </div>
     
     {% if messages %}
     {% for message in messages %}

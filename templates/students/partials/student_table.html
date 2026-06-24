@@ -27,8 +27,8 @@
             </td>
             <td class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-2">
-                    <a href="{% url 'students:student_edit' student.pk %}" class="text-blue-600 hover:text-blue-800">Edit</a>
-                    <a href="{% url 'students:student_delete' student.pk %}" class="text-red-600 hover:text-red-800">Delete</a>
+                    <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'students:student_edit' student.pk %}' } }))" class="text-blue-600 hover:text-blue-800">Edit</button>
+                    <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'students:student_delete' student.pk %}' } }))" class="text-red-600 hover:text-red-800">Delete</button>
                 </div>
             </td>
         </tr>

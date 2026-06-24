@@ -5,7 +5,7 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <h1 class="text-xl font-bold">Subjects</h1>
-        <a href="{% url 'academics:subject_create' %}" class="bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition">Add Subject</a>
+        <button onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:subject_create' %}' } }))" class="bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition">Add Subject</button>
     </div>
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
         <div class="overflow-x-auto">

@@ -8,10 +8,10 @@
             <h1 class="text-xl font-bold">Students</h1>
             <p class="text-sm text-gray-500">Manage student records</p>
         </div>
-        <a href="{% url 'students:student_create' %}" class="inline-flex items-center gap-2 bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition">
+        <button onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'students:student_create' %}' } }))" class="inline-flex items-center gap-2 bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
             Add Student
-        </a>
+        </button>
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
@@ -36,7 +36,7 @@
                 </select>
             </form>
         </div>
-        <div class="overflow-x-auto" id="student-table">
+        <div class="overflow-x-auto" id="student-table" hx-get="{% url 'students:student_list' %}" hx-trigger="refreshTable from:body">
             {% include 'students/partials/student_table.html' %}
         </div>
     </div>
