@@ -23,3 +23,19 @@
         {% endfor %}
     </tbody>
 </table>
+{% if grade_levels.has_other_pages %}
+<div class="px-4 py-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+    <p class="text-sm text-gray-500">Showing {{ grade_levels.start_index }}-{{ grade_levels.end_index }} of {{ grade_levels.paginator.count }}</p>
+    <div class="flex gap-1">
+        {% if grade_levels.has_previous %}
+        <a href="?page={{ grade_levels.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+        {% endif %}
+        {% for num in grade_levels.paginator.page_range %}
+        <a href="?page={{ num }}" class="px-3 py-1 border rounded {% if grade_levels.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+        {% endfor %}
+        {% if grade_levels.has_next %}
+        <a href="?page={{ grade_levels.next_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

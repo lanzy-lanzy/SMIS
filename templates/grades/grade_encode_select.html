@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}Encode Grades{% endblock %}
+{% block page_title %}Encode Grades - {{ grading_period.name }}{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">Encode Grades</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Select a class and enter grades for {{ grading_period.name }}</p>
+        </div>
+        <a href="{% url 'grades:grade_list' %}?period={{ grading_period.pk }}" class="inline-flex items-center gap-2 border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to Classes
+        </a>
+    </div>
+
+    <!-- Period Selector -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Grading Period:</span>
+            <div class="flex flex-wrap gap-2">
+                {% for period in all_periods %}
+                <a href="?period={{ period.pk }}"
+                   class="px-4 py-2 rounded-lg text-sm font-medium transition {% if grading_period.pk == period.pk %}bg-primary text-white shadow-sm{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}">
+                    {{ period.name }}
+                    {% if period.is_submissions_open %}
+                        <span class="ml-1 w-2 h-2 inline-block rounded-full bg-green-400"></span>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+            {% if not grading_period.is_submissions_open %}
+            <span class="ml-auto inline-flex items-center gap-1 px-3 py-1 text-xs rounded-lg bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300 font-medium">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                Submissions Closed
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Subject Selector Cards -->
+    {% if not selected_assignment %}
+    <div>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Select a Class</h2>
+        {% regroup assignments by section.grade_level as grade_groups %}
+        {% if grade_groups %}
+        <div class="space-y-6">
+            {% for group in grade_groups %}
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
+                <div class="px-5 py-4 bg-gradient-to-r from-gray-50 to-white dark:from-slate-700/50 dark:to-slate-800 border-b border-gray-100 dark:border-slate-700">
+                    <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path></svg>
+                        {{ group.grouper.name }}
+                    </h3>
+                </div>
+                <div class="p-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {% for assignment in group.list %}
+                        <a href="?assignment={{ assignment.pk }}&period={{ grading_period.pk }}"
+                           class="group block bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-primary/30 dark:hover:border-primary/40 hover:shadow-lg transition-all duration-200 p-5">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                                        {{ assignment.subject.code|truncatechars:3 }}
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900 dark:text-white group-hover:text-primary transition">{{ assignment.subject.name }}</h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ assignment.section.name }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-sm text-primary font-medium">
+                                <span>Start Encoding</span>
+                                <svg class="w-4 h-4 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-12 text-center">
+            <div class="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No classes assigned</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Contact your administrator to assign you to subjects and sections.</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Dynamic Grade Entry Table -->
+    <div id="grade-entry-table">
+        {% if selected_assignment %}
+            {% include 'grades/partials/grade_encode_select_table.html' %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

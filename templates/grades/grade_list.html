@@ -6,44 +6,105 @@
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-xl font-bold">Grade Assignments</h1>
-            <p class="text-sm text-gray-500">Select a subject to encode grades</p>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">My Classes & Grades</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+                {% if user.is_teacher %}Select a class to encode grades or view students{% else %}Manage grade assignments and submissions across sections{% endif %}
+            </p>
         </div>
         <div class="flex gap-2">
-            <a href="{% url 'grades:submission_list' %}" class="inline-flex items-center gap-2 border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+            {% if user.is_teacher %}
+            <a href="{% url 'grades:grade_encode_select' %}{% if current_period %}?period={{ current_period.pk }}{% endif %}" class="inline-flex items-center gap-2 bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                Encode Grades
+            </a>
+            {% endif %}
+            <a href="{% url 'grades:submission_list' %}" class="inline-flex items-center gap-2 border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition text-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                 Submissions
             </a>
-            <a href="{% url 'grades:grade_export' %}" class="inline-flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition">
+            {% if user.is_admin or user.is_registrar %}
+            <a href="{% url 'grades:grade_export' %}" class="inline-flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition text-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 Export
             </a>
+            {% endif %}
         </div>
     </div>
 
     <!-- Current Period Info -->
     {% if current_sy %}
-    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 text-sm">
-        <strong>Current School Year:</strong> {{ current_sy.name }} | <strong>Current Period:</strong> {{ current_period.name|default:"Not set" }}
+    <div class="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3 text-sm">
+        <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <span><strong>Current School Year:</strong> {{ current_sy.name }}</span>
+        </div>
+        {% if user.is_admin %}
+        <a href="{% url 'academics:grading_period_list' %}" class="text-blue-600 hover:underline font-medium">Manage Periods</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Grading Period Selector -->
+    {% if all_periods %}
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Grading Period:</span>
+            <div class="flex flex-wrap gap-2">
+                {% for period in all_periods %}
+                <a href="?period={{ period.pk }}"
+                   class="px-4 py-2 rounded-lg text-sm font-medium transition {% if current_period.pk == period.pk %}bg-primary text-white shadow-sm{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}">
+                    {{ period.name }}
+                    {% if period.is_submissions_open %}
+                        <span class="ml-1 w-2 h-2 inline-block rounded-full bg-green-400"></span>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+            {% if current_period %}
+            <span class="text-xs text-gray-500 ml-auto">
+                {% if current_period.is_submissions_open %}
+                <span class="inline-flex items-center gap-1 text-green-600 font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Submissions Open
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-1 text-red-600 font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Submissions Closed
+                </span>
+                {% endif %}
+            </span>
+            {% endif %}
+        </div>
     </div>
     {% endif %}
 
     <!-- Stats Cards -->
     <div x-show="showStats" x-transition class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
-            <div class="text-sm text-gray-500 dark:text-gray-400">Total Assignments</div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700 shadow-sm">
+            <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                Total Classes
+            </div>
             <div class="text-2xl font-bold text-primary">{{ total_assignments }}</div>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
-            <div class="text-sm text-gray-500 dark:text-gray-400">Pending Submissions</div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700 shadow-sm">
+            <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Pending Submissions
+            </div>
             <div class="text-2xl font-bold text-orange-500">{{ pending_submissions }}</div>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
-            <div class="text-sm text-gray-500 dark:text-gray-400">Validated Grades</div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700 shadow-sm">
+            <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Validated Grades
+            </div>
             <div class="text-2xl font-bold text-emerald-600">{{ validated_grades }}</div>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
-            <div class="text-sm text-gray-500 dark:text-gray-400">At Risk Students</div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700 shadow-sm">
+            <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                At Risk Students
+            </div>
             <div class="text-2xl font-bold text-red-600">{{ at_risk_count }}</div>
         </div>
     </div>
@@ -53,13 +114,13 @@
         <div class="flex flex-col lg:flex-row lg:items-center gap-4">
             <!-- View Toggle -->
             <div class="flex items-center gap-2 bg-gray-100 dark:bg-slate-700 rounded-lg p-1">
-                <button type="button" @click="view = 'grid'" :class="view === 'grid' ? 'bg-white dark:bg-slate-600 shadow' : ''" 
-                        class="px-4 py-2 rounded-md text-sm font-medium transition">
+                <button type="button" @click="view = 'grid'" :class="view === 'grid' ? 'bg-white dark:bg-slate-600 shadow' : ''"
+                        class="px-4 py-2 rounded-md text-sm font-medium transition flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
                     Grid
                 </button>
-                <button type="button" @click="view = 'table'" :class="view === 'table' ? 'bg-white dark:bg-slate-600 shadow' : ''" 
-                        class="px-4 py-2 rounded-md text-sm font-medium transition">
+                <button type="button" @click="view = 'table'" :class="view === 'table' ? 'bg-white dark:bg-slate-600 shadow' : ''"
+                        class="px-4 py-2 rounded-md text-sm font-medium transition flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
                     Table
                 </button>
@@ -68,6 +129,7 @@
             <!-- Search & Filters -->
             <form id="grade-filters" class="flex-1 flex flex-wrap gap-3">
                 <input type="hidden" name="view" :value="view">
+                <input type="hidden" name="period" value="{{ current_period.pk }}">
                 <input type="text" name="q" value="{{ query }}" placeholder="Search by teacher or subject..."
                        class="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                        hx-get="{% url 'grades:grade_list' %}" :hx-target="view === 'table' ? '#assignment-table' : '#assignment-grid'" hx-trigger="keyup changed delay:300ms" hx-include="#grade-filters">
@@ -96,51 +158,17 @@
 
     <!-- Grid View -->
     <div x-show="view === 'grid'" x-transition>
-        <div id="assignment-grid" hx-get="{% url 'grades:grade_list' %}?view=grid" hx-trigger="refreshTable from:body">
+        <div id="assignment-grid" hx-get="{% url 'grades:grade_list' %}?view=grid&period={{ current_period.pk }}" hx-trigger="refreshTable from:body">
             {% include 'grades/partials/assignment_list.html' %}
         </div>
     </div>
 
     <!-- Table View -->
     <div x-show="view === 'table'" x-transition>
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
             <div class="overflow-x-auto" id="assignment-table">
                 {% include 'grades/partials/assignment_table.html' %}
             </div>
-        </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
-        <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <a href="{% url 'grades:submission_list' %}" class="flex items-center gap-3 p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition">
-                <div class="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                    <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                </div>
-                <div>
-                    <div class="font-medium">View Submissions</div>
-                    <div class="text-sm text-gray-500">Check pending and validated submissions</div>
-                </div>
-            </a>
-            <a href="{% url 'grades:submission_list' %}" class="flex items-center gap-3 p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition">
-                <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </div>
-                <div>
-                    <div class="font-medium">Validate Grades</div>
-                    <div class="text-sm text-gray-500">Review and validate submitted grades</div>
-                </div>
-            </a>
-            <a href="{% url 'grades:grade_export' %}" class="flex items-center gap-3 p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition">
-                <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                </div>
-                <div>
-                    <div class="font-medium">Export Grades</div>
-                    <div class="text-sm text-gray-500">Download grades as CSV file</div>
-                </div>
-            </a>
         </div>
     </div>
 </div>

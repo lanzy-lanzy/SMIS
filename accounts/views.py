@@ -14,6 +14,7 @@ from .forms import (
     ProfileForm,
     PasswordChangeForm,
 )
+from .decorators import admin_required
 
 
 def login_view(request):
@@ -53,12 +54,8 @@ def logout_view(request):
     return redirect("accounts:login")
 
 
-@login_required
+@admin_required
 def user_list(request):
-    if not request.user.is_admin:
-        messages.error(request, "Access denied.")
-        return redirect("dashboard:index")
-
     query = request.GET.get("q", "")
     role_filter = request.GET.get("role", "")
 
@@ -94,12 +91,8 @@ def user_list(request):
     )
 
 
-@login_required
+@admin_required
 def user_create(request):
-    if not request.user.is_admin:
-        messages.error(request, "Access denied.")
-        return redirect("dashboard:index")
-
     if request.method == "POST":
         form = UserCreationFormAdmin(request.POST)
         if form.is_valid():
@@ -132,12 +125,8 @@ def user_create(request):
     )
 
 
-@login_required
+@admin_required
 def user_edit(request, pk):
-    if not request.user.is_admin:
-        messages.error(request, "Access denied.")
-        return redirect("dashboard:index")
-
     user_obj = get_object_or_404(User, pk=pk)
 
     if request.method == "POST":
@@ -185,12 +174,8 @@ def user_edit(request, pk):
     )
 
 
-@login_required
+@admin_required
 def user_delete(request, pk):
-    if not request.user.is_admin:
-        messages.error(request, "Access denied.")
-        return redirect("dashboard:index")
-
     user_obj = get_object_or_404(User, pk=pk)
 
     if request.method == "POST":
@@ -278,3 +263,39 @@ def change_password(request):
     else:
         form = PasswordChangeForm()
     return render(request, "accounts/change_password.html", {"form": form})
+
+
+@admin_required
+def audit_log_list(request):
+    """View audit logs (admin only)."""
+    action_filter = request.GET.get("action", "")
+    model_filter = request.GET.get("model", "")
+    query = request.GET.get("q", "")
+    
+    logs = AuditLog.objects.select_related("user").all()
+    
+    if action_filter:
+        logs = logs.filter(action=action_filter)
+    if model_filter:
+        logs = logs.filter(model_name__icontains=model_filter)
+    if query:
+        logs = logs.filter(
+            Q(user__first_name__icontains=query)
+            | Q(user__last_name__icontains=query)
+            | Q(description__icontains=query)
+            | Q(model_name__icontains=query)
+        )
+    
+    paginator = Paginator(logs, 30)
+    page = request.GET.get("page", 1)
+    logs = paginator.get_page(page)
+    
+    actions = AuditLog.ACTION_CHOICES
+    
+    return render(request, "accounts/audit_log_list.html", {
+        "logs": logs,
+        "actions": actions,
+        "action_filter": action_filter,
+        "model_filter": model_filter,
+        "query": query,
+    })

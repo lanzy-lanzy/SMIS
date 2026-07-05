@@ -29,4 +29,6 @@ urlpatterns = [
     path('assignments/export/', views.assignment_export, name='assignment_export'),
     path('grading-periods/', views.grading_period_list, name='grading_period_list'),
     path('grading-periods/create/', views.grading_period_create, name='grading_period_create'),
+    path('grading-periods/<int:pk>/toggle-submissions/', views.grading_period_toggle_submissions, name='grading_period_toggle_submissions'),
+    path('grading-periods/<int:pk>/toggle-current/', views.grading_period_toggle_current, name='grading_period_toggle_current'),
 ]

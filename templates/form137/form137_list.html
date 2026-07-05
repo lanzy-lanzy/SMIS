@@ -195,6 +195,22 @@
                 </tbody>
             </table>
         </div>
+        {% if records.has_other_pages %}
+        <div class="px-4 py-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+            <p class="text-sm text-gray-500">Showing {{ records.start_index }}-{{ records.end_index }} of {{ records.paginator.count }}</p>
+            <div class="flex gap-1">
+                {% if records.has_previous %}
+                <a href="?page={{ records.previous_page_number }}{% if sy_filter %}&sy={{ sy_filter }}{% endif %}{% if gl_filter %}&gl={{ gl_filter }}{% endif %}{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+                {% endif %}
+                {% for num in records.paginator.page_range %}
+                <a href="?page={{ num }}{% if sy_filter %}&sy={{ sy_filter }}{% endif %}{% if gl_filter %}&gl={{ gl_filter }}{% endif %}{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1 border rounded {% if records.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+                {% endfor %}
+                {% if records.has_next %}
+                <a href="?page={{ records.next_page_number }}{% if sy_filter %}&sy={{ sy_filter }}{% endif %}{% if gl_filter %}&gl={{ gl_filter }}{% endif %}{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Grid View -->
@@ -255,5 +271,22 @@
         </div>
         {% endfor %}
     </div>
+
+    {% if records.has_other_pages %}
+    <div class="mt-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 px-4 py-3 flex items-center justify-between">
+        <p class="text-sm text-gray-500">Showing {{ records.start_index }}-{{ records.end_index }} of {{ records.paginator.count }}</p>
+        <div class="flex gap-1">
+            {% if records.has_previous %}
+            <a href="?page={{ records.previous_page_number }}{% if sy_filter %}&sy={{ sy_filter }}{% endif %}{% if gl_filter %}&gl={{ gl_filter }}{% endif %}{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+            {% endif %}
+            {% for num in records.paginator.page_range %}
+            <a href="?page={{ num }}{% if sy_filter %}&sy={{ sy_filter }}{% endif %}{% if gl_filter %}&gl={{ gl_filter }}{% endif %}{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1 border rounded {% if records.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+            {% endfor %}
+            {% if records.has_next %}
+            <a href="?page={{ records.next_page_number }}{% if sy_filter %}&sy={{ sy_filter }}{% endif %}{% if gl_filter %}&gl={{ gl_filter }}{% endif %}{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

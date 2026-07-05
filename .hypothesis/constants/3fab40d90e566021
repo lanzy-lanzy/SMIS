@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\students\migrations\0001_initial.py
+# hypothesis_version: 6.135.26
+
+[100, 200, 254, '0001_initial', 'Active', 'Dropped', 'F', 'Female', 'ID', 'Inactive', 'M', 'Male', 'Student', 'Transferred', 'academics', 'academics.gradelevel', 'academics.schoolyear', 'academics.section', 'active', 'address', 'birthdate', 'birthplace', 'created_at', 'dropped', 'email', 'first_name', 'grade_level', 'id', 'inactive', 'last_name', 'lrn', 'middle_name', 'ordering', 'parent_address', 'parent_name', 'parent_phone', 'phone', 'school_year', 'section', 'sex', 'status', 'student_profile', 'suffix', 'transferred', 'updated_at', 'user_account']

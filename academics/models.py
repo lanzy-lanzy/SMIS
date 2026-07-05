@@ -86,6 +86,7 @@ class GradingPeriod(models.Model):
     order = models.IntegerField(choices=PERIOD_CHOICES)
     school_year = models.ForeignKey(SchoolYear, on_delete=models.CASCADE, related_name='grading_periods')
     is_current = models.BooleanField(default=False)
+    is_submissions_open = models.BooleanField(default=False, verbose_name="Open for Grade Submissions")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

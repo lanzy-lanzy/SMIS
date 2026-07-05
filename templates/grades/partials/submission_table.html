@@ -1,38 +1,104 @@
-<table class="w-full text-sm">
-    <thead class="bg-gray-50 dark:bg-slate-700">
-        <tr>
-            <th class="px-4 py-3 text-left font-medium">Teacher</th>
-            <th class="px-4 py-3 text-left font-medium">Subject</th>
-            <th class="px-4 py-3 text-left font-medium">Section</th>
-            <th class="px-4 py-3 text-left font-medium">Period</th>
-            <th class="px-4 py-3 text-left font-medium">Status</th>
-            <th class="px-4 py-3 text-left font-medium">Date</th>
-            <th class="px-4 py-3 text-right font-medium">Actions</th>
-        </tr>
-    </thead>
-    <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
-        {% for sub in submissions %}
-        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
-            <td class="px-4 py-3">{{ sub.teacher.get_full_name }}</td>
-            <td class="px-4 py-3">{{ sub.subject }}</td>
-            <td class="px-4 py-3">{{ sub.section }}</td>
-            <td class="px-4 py-3">{{ sub.grading_period }}</td>
-            <td class="px-4 py-3">
-                <span class="px-2 py-1 text-xs rounded-full {% if sub.status == 'pending' %}bg-yellow-100 text-yellow-800{% elif sub.status == 'approved' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
-                    {{ sub.get_status_display }}
-                </span>
-            </td>
-            <td class="px-4 py-3 text-sm text-gray-500">{{ sub.submitted_at|date:"M d, Y" }}</td>
-            <td class="px-4 py-3 text-right">
-                {% if sub.status == 'pending' and user.is_registrar %}
-                <a href="{% url 'grades:submission_validate' sub.pk %}" class="text-blue-600 hover:underline">Review</a>
-                {% endif %}
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="7" class="px-4 py-8 text-center text-gray-500">No submissions found</td>
-        </tr>
+{% regroup submissions by grading_period as period_groups %}
+
+{% if period_groups %}
+<div class="space-y-6">
+    {% for group in period_groups %}
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
+        <div class="px-5 py-4 bg-gradient-to-r from-gray-50 to-white dark:from-slate-700/50 dark:to-slate-800 border-b border-gray-100 dark:border-slate-700">
+            <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                {{ group.grouper.name }}
+                <span class="text-xs text-gray-500 font-normal">({{ group.list|length }} submission{{ group.list|length|pluralize }})</span>
+            </h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-slate-700">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-medium">Teacher</th>
+                        <th class="px-4 py-3 text-left font-medium">Subject</th>
+                        <th class="px-4 py-3 text-left font-medium">Section</th>
+                        <th class="px-4 py-3 text-left font-medium">Status</th>
+                        <th class="px-4 py-3 text-left font-medium">Date</th>
+                        <th class="px-4 py-3 text-right font-medium">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+                    {% for sub in group.list %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 group transition-colors">
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary text-xs font-bold">
+                                    {{ sub.teacher.first_name|first }}{{ sub.teacher.last_name|first }}
+                                </div>
+                                <span class="text-gray-700 dark:text-gray-200">{{ sub.teacher.get_full_name|default:"Unknown" }}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ sub.subject }}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium">{{ sub.section }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if sub.status == 'pending' %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 font-medium">
+                                <span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+                                Pending
+                            </span>
+                            {% elif sub.status == 'approved' %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 font-medium">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Approved
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 font-medium">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                                Returned
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ sub.submitted_at|date:"M d, Y" }}</td>
+                        <td class="px-4 py-3 text-right">
+                            {% if sub.status == 'pending' %}
+                                {% if user.is_registrar or user.is_admin %}
+                                <a href="{% url 'grades:submission_validate' sub.pk %}" class="inline-flex items-center gap-1 bg-primary hover:bg-blue-800 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                    Review
+                                </a>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+</div>
+
+{% if submissions.has_other_pages %}
+<div class="mt-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 px-4 py-3 flex items-center justify-between">
+    <p class="text-sm text-gray-500">Showing {{ submissions.start_index }}-{{ submissions.end_index }} of {{ submissions.paginator.count }}</p>
+    <div class="flex gap-1">
+        {% if submissions.has_previous %}
+        <a href="?page={{ submissions.previous_page_number }}{% if selected_period %}&period={{ selected_period.pk }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+        {% endif %}
+        {% for num in submissions.paginator.page_range %}
+        <a href="?page={{ num }}{% if selected_period %}&period={{ selected_period.pk }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="px-3 py-1 border rounded {% if submissions.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
         {% endfor %}
-    </tbody>
-</table>
+        {% if submissions.has_next %}
+        <a href="?page={{ submissions.next_page_number }}{% if selected_period %}&period={{ selected_period.pk }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-12 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+    </div>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No submissions found</h3>
+    <p class="text-sm text-gray-500 dark:text-gray-400">Grade submissions will appear here once teachers submit them for validation.</p>
+</div>
+{% endif %}

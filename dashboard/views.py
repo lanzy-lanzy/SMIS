@@ -16,6 +16,10 @@ def landing(request):
 
 @login_required
 def index(request):
+    # Redirect students to their own dashboard
+    if request.user.is_student_user:
+        return redirect('students:student_dashboard')
+    
     current_sy = SchoolYear.objects.filter(is_current=True).first()
     
     total_students = Student.objects.filter(status='active').count()
@@ -26,7 +30,7 @@ def index(request):
     validated_records = Form137Record.objects.count()
     
     at_risk_count = Grade.objects.filter(
-        status='validated', quarter_grade__lt=75
+        status__in=['validated', 'locked'], quarter_grade__lt=75
     ).values('student').distinct().count() if current_sy else 0
     
     recent_submissions = GradeSubmission.objects.select_related(

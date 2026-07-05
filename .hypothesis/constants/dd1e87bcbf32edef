@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\students\models.py
+# hypothesis_version: 6.135.26
+
+[100, 200, 'Active', 'Dropped', 'F', 'Female', 'Inactive', 'M', 'Male', 'Transferred', 'academics.GradeLevel', 'academics.SchoolYear', 'academics.Section', 'active', 'dropped', 'first_name', 'inactive', 'last_name', 'student_profile', 'transferred']

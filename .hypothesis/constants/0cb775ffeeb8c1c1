@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\students\forms.py
+# hypothesis_version: 6.135.26
+
+['address', 'birthdate', 'birthplace', 'class', 'date', 'email', 'first_name', 'grade_level', 'last_name', 'lrn', 'middle_name', 'parent_address', 'parent_name', 'parent_phone', 'phone', 'school_year', 'section', 'sex', 'status', 'suffix', 'type']

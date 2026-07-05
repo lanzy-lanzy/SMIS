@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\config\urls.py
+# hypothesis_version: 6.135.26
+
+['academics.urls', 'academics/', 'accounts.urls', 'accounts/', 'admin/', 'dashboard.urls', 'form137.urls', 'form137/', 'grades.urls', 'grades/', 'reports.urls', 'reports/', 'students.urls', 'students/']

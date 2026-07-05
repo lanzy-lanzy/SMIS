@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\grades\migrations\0001_initial.py
+# hypothesis_version: 6.135.26
+
+['-submitted_at', '0001_initial', '0002_initial', 'Approved', 'Draft', 'Grade', 'GradeSubmission', 'GradeValidation', 'ID', 'Locked', 'Pending', 'Returned', 'Submitted', 'Validated', 'academics', 'academics.schoolyear', 'academics.section', 'academics.subject', 'approved', 'assessment', 'created_at', 'draft', 'encoded_by', 'encoded_grades', 'final_grade', 'grade_submissions', 'grades', 'grading_period', 'id', 'locked', 'ordering', 'pending', 'performance_task', 'quarter_grade', 'remarks', 'returned', 'reviewed_at', 'school_year', 'section', 'status', 'student', 'student__last_name', 'students', 'students.student', 'subject', 'subject__name', 'submission', 'submitted', 'submitted_at', 'teacher', 'unique_together', 'updated_at', 'updated_by', 'updated_grades', 'validated', 'validated_at', 'validated_by', 'validation', 'written_work']

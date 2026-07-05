@@ -1,18 +1,116 @@
 {% extends 'base.html' %}
 {% block title %}Encode Grades{% endblock %}
-{% block page_title %}Grade Encoding - {{ assignment.subject }} ({{ assignment.section }}){% endblock %}
+{% block page_title %}Encode Grades{% endblock %}
 {% block content %}
-<div class="space-y-6">
-    <div class="flex items-center justify-between">
+<div class="space-y-6" x-data="{ showConfirm: false }">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <p class="text-sm text-gray-500">{{ assignment.subject }} | {{ assignment.section }} | {{ current_period }}</p>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">Encode Grades</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">{{ assignment.subject.name }} — {{ assignment.section.grade_level }} {{ assignment.section.name }}</p>
         </div>
-        <a href="{% url 'grades:grade_list' %}" class="border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition text-sm">Back</a>
+        <a href="{% url 'grades:grade_list' %}?period={{ current_period.pk }}" class="inline-flex items-center gap-2 border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to Classes
+        </a>
     </div>
-    
-    <form method="post" action="{% url 'grades:grade_save' assignment.pk %}">
+
+    <!-- Class Summary Card -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-5">
+        <div class="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                    {{ assignment.subject.code|truncatechars:3 }}
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Subject</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">{{ assignment.subject.name }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-gray-600 dark:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Section</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">{{ assignment.section.name }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-gray-600 dark:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Students</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">{{ grade_data|length }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 md:ml-auto">
+                <div class="w-12 h-12 rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-gray-600 dark:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Period</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">{{ current_period.name }}</p>
+                </div>
+            </div>
+        </div>
+
+        {% if submission %}
+        <div class="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center gap-2 text-sm">
+            <span class="text-gray-500 dark:text-gray-400">Submission Status:</span>
+            {% if submission.status == 'pending' %}
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 font-medium">
+                <span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+                Pending Review
+            </span>
+            {% elif submission.status == 'approved' %}
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 font-medium">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                Validated
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 font-medium">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                Returned
+            </span>
+            {% endif %}
+            {% if submission.remarks %}
+            <span class="text-gray-400 dark:text-gray-500">— {{ submission.remarks }}</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Period Selector -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Grading Period:</span>
+            <div class="flex flex-wrap gap-2">
+                {% for period in all_periods %}
+                <a href="?period={{ period.pk }}"
+                   class="px-4 py-2 rounded-lg text-sm font-medium transition {% if current_period.pk == period.pk %}bg-primary text-white shadow-sm{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}">
+                    {{ period.name }}
+                    {% if period.is_submissions_open %}
+                        <span class="ml-1 w-2 h-2 inline-block rounded-full bg-green-400"></span>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+            {% if not current_period.is_submissions_open %}
+            <span class="ml-auto inline-flex items-center gap-1 px-3 py-1 text-xs rounded-lg bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300 font-medium">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                Submissions Closed
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <form id="grade-form" method="post" action="{% url 'grades:grade_save' assignment.pk %}?period={{ current_period.pk }}" x-ref="gradeForm">
         {% csrf_token %}
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+        <input type="hidden" name="period" value="{{ current_period.pk }}">
+
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 dark:bg-slate-700">
@@ -22,36 +120,56 @@
                             <th class="px-4 py-3 text-left font-medium">Performance Task</th>
                             <th class="px-4 py-3 text-left font-medium">Assessment</th>
                             <th class="px-4 py-3 text-left font-medium">Quarter Grade</th>
-                            <th class="px-4 py-3 text-left font-medium">Remarks</th>
+                            <th class="px-4 py-3 text-left font-medium">Status</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
                         {% for item in grade_data %}
-                        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
                             <td class="px-4 py-3">
-                                <p class="font-medium">{{ item.student.full_name }}</p>
-                                <p class="text-xs text-gray-500">{{ item.student.lrn }}</p>
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                                        {{ item.student.first_name|first }}{{ item.student.last_name|first }}
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900 dark:text-white">{{ item.student.full_name }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ item.student.lrn }}</p>
+                                    </div>
+                                </div>
                             </td>
                             <td class="px-4 py-3">
                                 <input type="number" name="student_{{ item.student.id }}_written" step="0.01" min="0" max="100"
                                        value="{{ item.grade.written_work|default:'' }}"
-                                       class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                                       {% if not current_period.is_submissions_open or item.grade.status == 'locked' or item.grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-20 px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
                             </td>
                             <td class="px-4 py-3">
                                 <input type="number" name="student_{{ item.student.id }}_performance" step="0.01" min="0" max="100"
                                        value="{{ item.grade.performance_task|default:'' }}"
-                                       class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                                       {% if not current_period.is_submissions_open or item.grade.status == 'locked' or item.grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-20 px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
                             </td>
                             <td class="px-4 py-3">
                                 <input type="number" name="student_{{ item.student.id }}_assessment" step="0.01" min="0" max="100"
                                        value="{{ item.grade.assessment|default:'' }}"
-                                       class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                                       {% if not current_period.is_submissions_open or item.grade.status == 'locked' or item.grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-20 px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
                             </td>
-                            <td class="px-4 py-3 font-medium">{{ item.grade.quarter_grade|default:"-" }}</td>
+                            <td class="px-4 py-3 font-bold text-primary">{{ item.grade.quarter_grade|default:"-" }}</td>
                             <td class="px-4 py-3">
-                                {% if item.grade.remarks %}
-                                <span class="px-2 py-1 text-xs rounded-full {% if item.grade.remarks == 'Passed' %}bg-green-100 text-green-800{% elif item.grade.remarks == 'Failed' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                                    {{ item.grade.remarks }}
+                                {% if item.grade.status == 'locked' or item.grade.status == 'validated' %}
+                                <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                    Validated
+                                </span>
+                                {% elif item.grade.status == 'submitted' %}
+                                <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 font-medium">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    Submitted
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-medium">
+                                    Draft
                                 </span>
                                 {% endif %}
                             </td>
@@ -61,10 +179,68 @@
                 </table>
             </div>
         </div>
-        
-        <div class="flex gap-3 mt-4">
-            <button type="submit" name="action" value="draft" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition">Save as Draft</button>
-            <button type="submit" name="action" value="submit" class="bg-accent hover:bg-green-600 text-white px-6 py-2 rounded-lg transition">Submit for Validation</button>
+
+        {% if current_period.is_submissions_open %}
+        <div class="flex flex-col sm:flex-row gap-3 mt-4">
+            <button type="submit" name="action" value="draft" class="inline-flex items-center justify-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2.5 rounded-lg transition font-medium">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                Save as Draft
+            </button>
+            <button type="button" @click="showConfirm = true" class="inline-flex items-center justify-center gap-2 bg-accent hover:bg-green-600 text-white px-6 py-2.5 rounded-lg transition font-medium">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Submit for Validation
+            </button>
+        </div>
+        {% else %}
+        <div class="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-4 py-3 text-sm text-yellow-800 dark:text-yellow-300 flex items-start gap-2">
+            <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div><strong>Note:</strong> Grade submissions are currently closed for this period. Contact the admin to open submissions.</div>
+        </div>
+        {% endif %}
+
+        <!-- Submission Confirmation Modal -->
+        <div x-show="showConfirm" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showConfirm = false"></div>
+            <div x-show="showConfirm" x-transition class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-6">
+                <div class="text-center mb-6">
+                    <div class="w-14 h-14 rounded-full bg-accent/10 dark:bg-accent/20 flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Submit Grades for Validation?</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        You are about to submit <strong class="text-gray-900 dark:text-white">{{ grade_data|length }} student grade{{ grade_data|length|pluralize }}</strong> for:
+                    </p>
+                </div>
+
+                <div class="bg-gray-50 dark:bg-slate-700/50 rounded-xl p-4 mb-6 space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500 dark:text-gray-400">Subject</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ assignment.subject.name }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500 dark:text-gray-400">Section</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ assignment.section.name }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500 dark:text-gray-400">Period</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ current_period.name }}</span>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 mb-6 text-sm text-blue-800 dark:text-blue-300 flex items-start gap-2">
+                    <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <div>After submitting, the grades will be sent to the registrar for review and validation. You won't be able to edit them until they are returned.</div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="button" @click="showConfirm = false" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition font-medium text-sm">
+                        Cancel
+                    </button>
+                    <button type="submit" name="action" value="submit" class="flex-1 px-4 py-2.5 bg-accent hover:bg-green-600 text-white rounded-lg transition font-medium text-sm">
+                        Yes, Submit
+                    </button>
+                </div>
+            </div>
         </div>
     </form>
 </div>

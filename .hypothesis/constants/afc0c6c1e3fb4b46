@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\academics\migrations\0001_initial.py
+# hypothesis_version: 6.135.26
+
+[100, 200, '-name', 'First Quarter', 'Fourth Quarter', 'GradeLevel', 'GradingPeriod', 'ID', 'SchoolYear', 'Second Quarter', 'Section', 'Subject', 'TeacherAssignment', 'Third Quarter', 'academics.schoolyear', 'code', 'created_at', 'description', 'grade_level', 'grading_periods', 'id', 'is_active', 'is_current', 'level', 'name', 'order', 'ordering', 'school_year']

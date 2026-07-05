@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block title %}Encode All Grades{% endblock %}
+{% block page_title %}Encode All Grades - {{ grading_period.name }}{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <p class="text-sm text-gray-500">Enter grades for all your subjects in one place</p>
+        </div>
+        <a href="{% url 'grades:submission_list' %}?period={{ grading_period.pk }}" class="border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition text-sm">Back to Submissions</a>
+    </div>
+
+    <!-- Period Selector -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
+        <div class="flex items-center gap-4">
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Grading Period:</label>
+            <div class="flex gap-2">
+                {% for period in all_periods %}
+                <a href="?period={{ period.pk }}" 
+                   class="px-4 py-2 rounded-lg text-sm font-medium transition {% if grading_period.pk == period.pk %}bg-primary text-white{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}">
+                    {{ period.name }}
+                    {% if period.is_submissions_open %}
+                        <span class="ml-1 w-2 h-2 inline-block rounded-full bg-green-400"></span>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% if not grading_period.is_submissions_open %}
+        <div class="mt-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 text-sm text-yellow-800 dark:text-yellow-300">
+            Grade submissions are currently closed for {{ grading_period.name }}. Contact the admin to open submissions.
+        </div>
+        {% endif %}
+    </div>
+
+    <form method="post" action="{% url 'grades:grade_save_all' %}?period={{ grading_period.pk }}">
+        {% csrf_token %}
+        <input type="hidden" name="period" value="{{ grading_period.pk }}">
+        
+        {% for item in assignment_data %}
+        {% with assignment=item.assignment submission=item.submission %}
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white text-sm font-bold">
+                        {{ assignment.subject.code|truncatechars:3 }}
+                    </div>
+                    <div>
+                        <h3 class="font-semibold">{{ assignment.subject.name }}</h3>
+                        <p class="text-sm text-gray-500">{{ assignment.section.grade_level }} - {{ assignment.section.name }}</p>
+                    </div>
+                </div>
+                {% if submission %}
+                <span class="px-3 py-1 text-xs rounded-full {% if submission.status == 'pending' %}bg-yellow-100 text-yellow-800{% elif submission.status == 'approved' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ submission.get_status_display }}
+                </span>
+                {% endif %}
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-slate-700">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium">Student</th>
+                            <th class="px-4 py-3 text-left font-medium">Written Work</th>
+                            <th class="px-4 py-3 text-left font-medium">Performance Task</th>
+                            <th class="px-4 py-3 text-left font-medium">Assessment</th>
+                            <th class="px-4 py-3 text-left font-medium">Quarter Grade</th>
+                            <th class="px-4 py-3 text-left font-medium">Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+                        {% for sg in item.student_grades %}
+                        {% with student=sg.student grade=sg.grade %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                            <td class="px-4 py-3">
+                                <p class="font-medium">{{ student.full_name }}</p>
+                                <p class="text-xs text-gray-500">{{ student.lrn }}</p>
+                            </td>
+                            <td class="px-4 py-3">
+                                <input type="number" name="assignment_{{ assignment.pk }}_student_{{ student.id }}_written" step="0.01" min="0" max="100"
+                                       value="{{ grade.written_work|default:'' }}"
+                                       {% if not grading_period.is_submissions_open or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                            </td>
+                            <td class="px-4 py-3">
+                                <input type="number" name="assignment_{{ assignment.pk }}_student_{{ student.id }}_performance" step="0.01" min="0" max="100"
+                                       value="{{ grade.performance_task|default:'' }}"
+                                       {% if not grading_period.is_submissions_open or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                            </td>
+                            <td class="px-4 py-3">
+                                <input type="number" name="assignment_{{ assignment.pk }}_student_{{ student.id }}_assessment" step="0.01" min="0" max="100"
+                                       value="{{ grade.assessment|default:'' }}"
+                                       {% if not grading_period.is_submissions_open or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                            </td>
+                            <td class="px-4 py-3 font-medium">{{ grade.quarter_grade|default:"-" }}</td>
+                            <td class="px-4 py-3">
+                                {% if grade.remarks %}
+                                <span class="px-2 py-1 text-xs rounded-full {% if grade.remarks == 'Passed' %}bg-green-100 text-green-800{% elif grade.remarks == 'Failed' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    {{ grade.remarks }}
+                                </span>
+                                {% endif %}
+                                {% if grade.status == 'locked' or grade.status == 'validated' %}
+                                <span class="ml-1 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">Validated</span>
+                                {% elif grade.status == 'submitted' %}
+                                <span class="ml-1 px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">Submitted</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endwith %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if not item.student_grades %}
+            <div class="p-8 text-center text-gray-500 text-sm">
+                No active students found in this section.
+            </div>
+            {% endif %}
+        </div>
+        {% endwith %}
+        {% endfor %}
+        
+        {% if grading_period.is_submissions_open %}
+        <div class="flex gap-3 mt-6 sticky bottom-4 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 z-10">
+            <button type="submit" name="action" value="draft" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition font-medium">Save All as Draft</button>
+            <button type="submit" name="action" value="submit" class="bg-accent hover:bg-green-600 text-white px-6 py-3 rounded-lg transition font-medium">Submit All for Validation</button>
+        </div>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

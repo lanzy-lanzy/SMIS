@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\form137\utils.py
+# hypothesis_version: 6.135.26
+
+['0', '75', 'Araling Panlipunan', 'Arts', 'English', 'Failed', 'Filipino', 'Health', 'MAPEH', 'Mathematics', 'Music', 'PROMOTED', 'Passed', 'Physical Education', 'RETAINED', 'Science', 'adviser_name', 'display_name', 'final_grade', 'general_average', 'grade_level', 'grading_period', 'is_blank', 'is_mapeh', 'is_mapeh_sub', 'q1', 'q2', 'q3', 'q4', 'remarks', 'school_year', 'school_year__name', 'section', 'section__adviser', 'section_name', 'subject', 'subject__grade_level', 'subject_name', 'subject_rows', 'subjects', 'validated']

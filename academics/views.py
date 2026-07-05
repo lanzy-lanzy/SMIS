@@ -1,5 +1,4 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse
 from django.core.paginator import Paginator
@@ -20,28 +19,32 @@ from .forms import (
     GradingPeriodForm,
 )
 from accounts.models import AuditLog
+from accounts.decorators import admin_required
 
 
-@login_required
+@admin_required
 def academics_index(request):
     return render(request, "academics/index.html")
 
 
-@login_required
+@admin_required
 def school_year_list(request):
     school_years = SchoolYear.objects.all()
+    paginator = Paginator(school_years, 15)
+    page = request.GET.get("page", 1)
+    school_years_page = paginator.get_page(page)
     if request.headers.get("HX-Request"):
         return render(
             request,
             "academics/partials/school_year_table.html",
-            {"school_years": school_years},
+            {"school_years": school_years_page},
         )
     return render(
-        request, "academics/school_year_list.html", {"school_years": school_years}
+        request, "academics/school_year_list.html", {"school_years": school_years_page}
     )
 
 
-@login_required
+@admin_required
 def school_year_create(request):
     if request.method == "POST":
         form = SchoolYearForm(request.POST)
@@ -76,7 +79,7 @@ def school_year_create(request):
     )
 
 
-@login_required
+@admin_required
 def school_year_edit(request, pk):
     sy = get_object_or_404(SchoolYear, pk=pk)
     if request.method == "POST":
@@ -112,7 +115,7 @@ def school_year_edit(request, pk):
     )
 
 
-@login_required
+@admin_required
 def school_year_delete(request, pk):
     sy = get_object_or_404(SchoolYear, pk=pk)
     if request.method == "POST":
@@ -143,21 +146,24 @@ def school_year_delete(request, pk):
     )
 
 
-@login_required
+@admin_required
 def grade_level_list(request):
     grade_levels = GradeLevel.objects.all()
+    paginator = Paginator(grade_levels, 15)
+    page = request.GET.get("page", 1)
+    grade_levels_page = paginator.get_page(page)
     if request.headers.get("HX-Request"):
         return render(
             request,
             "academics/partials/grade_level_table.html",
-            {"grade_levels": grade_levels},
+            {"grade_levels": grade_levels_page},
         )
     return render(
-        request, "academics/grade_level_list.html", {"grade_levels": grade_levels}
+        request, "academics/grade_level_list.html", {"grade_levels": grade_levels_page}
     )
 
 
-@login_required
+@admin_required
 def grade_level_create(request):
     if request.method == "POST":
         form = GradeLevelForm(request.POST)
@@ -192,7 +198,7 @@ def grade_level_create(request):
     )
 
 
-@login_required
+@admin_required
 def grade_level_edit(request, pk):
     gl = get_object_or_404(GradeLevel, pk=pk)
     if request.method == "POST":
@@ -228,7 +234,7 @@ def grade_level_edit(request, pk):
     )
 
 
-@login_required
+@admin_required
 def grade_level_delete(request, pk):
     gl = get_object_or_404(GradeLevel, pk=pk)
     if request.method == "POST":
@@ -259,19 +265,22 @@ def grade_level_delete(request, pk):
     )
 
 
-@login_required
+@admin_required
 def section_list(request):
-    sections = Section.objects.select_related(
+    sections_with_teachers = Section.objects.select_related(
         "grade_level", "school_year", "adviser"
     ).all()
+    paginator = Paginator(sections_with_teachers, 15)
+    page = request.GET.get("page", 1)
+    sections_page = paginator.get_page(page)
     if request.headers.get("HX-Request"):
         return render(
-            request, "academics/partials/section_table.html", {"sections": sections}
+            request, "academics/partials/section_table.html", {"sections_with_teachers": sections_page}
         )
-    return render(request, "academics/section_list.html", {"sections": sections})
+    return render(request, "academics/section_list.html", {"sections_with_teachers": sections_page})
 
 
-@login_required
+@admin_required
 def section_create(request):
     if request.method == "POST":
         form = SectionForm(request.POST)
@@ -304,7 +313,7 @@ def section_create(request):
     )
 
 
-@login_required
+@admin_required
 def section_edit(request, pk):
     section = get_object_or_404(Section, pk=pk)
     if request.method == "POST":
@@ -338,7 +347,7 @@ def section_edit(request, pk):
     )
 
 
-@login_required
+@admin_required
 def section_delete(request, pk):
     section = get_object_or_404(Section, pk=pk)
     if request.method == "POST":
@@ -371,17 +380,20 @@ def section_delete(request, pk):
     )
 
 
-@login_required
+@admin_required
 def subject_list(request):
     subjects = Subject.objects.select_related("grade_level").all()
+    paginator = Paginator(subjects, 15)
+    page = request.GET.get("page", 1)
+    subjects_page = paginator.get_page(page)
     if request.headers.get("HX-Request"):
         return render(
-            request, "academics/partials/subject_table.html", {"subjects": subjects}
+            request, "academics/partials/subject_table.html", {"subjects": subjects_page}
         )
-    return render(request, "academics/subject_list.html", {"subjects": subjects})
+    return render(request, "academics/subject_list.html", {"subjects": subjects_page})
 
 
-@login_required
+@admin_required
 def subject_create(request):
     if request.method == "POST":
         form = SubjectForm(request.POST)
@@ -414,7 +426,7 @@ def subject_create(request):
     )
 
 
-@login_required
+@admin_required
 def subject_edit(request, pk):
     subject = get_object_or_404(Subject, pk=pk)
     if request.method == "POST":
@@ -448,7 +460,7 @@ def subject_edit(request, pk):
     )
 
 
-@login_required
+@admin_required
 def subject_delete(request, pk):
     subject = get_object_or_404(Subject, pk=pk)
     if request.method == "POST":
@@ -481,7 +493,7 @@ def subject_delete(request, pk):
     )
 
 
-@login_required
+@admin_required
 def assignment_list(request):
     from django.core.paginator import Paginator
     from django.db.models import Q, Count
@@ -495,7 +507,7 @@ def assignment_list(request):
     
     assignments = TeacherAssignment.objects.select_related(
         "teacher", "subject", "section", "section__grade_level", "school_year"
-    ).all()
+    ).all().order_by('teacher__last_name', 'teacher__first_name', 'subject__name', 'section__name')
     
     if query:
         assignments = assignments.filter(
@@ -527,31 +539,45 @@ def assignment_list(request):
     ).order_by('-assignment_count')
     
     # Sections with teachers for section view
-    sections = Section.objects.filter(school_year=current_sy).prefetch_related('assignments__teacher', 'assignments__subject') if current_sy else Section.objects.none()
-    
+    sections_with_teachers = Section.objects.filter(school_year=current_sy).prefetch_related('assignments__teacher', 'assignments__subject') if current_sy else Section.objects.none()
+
     # Filter options
     all_subjects = Subject.objects.filter(is_active=True)
     all_sections = Section.objects.filter(school_year=current_sy) if current_sy else Section.objects.none()
     all_school_years = SchoolYear.objects.all()
-    
+
+    # Pagination
+    paginator = Paginator(assignments, 15)
+    page = request.GET.get("page", 1)
+    assignments_page = paginator.get_page(page)
+
+    sections_paginator = Paginator(sections_with_teachers, 15)
+    sections_page = sections_paginator.get_page(page)
+
     if request.headers.get("HX-Request"):
         if view_type == "section":
             return render(
                 request,
                 "academics/partials/section_table.html",
-                {"sections_with_teachers": sections},
+                {"sections_with_teachers": sections_page},
             )
         return render(
             request,
             "academics/partials/assignment_table.html",
-            {"assignments": assignments},
+            {
+                "assignments": assignments_page,
+                "query": query,
+                "subject_filter": subject_filter,
+                "section_filter": section_filter,
+                "school_year_filter": school_year_filter,
+            },
         )
-    
+
     return render(
         request,
         "academics/assignment_list.html",
         {
-            "assignments": assignments,
+            "assignments": assignments_page,
             "query": query,
             "subject_filter": subject_filter,
             "section_filter": section_filter,
@@ -561,7 +587,7 @@ def assignment_list(request):
             "unassigned_teachers": unassigned_teachers,
             "sections_covered": sections_covered,
             "teacher_workloads": teacher_workloads,
-            "sections_with_teachers": sections,
+            "sections_with_teachers": sections_page,
             "subjects": all_subjects,
             "sections": all_sections,
             "school_years": all_school_years,
@@ -569,7 +595,7 @@ def assignment_list(request):
     )
 
 
-@login_required
+@admin_required
 def assignment_create(request):
     if request.method == "POST":
         form = TeacherAssignmentForm(request.POST)
@@ -606,7 +632,7 @@ def assignment_create(request):
     )
 
 
-@login_required
+@admin_required
 def assignment_edit(request, pk):
     assignment = get_object_or_404(TeacherAssignment, pk=pk)
     if request.method == "POST":
@@ -644,7 +670,7 @@ def assignment_edit(request, pk):
     )
 
 
-@login_required
+@admin_required
 def assignment_bulk_create(request):
     from accounts.models import User
     
@@ -702,7 +728,7 @@ def assignment_bulk_create(request):
     )
 
 
-@login_required
+@admin_required
 def assignment_export(request):
     import csv
     from django.http import HttpResponse
@@ -730,7 +756,7 @@ def assignment_export(request):
     return response
 
 
-@login_required
+@admin_required
 def assignment_delete(request, pk):
     assignment = get_object_or_404(TeacherAssignment, pk=pk)
     if request.method == "POST":
@@ -762,19 +788,22 @@ def assignment_delete(request, pk):
     )
 
 
-@login_required
+@admin_required
 def grading_period_list(request):
     periods = GradingPeriod.objects.select_related("school_year").all()
+    paginator = Paginator(periods, 15)
+    page = request.GET.get("page", 1)
+    periods_page = paginator.get_page(page)
     if request.headers.get("HX-Request"):
         return render(
             request,
             "academics/partials/grading_period_table.html",
-            {"periods": periods},
+            {"periods": periods_page},
         )
-    return render(request, "academics/grading_period_list.html", {"periods": periods})
+    return render(request, "academics/grading_period_list.html", {"periods": periods_page})
 
 
-@login_required
+@admin_required
 def grading_period_create(request):
     if request.method == "POST":
         form = GradingPeriodForm(request.POST)
@@ -807,3 +836,59 @@ def grading_period_create(request):
         "academics/grading_period_form.html",
         {"form": form, "title": "Add Grading Period"},
     )
+
+
+@admin_required
+def grading_period_toggle_submissions(request, pk):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    
+    period = get_object_or_404(GradingPeriod, pk=pk)
+    period.is_submissions_open = not period.is_submissions_open
+    period.save()
+    
+    status = "opened" if period.is_submissions_open else "closed"
+    AuditLog.objects.create(
+        user=request.user,
+        action="update",
+        model_name="GradingPeriod",
+        object_id=str(period.id),
+        description=f"Grade submissions {status} for {period.name}",
+    )
+    messages.success(request, f"Grade submissions {status} for {period.name}.")
+    
+    if request.headers.get("HX-Request"):
+        return render(
+            request,
+            "academics/partials/grading_period_row.html",
+            {"gp": period},
+        )
+    return redirect("academics:grading_period_list")
+
+
+@admin_required
+def grading_period_toggle_current(request, pk):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    
+    period = get_object_or_404(GradingPeriod, pk=pk)
+    period.is_current = not period.is_current
+    period.save()
+    
+    status = "activated" if period.is_current else "deactivated"
+    AuditLog.objects.create(
+        user=request.user,
+        action="update",
+        model_name="GradingPeriod",
+        object_id=str(period.id),
+        description=f"Grading period {status}: {period.name}",
+    )
+    messages.success(request, f"Grading period {period.name} {status}.")
+    
+    if request.headers.get("HX-Request"):
+        return render(
+            request,
+            "academics/partials/grading_period_row.html",
+            {"gp": period},
+        )
+    return redirect("academics:grading_period_list")

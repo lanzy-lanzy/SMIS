@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\academics\forms.py
+# hypothesis_version: 6.135.26
+
+['adviser', 'class', 'code', 'description', 'grade_level', 'is_active', 'is_current', 'level', 'name', 'order', 'school_year', 'section', 'subject', 'teacher']

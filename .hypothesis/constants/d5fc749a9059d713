@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\reports\urls.py
+# hypothesis_version: 6.135.26
+
+['at-risk-students/', 'at_risk_students', 'grade-trends/', 'grade_trends', 'index', 'reports', 'section-performance/', 'section_performance', 'student_history', 'subject-performance/', 'subject_performance']

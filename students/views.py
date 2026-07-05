@@ -8,36 +8,48 @@ from .models import Student
 from .forms import StudentForm
 from accounts.models import AuditLog
 from grades.models import Grade
+from accounts.decorators import (
+    role_required,
+    admin_required,
+    registrar_or_admin_required,
+    teacher_or_admin_required,
+)
 
 
-@login_required
+def _teacher_assigned_sections(user):
+    """Return section IDs for sections the teacher is assigned to in the current school year."""
+    from academics.models import TeacherAssignment, SchoolYear
+    current_sy = SchoolYear.objects.filter(is_current=True).first()
+    if current_sy:
+        return list(TeacherAssignment.objects.filter(
+            teacher=user,
+            school_year=current_sy
+        ).values_list('section_id', flat=True).distinct())
+    return []
+
+
+def _filter_students_by_role(queryset, user):
+    """Scope student queryset based on user role."""
+    if user.is_teacher:
+        assigned_section_ids = _teacher_assigned_sections(user)
+        if assigned_section_ids:
+            return queryset.filter(section_id__in=assigned_section_ids)
+        return queryset.none()
+    return queryset
+
+
+@role_required('admin', 'registrar', 'teacher', 'principal')
 def student_list(request):
-    if not (
-        request.user.is_admin or request.user.is_registrar or request.user.is_teacher
-    ):
-        messages.error(request, "Access denied.")
-        return redirect("dashboard:index")
-
     query = request.GET.get("q", "")
     grade_filter = request.GET.get("grade", "")
     section_filter = request.GET.get("section", "")
     status_filter = request.GET.get("status", "")
-    view_type = request.GET.get("view", "table")
+    view_type = request.GET.get("view", "sections")
 
     students = Student.objects.select_related(
         "grade_level", "section", "school_year"
     ).all()
-
-    # Filter students by teacher's assigned sections
-    if request.user.is_teacher:
-        from academics.models import TeacherAssignment, SchoolYear
-        current_sy = SchoolYear.objects.filter(is_current=True).first()
-        if current_sy:
-            assigned_sections = TeacherAssignment.objects.filter(
-                teacher=request.user,
-                school_year=current_sy
-            ).values_list('section_id', flat=True).distinct()
-            students = students.filter(section_id__in=assigned_sections)
+    students = _filter_students_by_role(students, request.user)
 
     if query:
         students = students.filter(
@@ -56,17 +68,8 @@ def student_list(request):
     if status_filter:
         students = students.filter(status=status_filter)
 
-    # Stats
-    all_students = Student.objects.all()
-    if request.user.is_teacher:
-        from academics.models import TeacherAssignment, SchoolYear
-        current_sy = SchoolYear.objects.filter(is_current=True).first()
-        if current_sy:
-            assigned_sections = TeacherAssignment.objects.filter(
-                teacher=request.user,
-                school_year=current_sy
-            ).values_list('section_id', flat=True).distinct()
-            all_students = all_students.filter(section_id__in=assigned_sections)
+    # Stats (scoped by role)
+    all_students = _filter_students_by_role(Student.objects.all(), request.user)
     
     total_students = all_students.count()
     active_students = all_students.filter(status='active').count()
@@ -74,11 +77,7 @@ def student_list(request):
     transferred_students = all_students.filter(status='transferred').count()
     
     # Students by grade level
-    students_by_grade = all_students.values('grade_level__name').annotate(count=Count('id')).order_by('grade_level__name')
-
-    paginator = Paginator(students, 20)
-    page = request.GET.get("page", 1)
-    students = paginator.get_page(page)
+    students_by_grade = all_students.values('grade_level__name', 'grade_level__id').annotate(count=Count('id')).order_by('grade_level__level')
 
     from academics.models import GradeLevel, Section
 
@@ -86,10 +85,21 @@ def student_list(request):
     sections = Section.objects.all()
 
     if request.headers.get("HX-Request"):
-        template = "students/partials/student_grid.html" if view_type == "grid" else "students/partials/student_table.html"
+        if view_type == 'grid':
+            template = "students/partials/student_grid.html"
+        elif view_type == 'sections':
+            template = "students/partials/student_sections.html"
+        else:
+            template = "students/partials/student_table.html"
         return render(
             request, template, {"students": students}
         )
+
+    # Only paginate for table/grid views; sections view shows grouped results
+    if view_type != 'sections':
+        paginator = Paginator(students, 20)
+        page = request.GET.get("page", 1)
+        students = paginator.get_page(page)
 
     return render(
         request,
@@ -112,12 +122,8 @@ def student_list(request):
     )
 
 
-@login_required
+@registrar_or_admin_required
 def student_create(request):
-    if not (request.user.is_admin or request.user.is_registrar):
-        messages.error(request, "Access denied.")
-        return redirect("dashboard:index")
-
     from academics.models import GradeLevel, Section, SchoolYear
 
     if request.method == "POST":
@@ -155,12 +161,8 @@ def student_create(request):
     return render(request, "students/student_form.html", context)
 
 
-@login_required
+@registrar_or_admin_required
 def student_edit(request, pk):
-    if not (request.user.is_admin or request.user.is_registrar):
-        messages.error(request, "Access denied.")
-        return redirect("dashboard:index")
-
     student = get_object_or_404(Student, pk=pk)
 
     from academics.models import GradeLevel, Section, SchoolYear
@@ -201,18 +203,14 @@ def student_edit(request, pk):
     return render(request, "students/student_form.html", context)
 
 
-@login_required
+@admin_required
 def student_delete(request, pk):
-    if not request.user.is_admin:
-        messages.error(request, "Access denied.")
-        return redirect("dashboard:index")
-
     student = get_object_or_404(Student, pk=pk)
 
     if request.method == "POST":
         full_name = student.full_name
         has_validated = Grade.objects.filter(
-            student=student, status="validated"
+            student=student, status__in=['validated', 'locked']
         ).exists()
         if has_validated:
             messages.warning(
@@ -244,29 +242,16 @@ def student_delete(request, pk):
     return render(request, "students/student_confirm_delete.html", {"student": student})
 
 
-@login_required
+@role_required('admin', 'registrar', 'teacher', 'principal')
 def student_detail(request, pk):
-    if not (
-        request.user.is_admin or request.user.is_registrar or request.user.is_teacher
-    ):
-        messages.error(request, "Access denied.")
-        return redirect("dashboard:index")
-
     student = get_object_or_404(Student, pk=pk)
     
     # For teachers, check if they are assigned to the student's section
     if request.user.is_teacher:
-        from academics.models import TeacherAssignment, SchoolYear
-        current_sy = SchoolYear.objects.filter(is_current=True).first()
-        if current_sy:
-            is_assigned = TeacherAssignment.objects.filter(
-                teacher=request.user,
-                school_year=current_sy,
-                section=student.section
-            ).exists()
-            if not is_assigned:
-                messages.error(request, "Access denied. You are not assigned to this section.")
-                return redirect("students:student_list")
+        assigned_section_ids = _teacher_assigned_sections(request.user)
+        if student.section_id not in assigned_section_ids:
+            messages.error(request, "Access denied. You are not assigned to this section.")
+            return redirect("students:student_list")
     
     grades = (
         Grade.objects.filter(student=student)
@@ -279,7 +264,7 @@ def student_detail(request, pk):
     )
 
 
-@login_required
+@registrar_or_admin_required
 def student_export(request):
     import csv
     from django.http import HttpResponse
@@ -311,3 +296,27 @@ def student_export(request):
         ])
     
     return response
+
+
+@login_required
+def student_dashboard(request):
+    """Dashboard for student users showing their own grades and records."""
+    if not request.user.is_student_user:
+        messages.error(request, "Access denied.")
+        return redirect("dashboard:index")
+    
+    if not request.user.student_profile:
+        messages.error(request, "No student profile linked to this account.")
+        return redirect("dashboard:index")
+    
+    student = request.user.student_profile
+    grades = (
+        Grade.objects.filter(student=student, status__in=['validated', 'locked'])
+        .select_related("subject", "grading_period", "school_year")
+        .order_by("-school_year__name", "-grading_period__order", "subject__name")
+    )
+    
+    return render(request, "students/student_dashboard.html", {
+        "student": student,
+        "grades": grades,
+    })

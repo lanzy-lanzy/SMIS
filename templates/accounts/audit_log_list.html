@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Audit Logs{% endblock %}
+{% block page_title %}Audit Logs{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold">Audit Logs</h1>
+            <p class="text-sm text-gray-500">Track system activities and changes</p>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
+        <form class="flex flex-wrap gap-3">
+            <input type="text" name="q" value="{{ query }}" placeholder="Search user, model, or description..."
+                   class="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+            <select name="action" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm">
+                <option value="">All Actions</option>
+                {% for val, label in actions %}
+                <option value="{{ val }}" {% if action_filter == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" name="model" value="{{ model_filter }}" placeholder="Model name..."
+                   class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm">
+            <button type="submit" class="bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition text-sm">Filter</button>
+            <a href="{% url 'accounts:audit_log_list' %}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition text-sm">Reset</a>
+        </form>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-slate-700">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-medium">Timestamp</th>
+                        <th class="px-4 py-3 text-left font-medium">User</th>
+                        <th class="px-4 py-3 text-left font-medium">Action</th>
+                        <th class="px-4 py-3 text-left font-medium">Model</th>
+                        <th class="px-4 py-3 text-left font-medium">Description</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+                    {% for log in logs %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                        <td class="px-4 py-3 text-gray-500">{{ log.timestamp|date:"M d, Y H:i" }}</td>
+                        <td class="px-4 py-3 text-gray-500">{% if log.user %}{{ log.user.get_full_name|default:log.user.username }}{% else %}System{% endif %}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs rounded-full 
+                                {% if log.action == 'create' %}bg-green-100 text-green-800
+                                {% elif log.action == 'update' %}bg-blue-100 text-blue-800
+                                {% elif log.action == 'delete' %}bg-red-100 text-red-800
+                                {% elif log.action == 'login' or log.action == 'logout' %}bg-gray-100 text-gray-800
+                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ log.get_action_display }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">{{ log.model_name }}</td>
+                        <td class="px-4 py-3">{{ log.description }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-4 py-8 text-center text-gray-500">No audit logs found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if logs.has_other_pages %}
+        <div class="px-4 py-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+            <p class="text-sm text-gray-500">Showing {{ logs.start_index }}-{{ logs.end_index }} of {{ logs.paginator.count }}</p>
+            <div class="flex gap-1">
+                {% if logs.has_previous %}
+                <a href="?page={{ logs.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+                {% endif %}
+                {% for num in logs.paginator.page_range %}
+                <a href="?page={{ num }}" class="px-3 py-1 border rounded {% if logs.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+                {% endfor %}
+                {% if logs.has_next %}
+                <a href="?page={{ logs.next_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

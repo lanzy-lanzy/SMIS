@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\config\settings.py
+# hypothesis_version: 6.135.26
+
+['*', ',', '/media/', '/static/', 'ALLOWED_HOSTS', 'APP_DIRS', 'Asia/Manila', 'BACKEND', 'CSRF_TRUSTED_ORIGINS', 'DEBUG', 'DIRS', 'ENGINE', 'NAME', 'OPTIONS', 'SECRET_KEY', 'academics', 'accounts', 'accounts.User', 'accounts:login', 'config.urls', 'context_processors', 'dashboard', 'dashboard:index', 'db.sqlite3', 'default', 'django.contrib.admin', 'django.contrib.auth', 'en-us', 'form137', 'grades', 'media', 'reports', 'static', 'staticfiles', 'students', 'templates']

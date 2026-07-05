@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\dashboard\views.py
+# hypothesis_version: 6.135.26
+
+['-submitted_at', '-updated_at', 'active', 'at_risk_count', 'current_sy', 'dashboard/index.html', 'dashboard:index', 'encoded_by', 'grade_level__level', 'grade_level__name', 'id', 'landing.html', 'pending', 'pending_submissions', 'recent_activity', 'recent_submissions', 'section', 'student', 'students_by_level', 'subject', 'teacher', 'total_sections', 'total_students', 'total_teachers', 'validated', 'validated_records']

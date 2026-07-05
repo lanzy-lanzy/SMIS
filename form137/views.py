@@ -1,23 +1,32 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse
+from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.utils import timezone
 from datetime import timedelta
 from .models import Form137Record
+from .utils import build_grade_blocks, build_printable_grade_blocks
 from students.models import Student
 from grades.models import Grade
 from academics.models import SchoolYear, GradeLevel, GradingPeriod, Subject
 from accounts.models import AuditLog
+from accounts.decorators import role_required
 
 
-@login_required
+def _form137_print_context(student, school_year, record):
+    grade_blocks = build_grade_blocks(student)
+    return {
+        'student': student,
+        'school_year': school_year,
+        'record': record,
+        'grade_blocks': grade_blocks,
+        'print_blocks': build_printable_grade_blocks(grade_blocks),
+    }
+
+
+@role_required('admin', 'registrar', 'principal')
 def form137_list(request):
-    if not request.user.is_registrar and not request.user.is_admin:
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard:index')
-
     school_years = SchoolYear.objects.all()
     grade_levels = GradeLevel.objects.all()
     
@@ -49,9 +58,13 @@ def form137_list(request):
         date_generated__year=timezone.now().year,
         date_generated__month=timezone.now().month
     ).count()
-    
+
+    paginator = Paginator(records, 15)
+    page = request.GET.get('page', 1)
+    records_page = paginator.get_page(page)
+
     return render(request, 'form137/form137_list.html', {
-        'records': records,
+        'records': records_page,
         'school_years': school_years,
         'grade_levels': grade_levels,
         'sy_filter': sy_filter,
@@ -64,36 +77,26 @@ def form137_list(request):
     })
 
 
-@login_required
+@role_required('admin', 'registrar', 'principal')
 def form137_generate(request, student_pk, sy_pk):
-    if not request.user.is_registrar:
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard:index')
-    
     student = get_object_or_404(Student, pk=student_pk)
     school_year = get_object_or_404(SchoolYear, pk=sy_pk)
-    
-    grades = Grade.objects.filter(
-        student=student,
-        school_year=school_year,
-        status='validated'
-    ).select_related('subject', 'grading_period').order_by(
-        'grading_period__order', 'subject__name'
-    )
-    
-    if not grades.exists():
+
+    grade_blocks = build_grade_blocks(student)
+
+    if not grade_blocks:
         messages.warning(request, 'No validated grades found for this student.')
         return redirect('form137:form137_list')
-    
-    grade_level = grades.first().subject.grade_level
-    
+
+    grade_level = grade_blocks[0]["grade_level"]
+
     record, created = Form137Record.objects.get_or_create(
         student=student,
         school_year=school_year,
         grade_level=grade_level,
         defaults={'generated_by': request.user}
     )
-    
+
     if created:
         AuditLog.objects.create(
             user=request.user,
@@ -102,101 +105,34 @@ def form137_generate(request, student_pk, sy_pk):
             object_id=str(record.id),
             description=f'Generated Form 137 for {student.full_name}'
         )
-    
-    periods = GradingPeriod.objects.filter(school_year=school_year).order_by('order')
-    
-    subjects = Subject.objects.filter(
-        id__in=grades.values_list('subject_id', flat=True).distinct()
-    )
-    
-    grade_data = {}
-    for subject in subjects:
-        grade_data[subject.name] = {}
-        for period in periods:
-            grade = grades.filter(subject=subject, grading_period=period).first()
-            grade_data[subject.name][period.order] = grade
-    
-    # Calculate general average
-    if grades.exists():
-        total_final = sum(grade.final_grade for grade in grades)
-        general_average = total_final / grades.count()
-    else:
-        general_average = 0
-    
-    # Create final grades dictionary for easy lookup
-    final_grades = {}
-    for grade in grades:
-        final_grades[grade.subject.name] = {
-            'final_grade': grade.final_grade,
-            'remarks': 'Passed' if grade.final_grade >= 75 else 'Failed'
-        }
-    
-    return render(request, 'form137/form137_print.html', {
-        'student': student,
-        'school_year': school_year,
-        'grades': grades,
-        'grade_data': grade_data,
-        'periods': periods,
-        'record': record,
-        'general_average': general_average,
-        'final_grades': final_grades
-    })
+
+    return render(request, 'form137/form137_print.html', _form137_print_context(
+        student,
+        school_year,
+        record,
+    ))
 
 
-@login_required
+@role_required('admin', 'registrar', 'principal')
 def form137_preview(request, record_pk):
-    if not request.user.is_registrar and not request.user.is_admin:
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard:index')
-
     record = get_object_or_404(Form137Record, pk=record_pk)
-    
-    grades = Grade.objects.filter(
-        student=record.student,
-        school_year=record.school_year,
-        status='validated'
-    ).select_related('subject', 'grading_period').order_by(
-        'grading_period__order', 'subject__name'
-    )
-    
-    periods = GradingPeriod.objects.filter(
-        school_year=record.school_year
-    ).order_by('order')
-    
-    subjects = Subject.objects.filter(
-        id__in=grades.values_list('subject_id', flat=True).distinct()
-    )
-    
-    grade_data = {}
-    for subject in subjects:
-        grade_data[subject.name] = {}
-        for period in periods:
-            grade = grades.filter(subject=subject, grading_period=period).first()
-            grade_data[subject.name][period.order] = grade
-    
-    return render(request, 'form137/form137_print.html', {
-        'student': record.student,
-        'school_year': record.school_year,
-        'grades': grades,
-        'grade_data': grade_data,
-        'periods': periods,
-        'record': record
-    })
+
+    return render(request, 'form137/form137_print.html', _form137_print_context(
+        record.student,
+        record.school_year,
+        record,
+    ))
 
 
-@login_required
+@role_required('admin', 'registrar', 'principal')
 def form137_bulk_generate(request):
-    if not request.user.is_registrar and not request.user.is_admin:
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard:index')
-    
     if request.method == 'POST':
         sy_pk = request.POST.get('school_year')
         school_year = get_object_or_404(SchoolYear, pk=sy_pk)
         
         students_with_grades = Student.objects.filter(
             grades__school_year=school_year,
-            grades__status='validated'
+            grades__status__in=['validated', 'locked']
         ).distinct()
         
         count = 0
@@ -204,7 +140,7 @@ def form137_bulk_generate(request):
             grades = Grade.objects.filter(
                 student=student,
                 school_year=school_year,
-                status='validated'
+                status__in=['validated', 'locked']
             ).select_related('subject')
             
             if grades.exists():
@@ -227,7 +163,7 @@ def form137_bulk_generate(request):
     })
 
 
-@login_required
+@role_required('admin', 'registrar', 'principal')
 def form137_export(request):
     import csv
     

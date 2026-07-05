@@ -50,3 +50,19 @@
         {% endfor %}
     </tbody>
 </table>
+{% if sections_with_teachers.has_other_pages %}
+<div class="px-4 py-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+    <p class="text-sm text-gray-500">Showing {{ sections_with_teachers.start_index }}-{{ sections_with_teachers.end_index }} of {{ sections_with_teachers.paginator.count }}</p>
+    <div class="flex gap-1">
+        {% if sections_with_teachers.has_previous %}
+        <a href="?page={{ sections_with_teachers.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+        {% endif %}
+        {% for num in sections_with_teachers.paginator.page_range %}
+        <a href="?page={{ num }}" class="px-3 py-1 border rounded {% if sections_with_teachers.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+        {% endfor %}
+        {% if sections_with_teachers.has_next %}
+        <a href="?page={{ sections_with_teachers.next_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

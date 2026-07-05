@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\form137\urls.py
+# hypothesis_version: 6.135.26
+
+['bulk-generate/', 'export/', 'form137', 'form137_export', 'form137_generate', 'form137_list', 'form137_preview']

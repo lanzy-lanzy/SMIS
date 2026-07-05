@@ -3,16 +3,73 @@
 {% block page_title %}Grade Submissions{% endblock %}
 {% block content %}
 <div class="space-y-6">
+    <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-xl font-bold">Grade Submissions</h1>
-            <p class="text-sm text-gray-500">Review and validate submitted grades</p>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">Grade Submissions</h1>
+            {% if user.is_teacher %}
+            <p class="text-sm text-gray-500 dark:text-gray-400">Track your submitted grades here. To submit new grades, click "Encode Grades".</p>
+            {% else %}
+            <p class="text-sm text-gray-500 dark:text-gray-400">Review and validate submitted grades from teachers</p>
+            {% endif %}
         </div>
+        {% if user.is_teacher %}
+        <a href="{% url 'grades:grade_encode_select' %}{% if selected_period %}?period={{ selected_period.pk }}{% endif %}" class="inline-flex items-center gap-2 bg-primary hover:bg-blue-800 text-white px-5 py-2.5 rounded-lg transition font-medium shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            Encode Grades
+        </a>
+        {% endif %}
     </div>
 
+    <!-- Teacher Empty State / Workflow -->
+    {% if user.is_teacher and not submissions %}
+    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
+        <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
+            <div class="w-16 h-16 rounded-2xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
+                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-100">No Grade Submissions Yet</h3>
+                <p class="text-sm text-blue-700 dark:text-blue-300 mt-1">This page shows grades you have already submitted. Here's how to submit grades for a quarter:</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+                    <div class="bg-white/70 dark:bg-slate-800/70 rounded-lg p-3 text-sm">
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-bold mr-2">1</span>
+                        Click <strong>Start Encoding</strong>
+                    </div>
+                    <div class="bg-white/70 dark:bg-slate-800/70 rounded-lg p-3 text-sm">
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-bold mr-2">2</span>
+                        Enter grades for <strong>All Subjects</strong>
+                    </div>
+                    <div class="bg-white/70 dark:bg-slate-800/70 rounded-lg p-3 text-sm">
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-bold mr-2">3</span>
+                        Click <strong>Submit All for Validation</strong>
+                    </div>
+                </div>
+            </div>
+            <a href="{% url 'grades:grade_encode_select' %}{% if selected_period %}?period={{ selected_period.pk }}{% endif %}" class="inline-flex items-center justify-center gap-2 bg-primary hover:bg-blue-800 text-white px-6 py-3 rounded-lg transition font-medium shadow-sm whitespace-nowrap">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                Start Encoding
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
-        <div class="p-4 border-b border-gray-100 dark:border-slate-700">
-            <select name="status" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+        <div class="p-4 border-b border-gray-100 dark:border-slate-700 flex flex-wrap gap-3">
+            <!-- Period Filter -->
+            {% if all_periods %}
+            <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-500">Quarter:</span>
+                <a href="{% url 'grades:submission_list' %}" class="px-3 py-1.5 text-xs rounded-lg font-medium transition {% if not selected_period %}bg-primary text-white{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}">All</a>
+                {% for period in all_periods %}
+                <a href="{% url 'grades:submission_list' %}?period={{ period.pk }}" class="px-3 py-1.5 text-xs rounded-lg font-medium transition {% if selected_period.pk == period.pk %}bg-primary text-white{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}">
+                    {{ period.name }}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <!-- Status Filter -->
+            <select name="status" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
                     hx-get="{% url 'grades:submission_list' %}" hx-target="#submission-table" hx-trigger="change" hx-include="[name='status']">
                 <option value="">All Status</option>
                 {% for val, label in status_choices %}

@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\accounts\admin.py
+# hypothesis_version: 6.135.26
+
+['Additional Info', 'action', 'address', 'description', 'email', 'fields', 'first_name', 'is_active', 'last_name', 'model_name', 'phone', 'profile_picture', 'role', 'timestamp', 'user', 'user__username', 'username']

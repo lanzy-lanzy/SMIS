@@ -70,7 +70,7 @@ class TeacherAssignmentForm(forms.ModelForm):
 class GradingPeriodForm(forms.ModelForm):
     class Meta:
         model = GradingPeriod
-        fields = ('name', 'order', 'school_year', 'is_current')
+        fields = ('name', 'order', 'school_year', 'is_current', 'is_submissions_open')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

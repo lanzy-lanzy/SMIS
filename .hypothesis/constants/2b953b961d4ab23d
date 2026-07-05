@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\form137\models.py
+# hypothesis_version: 6.135.26
+
+['-date_generated', 'academics.GradeLevel', 'academics.SchoolYear', 'form137_records', 'grade_level', 'school_year', 'student', 'students.Student']

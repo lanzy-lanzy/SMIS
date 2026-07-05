@@ -1,8 +1,7 @@
 <table class="w-full text-sm">
     <thead class="bg-gray-50 dark:bg-slate-700">
         <tr>
-            <th class="px-4 py-3 text-left font-medium">LRN</th>
-            <th class="px-4 py-3 text-left font-medium">Name</th>
+            <th class="px-4 py-3 text-left font-medium">Student</th>
             <th class="px-4 py-3 text-left font-medium">Sex</th>
             <th class="px-4 py-3 text-left font-medium">Grade Level</th>
             <th class="px-4 py-3 text-left font-medium">Section</th>
@@ -14,31 +13,70 @@
     </thead>
     <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
         {% for student in students %}
-        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
-            <td class="px-4 py-3">{{ student.lrn }}</td>
+        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 group transition-colors">
             <td class="px-4 py-3">
-                <a href="{% url 'students:student_detail' student.pk %}" class="text-blue-600 hover:underline">{{ student.full_name }}</a>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                        {{ student.first_name|first }}{{ student.last_name|first }}
+                    </div>
+                    <div>
+                        <a href="{% url 'students:student_detail' student.pk %}" class="font-semibold text-gray-900 dark:text-white hover:text-primary transition">{{ student.full_name }}</a>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">LRN: {{ student.lrn }}</p>
+                    </div>
+                </div>
             </td>
-            <td class="px-4 py-3">{{ student.get_sex_display }}</td>
-            <td class="px-4 py-3">{{ student.grade_level }}</td>
-            <td class="px-4 py-3">{{ student.section }}</td>
+            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ student.get_sex_display }}</td>
             <td class="px-4 py-3">
-                <span class="px-2 py-1 text-xs rounded-full {% if student.status == 'active' %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400{% elif student.status == 'inactive' %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400{% endif %}">
+                <span class="px-2.5 py-1 text-xs rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 font-medium">{{ student.grade_level }}</span>
+            </td>
+            <td class="px-4 py-3">
+                <span class="px-2.5 py-1 text-xs rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium">{{ student.section }}</span>
+            </td>
+            <td class="px-4 py-3">
+                {% if student.status == 'active' %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                     {{ student.get_status_display }}
                 </span>
+                {% elif student.status == 'inactive' %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                    {{ student.get_status_display }}
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                    {{ student.get_status_display }}
+                </span>
+                {% endif %}
             </td>
             <td class="px-4 py-3 text-right">
                 {% if user.is_admin or user.is_registrar %}
-                <div class="flex items-center justify-end gap-2">
-                    <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'students:student_edit' student.pk %}' } }))" class="text-blue-600 hover:text-blue-800">Edit</button>
-                    <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'students:student_delete' student.pk %}' } }))" class="text-red-600 hover:text-red-800">Delete</button>
+                <div class="flex items-center justify-end gap-2 opacity-80 group-hover:opacity-100 transition">
+                    <a href="{% url 'form137:form137_generate' student.pk student.school_year_id %}" target="_blank" class="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 text-xs font-medium">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Form 137
+                    </a>
+                    <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'students:student_edit' student.pk %}' } }))" class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs font-medium">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        Edit
+                    </button>
+                    <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'students:student_delete' student.pk %}' } }))" class="inline-flex items-center gap-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Delete
+                    </button>
                 </div>
                 {% endif %}
             </td>
         </tr>
         {% empty %}
         <tr>
-            <td colspan="{% if user.is_admin or user.is_registrar %}7{% else %}6{% endif %}" class="px-4 py-8 text-center text-gray-500">No students found</td>
+            <td colspan="{% if user.is_admin or user.is_registrar %}6{% else %}5{% endif %}" class="px-4 py-12 text-center text-gray-500">
+                <div class="flex flex-col items-center gap-2">
+                    <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <p>No students found</p>
+                </div>
+            </td>
         </tr>
         {% endfor %}
     </tbody>

@@ -1,0 +1,27 @@
+<tr id="gp-row-{{ gp.pk }}" class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+    <td class="px-4 py-3">{{ gp.name }}</td>
+    <td class="px-4 py-3">{{ gp.school_year }}</td>
+    <td class="px-4 py-3">
+        {% if gp.is_current %}
+        <button hx-post="{% url 'academics:grading_period_toggle_current' gp.pk %}" hx-target="#gp-row-{{ gp.pk }}" hx-swap="outerHTML" class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 hover:bg-green-200 transition">
+            Active
+        </button>
+        {% else %}
+        <button hx-post="{% url 'academics:grading_period_toggle_current' gp.pk %}" hx-target="#gp-row-{{ gp.pk }}" hx-swap="outerHTML" class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 hover:bg-gray-200 transition">
+            Inactive
+        </button>
+        {% endif %}
+    </td>
+    <td class="px-4 py-3">
+        {% if gp.is_submissions_open %}
+        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Open</span>
+        {% else %}
+        <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Closed</span>
+        {% endif %}
+    </td>
+    <td class="px-4 py-3">
+        <button hx-post="{% url 'academics:grading_period_toggle_submissions' gp.pk %}" hx-target="#gp-row-{{ gp.pk }}" hx-swap="outerHTML" class="px-3 py-1 text-xs rounded-lg {% if gp.is_submissions_open %}bg-red-100 text-red-700 hover:bg-red-200{% else %}bg-green-100 text-green-700 hover:bg-green-200{% endif %} transition">
+            {% if gp.is_submissions_open %}Close Submissions{% else %}Open Submissions{% endif %}
+        </button>
+    </td>
+</tr>

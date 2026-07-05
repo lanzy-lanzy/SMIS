@@ -5,64 +5,87 @@
             <th class="px-4 py-3 text-left font-medium">Subject</th>
             <th class="px-4 py-3 text-left font-medium">Section</th>
             <th class="px-4 py-3 text-left font-medium">Grade Level</th>
+            <th class="px-4 py-3 text-left font-medium">Students</th>
             <th class="px-4 py-3 text-left font-medium">Teacher</th>
             <th class="px-4 py-3 text-left font-medium">Status</th>
-            <th class="px-4 py-3 text-right font-medium">Action</th>
+            <th class="px-4 py-3 text-right font-medium">Actions</th>
         </tr>
     </thead>
     <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
         {% for assignment in assignments %}
-        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 group">
             <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white text-xs font-bold">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                         {{ assignment.subject.code|truncatechars:3 }}
                     </div>
                     <div>
-                        <div class="font-medium">{{ assignment.subject.name }}</div>
+                        <div class="font-medium text-gray-900 dark:text-white">{{ assignment.subject.name }}</div>
                         <div class="text-xs text-gray-500">{{ assignment.subject.code }}</div>
                     </div>
                 </div>
             </td>
-            <td class="px-4 py-3">{{ assignment.section.name }}</td>
             <td class="px-4 py-3">
-                <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                    {{ assignment.section.grade_level }}
-                </span>
+                <span class="px-2 py-1 text-xs rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium">{{ assignment.section.name }}</span>
+            </td>
+            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ assignment.section.grade_level }}</td>
+            <td class="px-4 py-3">
+                <div class="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    <span>{{ assignment.student_count|default:0 }}</span>
+                </div>
             </td>
             <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">
+                    <div class="w-6 h-6 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary text-xs font-bold">
                         {{ assignment.teacher.first_name|first }}{{ assignment.teacher.last_name|first }}
                     </div>
-                    <span>{{ assignment.teacher.get_full_name }}</span>
+                    <span class="text-gray-700 dark:text-gray-200">{{ assignment.teacher.get_full_name }}</span>
                 </div>
             </td>
             <td class="px-4 py-3">
                 {% with sub_status=submissions_status|getitem:assignment.pk %}
-                {% if sub_status %}
-                    {% if sub_status == 'validated' %}
-                    <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">Validated</span>
-                    {% elif sub_status == 'pending' %}
-                    <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">Pending</span>
-                    {% elif sub_status == 'returned' %}
-                    <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Returned</span>
-                    {% endif %}
+                {% if sub_status == 'validated' %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 font-medium">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    Validated
+                </span>
+                {% elif sub_status == 'pending' %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 font-medium">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Pending
+                </span>
+                {% elif sub_status == 'returned' %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 font-medium">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    Returned
+                </span>
                 {% else %}
-                <span class="text-xs text-gray-400">No submission</span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-medium">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    Not Started
+                </span>
                 {% endif %}
                 {% endwith %}
             </td>
             <td class="px-4 py-3 text-right">
-                <a href="{% url 'grades:grade_encode' assignment.pk %}" class="inline-flex items-center gap-1 bg-secondary hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg transition text-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                    Encode
-                </a>
+                <div class="flex items-center justify-end gap-2">
+                    {% if user.is_teacher or user.is_admin %}
+                    <a href="{% url 'grades:grade_encode' assignment.pk %}?period={{ current_period.pk }}" class="inline-flex items-center gap-1 bg-primary hover:bg-blue-800 text-white px-3 py-1.5 rounded-lg transition text-xs font-medium">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        Encode
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'students:student_list' %}?section={{ assignment.section.pk }}" class="inline-flex items-center gap-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 px-3 py-1.5 rounded-lg transition text-xs font-medium">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        Students
+                    </a>
+                </div>
             </td>
         </tr>
         {% empty %}
         <tr>
-            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+            <td colspan="7" class="px-4 py-8 text-center text-gray-500">
                 <div class="flex flex-col items-center gap-2">
                     <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                     <p>No assignments found</p>
@@ -72,3 +95,19 @@
         {% endfor %}
     </tbody>
 </table>
+{% if assignments.has_other_pages %}
+<div class="px-4 py-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+    <p class="text-sm text-gray-500">Showing {{ assignments.start_index }}-{{ assignments.end_index }} of {{ assignments.paginator.count }}</p>
+    <div class="flex gap-1">
+        {% if assignments.has_previous %}
+        <a href="?page={{ assignments.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+        {% endif %}
+        {% for num in assignments.paginator.page_range %}
+        <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="px-3 py-1 border rounded {% if assignments.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+        {% endfor %}
+        {% if assignments.has_next %}
+        <a href="?page={{ assignments.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

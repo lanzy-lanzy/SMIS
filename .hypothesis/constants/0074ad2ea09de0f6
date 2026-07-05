@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\form137\migrations\0001_initial.py
+# hypothesis_version: 6.135.26
+
+['-date_generated', '0001_initial', '0002_initial', 'Form137Record', 'ID', 'academics', 'academics.gradelevel', 'academics.schoolyear', 'date_generated', 'form137_records', 'generated_by', 'grade_level', 'id', 'is_printed', 'ordering', 'school_year', 'student', 'students', 'students.student', 'unique_together']

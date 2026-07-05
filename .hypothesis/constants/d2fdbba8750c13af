@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\grades\admin.py
+# hypothesis_version: 6.135.26
+
+['grading_period', 'quarter_grade', 'school_year', 'section', 'status', 'student', 'subject', 'submission', 'submitted_at', 'teacher', 'validated_at', 'validated_by']

@@ -5,19 +5,20 @@ from students.models import Student
 from grades.models import Grade, GradeSubmission
 from academics.models import SchoolYear, GradeLevel, Section, Subject
 from accounts.models import User
+from accounts.decorators import principal_or_admin_required
 
 
-@login_required
+@principal_or_admin_required
 def reports_index(request):
     return render(request, 'reports/index.html')
 
 
-@login_required
+@principal_or_admin_required
 def grade_trends(request):
     sy_filter = request.GET.get('sy', '')
     gl_filter = request.GET.get('gl', '')
     
-    grades = Grade.objects.filter(status='validated').select_related(
+    grades = Grade.objects.filter(status__in=['validated', 'locked']).select_related(
         'subject', 'grading_period', 'school_year', 'grade_level'
     )
     
@@ -47,7 +48,7 @@ def grade_trends(request):
     })
 
 
-@login_required
+@principal_or_admin_required
 def section_performance(request):
     sy_filter = request.GET.get('sy', '')
     
@@ -56,7 +57,7 @@ def section_performance(request):
     section_data = []
     for section in sections:
         avg = Grade.objects.filter(
-            section=section, status='validated'
+            section=section, status__in=['validated', 'locked']
         ).aggregate(avg=Avg('quarter_grade'))['avg'] or 0
         
         student_count = Student.objects.filter(section=section, status='active').count()
@@ -76,14 +77,14 @@ def section_performance(request):
     })
 
 
-@login_required
+@principal_or_admin_required
 def subject_performance(request):
     subjects = Subject.objects.all()
     
     subject_data = []
     for subject in subjects:
         avg = Grade.objects.filter(
-            subject=subject, status='validated'
+            subject=subject, status__in=['validated', 'locked']
         ).aggregate(avg=Avg('quarter_grade'))['avg'] or 0
         
         subject_data.append({
@@ -96,13 +97,13 @@ def subject_performance(request):
     })
 
 
-@login_required
+@principal_or_admin_required
 def at_risk_students(request):
     sy_filter = request.GET.get('sy', '')
     gl_filter = request.GET.get('gl', '')
     
     grades = Grade.objects.filter(
-        status='validated',
+        status__in=['validated', 'locked'],
         quarter_grade__lt=75
     ).select_related('student', 'subject', 'school_year', 'grade_level')
     
@@ -142,13 +143,13 @@ def at_risk_students(request):
     })
 
 
-@login_required
+@principal_or_admin_required
 def student_history(request, student_pk):
     from students.models import Student
     student = Student.objects.get(pk=student_pk)
     
     grades = Grade.objects.filter(
-        student=student, status='validated'
+        student=student, status__in=['validated', 'locked']
     ).select_related('subject', 'grading_period', 'school_year').order_by(
         '-school_year__name', 'grading_period__order', 'subject__name'
     )

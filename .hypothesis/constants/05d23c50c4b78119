@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\students\views.py
+# hypothesis_version: 6.135.26
+
+['-school_year__name', 'Access denied.', 'Add Student', 'Address', 'Birthdate', 'Birthplace', 'Content-Disposition', 'Edit Student', 'First Name', 'Grade Level', 'HX-Request', 'HX-Trigger', 'LRN', 'Last Name', 'Middle Name', 'POST', 'Parent Name', 'Parent Phone', 'Section', 'Sex', 'Status', 'Student', 'Suffix', 'active', 'active_students', 'create', 'dashboard:index', 'delete', 'form', 'grade', 'grade_filter', 'grade_level', 'grade_level__name', 'grade_levels', 'grades', 'grading_period', 'grid', 'id', 'inactive', 'inactive_students', 'page', 'q', 'query', 'school_year', 'school_years', 'section', 'section_filter', 'section_id', 'sections', 'status', 'status_choices', 'status_filter', 'student', 'students', 'students_by_grade', 'subject', 'subject__name', 'table', 'text/csv', 'title', 'total_students', 'transferred', 'transferred_students', 'update', 'validated', 'view']

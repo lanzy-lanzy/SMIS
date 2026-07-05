@@ -1,70 +1,152 @@
 {% load form137_filters %}
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    {% for assignment in assignments %}
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5 hover:shadow-md transition">
-        <div class="flex items-start justify-between mb-3">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white text-sm font-bold">
-                    {{ assignment.subject.code|truncatechars:3 }}
-                </div>
-                <div>
-                    <h3 class="font-semibold">{{ assignment.subject.name }}</h3>
-                    <p class="text-sm text-gray-500">{{ assignment.subject.code }}</p>
-                </div>
-            </div>
-            <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                {{ assignment.section.grade_level }}
-            </span>
-        </div>
-        
-        <div class="space-y-2 mb-4">
-            <div class="flex items-center gap-2 text-sm">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                <span class="text-gray-600 dark:text-gray-400">{{ assignment.section.name }}</span>
-            </div>
-            <div class="flex items-center gap-2 text-sm">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                <span class="text-gray-600 dark:text-gray-400">{{ assignment.teacher.get_full_name }}</span>
-            </div>
-        </div>
+{% regroup assignments by section.grade_level as grade_groups %}
 
-        <!-- Submission Status -->
-        <div class="mb-4">
-            {% with sub_status=submissions_status|getitem:assignment.pk %}
-            {% if sub_status %}
-            <div class="flex items-center gap-2">
-                {% if sub_status == 'validated' %}
-                <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
-                    <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    Validated
-                </span>
-                {% elif sub_status == 'pending' %}
-                <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                    <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    Pending
-                </span>
-                {% elif sub_status == 'returned' %}
-                <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                    <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    Returned
-                </span>
-                {% endif %}
+{% if grade_groups %}
+<div class="space-y-6" x-data="{ openGroups: {} }">
+    {% for group in grade_groups %}
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
+        <!-- Grade Level Header -->
+        <button type="button"
+                @click="openGroups['gl_{{ group.grouper.pk }}'] = !openGroups['gl_{{ group.grouper.pk }}']"
+                class="w-full flex items-center justify-between px-5 py-4 bg-gradient-to-r from-gray-50 to-white dark:from-slate-700/50 dark:to-slate-800 hover:from-blue-50 hover:to-white dark:hover:from-slate-700 transition-colors">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path></svg>
+                </div>
+                <div class="text-left">
+                    <h3 class="font-semibold text-gray-900 dark:text-white">{{ group.grouper.name }}</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Class assignments</p>
+                </div>
             </div>
-            {% else %}
-            <span class="text-xs text-gray-400">No submissions yet</span>
-            {% endif %}
-            {% endwith %}
+            <div class="flex items-center gap-3">
+                <span class="px-2.5 py-1 text-xs rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-medium">
+                    {{ group.list|length }} assignment{{ group.list|length|pluralize }}
+                </span>
+                <svg class="w-5 h-5 text-gray-400 transition-transform duration-200" :class="openGroups['gl_{{ group.grouper.pk }}'] ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+        </button>
+
+        <!-- Assignments Grid -->
+        <div x-show="!openGroups['gl_{{ group.grouper.pk }}']" x-transition.duration.200ms class="p-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {% for assignment in group.list %}
+                {% with sub_status=submissions_status|getitem:assignment.pk %}
+                <div class="group relative bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-primary/30 dark:hover:border-primary/40 hover:shadow-lg transition-all duration-200 overflow-hidden">
+                    <!-- Status stripe -->
+                    <div class="absolute top-0 left-0 right-0 h-1
+                        {% if sub_status == 'validated' %}bg-emerald-500
+                        {% elif sub_status == 'pending' %}bg-yellow-500
+                        {% elif sub_status == 'returned' %}bg-red-500
+                        {% else %}bg-gray-200 dark:bg-slate-600{% endif %}">
+                    </div>
+
+                    <div class="p-5 pt-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                                    {{ assignment.subject.code|truncatechars:3 }}
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-900 dark:text-white leading-tight">{{ assignment.subject.name }}</h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ assignment.subject.code }}</p>
+                                </div>
+                            </div>
+                            <span class="px-2 py-1 text-xs rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium">
+                                {{ assignment.section.name }}
+                            </span>
+                        </div>
+
+                        <!-- Meta info -->
+                        <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
+                            <div class="flex items-center gap-1.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                <span>{{ assignment.teacher.get_full_name }}</span>
+                            </div>
+                            {% if assignment.student_count %}
+                            <div class="flex items-center gap-1.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                <span>{{ assignment.student_count }} students</span>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Status badge -->
+                        <div class="mb-4">
+                            {% if sub_status == 'validated' %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 font-medium">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Validated
+                            </span>
+                            {% elif sub_status == 'pending' %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 font-medium">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Pending Review
+                            </span>
+                            {% elif sub_status == 'returned' %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 font-medium">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                Returned
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-medium">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                Not Started
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex items-center gap-2">
+                            {% if user.is_teacher or user.is_admin %}
+                            <a href="{% url 'grades:grade_encode' assignment.pk %}?period={{ current_period.pk }}"
+                               class="flex-1 inline-flex items-center justify-center gap-1.5 bg-primary hover:bg-blue-800 text-white px-3 py-2 rounded-lg transition text-sm font-medium">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                Encode
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'students:student_list' %}?section={{ assignment.section.pk }}"
+                               class="flex-1 inline-flex items-center justify-center gap-1.5 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-lg transition text-sm font-medium">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                                Students
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endwith %}
+                {% endfor %}
+            </div>
         </div>
-        
-        <a href="{% url 'grades:grade_encode' assignment.pk %}" class="block w-full text-center bg-secondary hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition text-sm">
-            Encode Grades
-        </a>
-    </div>
-    {% empty %}
-    <div class="col-span-full text-center py-12 text-gray-500">
-        <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-        <p class="mb-2">No assignments found</p>
-        <p class="text-sm">Contact admin to assign you to subjects and sections</p>
     </div>
     {% endfor %}
 </div>
+{% else %}
+<div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-12 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+    </div>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No assignments found</h3>
+    <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">Contact your administrator to assign you to subjects and sections.</p>
+    {% if user.is_admin %}
+    <a href="{% url 'academics:assignment_list' %}" class="inline-flex items-center gap-2 bg-primary hover:bg-blue-800 text-white px-5 py-2.5 rounded-lg transition font-medium">
+        Manage Assignments
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if assignments.has_other_pages %}
+<div class="mt-4 flex items-center justify-between">
+    <p class="text-sm text-gray-500">Showing {{ assignments.start_index }}-{{ assignments.end_index }} of {{ assignments.paginator.count }}</p>
+    <div class="flex gap-1">
+        {% if assignments.has_previous %}
+        <a href="?page={{ assignments.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+        {% endif %}
+        {% for num in assignments.paginator.page_range %}
+        <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="px-3 py-1 border rounded {% if assignments.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+        {% endfor %}
+        {% if assignments.has_next %}
+        <a href="?page={{ assignments.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
