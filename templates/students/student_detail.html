@@ -97,67 +97,110 @@
 
     <!-- Academic Records -->
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
-        <div class="p-5 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+        <div class="p-5 border-b border-gray-100 dark:border-slate-700 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                 Academic Records
             </h3>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50 dark:bg-slate-700">
-                    <tr>
-                        <th class="px-4 py-3 text-left font-medium">Subject</th>
-                        <th class="px-4 py-3 text-left font-medium">Period</th>
-                        <th class="px-4 py-3 text-left font-medium">Year</th>
-                        <th class="px-4 py-3 text-left font-medium">Grade</th>
-                        <th class="px-4 py-3 text-left font-medium">Status</th>
-                        <th class="px-4 py-3 text-left font-medium">Remarks</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
-                    {% for grade in grades %}
-                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
-                        <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ grade.subject }}</td>
-                        <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ grade.grading_period }}</td>
-                        <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ grade.school_year }}</td>
-                        <td class="px-4 py-3 font-bold text-primary">{{ grade.quarter_grade }}</td>
-                        <td class="px-4 py-3">
-                            {% if grade.status == 'validated' or grade.status == 'locked' %}
-                            <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                                Validated
-                            </span>
-                            {% elif grade.status == 'submitted' %}
-                            <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 font-medium">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                Submitted
-                            </span>
-                            {% else %}
-                            <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-medium">
-                                Draft
-                            </span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-1 text-xs rounded-lg {% if grade.remarks == 'Passed' %}bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300{% elif grade.remarks == 'Failed' %}bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300{% else %}bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300{% endif %} font-medium">
-                                {{ grade.remarks|default:"-" }}
-                            </span>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                            <div class="flex flex-col items-center gap-2">
-                                <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-                                <p>No grades recorded</p>
-                            </div>
-                        </td>
-                    </tr>
+
+            <form method="get" class="flex flex-col sm:flex-row gap-2">
+                <div class="relative">
+                    <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <input type="text" name="q" value="{{ query }}" placeholder="Search subject..." class="pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary w-full sm:w-56">
+                </div>
+                <select name="quarter" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary w-full sm:w-56">
+                    <option value="">All Quarters</option>
+                    {% for q_id, q_name, sy_name in available_quarters %}
+                    <option value="{{ q_id }}" {% if quarter_filter == q_id|stringformat:"s" %}selected{% endif %}>{{ q_name }} ({{ sy_name }})</option>
                     {% endfor %}
-                </tbody>
-            </table>
+                </select>
+                <button type="submit" class="px-4 py-2 text-sm bg-primary hover:bg-blue-800 text-white rounded-lg transition">Filter</button>
+                {% if query or quarter_filter %}
+                <a href="{{ request.path }}" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 text-center">Clear</a>
+                {% endif %}
+            </form>
         </div>
+
+        {% if quarter_page.paginator.count > 0 %}
+            {% for quarter in quarter_page %}
+            <div class="border-b border-gray-100 dark:border-slate-700 last:border-b-0">
+                <div class="px-5 py-3 bg-gray-50 dark:bg-slate-700/50 flex items-center justify-between">
+                    <h4 class="font-medium text-gray-900 dark:text-white">
+                        {{ quarter.grading_period.name }}
+                    </h4>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">{{ quarter.school_year.name }}</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 dark:bg-slate-700">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-medium">Subject</th>
+                                <th class="px-4 py-3 text-left font-medium">Grade</th>
+                                <th class="px-4 py-3 text-left font-medium">Status</th>
+                                <th class="px-4 py-3 text-left font-medium">Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+                            {% for grade in quarter.grades %}
+                            <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                                <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ grade.subject }}</td>
+                                <td class="px-4 py-3 font-bold text-primary">{{ grade.quarter_grade }}</td>
+                                <td class="px-4 py-3">
+                                    {% if grade.status == 'validated' or grade.status == 'locked' %}
+                                    <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                        Validated
+                                    </span>
+                                    {% elif grade.status == 'submitted' %}
+                                    <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 font-medium">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        Submitted
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-medium">
+                                        Draft
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="px-2 py-1 text-xs rounded-lg {% if grade.remarks == 'Passed' %}bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300{% elif grade.remarks == 'Failed' %}bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300{% else %}bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300{% endif %} font-medium">
+                                        {{ grade.remarks|default:"-" }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if quarter_page.has_other_pages %}
+            <div class="px-4 py-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Showing quarter {{ quarter_page.number }} of {{ quarter_page.paginator.num_pages }}
+                </p>
+                <div class="flex gap-1">
+                    {% if quarter_page.has_previous %}
+                    <a href="?page={{ quarter_page.previous_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if quarter_filter %}&quarter={{ quarter_filter|urlencode }}{% endif %}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200">&laquo;</a>
+                    {% endif %}
+                    {% for num in quarter_page.paginator.page_range %}
+                    <a href="?page={{ num }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if quarter_filter %}&quarter={{ quarter_filter|urlencode }}{% endif %}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded {% if quarter_page.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200{% endif %}">{{ num }}</a>
+                    {% endfor %}
+                    {% if quarter_page.has_next %}
+                    <a href="?page={{ quarter_page.next_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if quarter_filter %}&quarter={{ quarter_filter|urlencode }}{% endif %}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200">&raquo;</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        {% else %}
+        <div class="px-4 py-8 text-center text-gray-500">
+            <div class="flex flex-col items-center gap-2">
+                <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                <p>No grades recorded</p>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

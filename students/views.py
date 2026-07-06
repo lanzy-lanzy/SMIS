@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
+from itertools import groupby
 from .models import Student
 from .forms import StudentForm
 from accounts.models import AuditLog
@@ -253,14 +254,62 @@ def student_detail(request, pk):
             messages.error(request, "Access denied. You are not assigned to this section.")
             return redirect("students:student_list")
     
+    query = request.GET.get("q", "").strip()
+    quarter_filter = request.GET.get("quarter", "").strip()
+
     grades = (
         Grade.objects.filter(student=student)
         .select_related("subject", "grading_period", "school_year")
         .order_by("-school_year__name", "-grading_period__order", "subject__name")
     )
 
+    # Search by subject name or code
+    if query:
+        grades = grades.filter(
+            Q(subject__name__icontains=query) | Q(subject__code__icontains=query)
+        )
+
+    # Filter by selected quarter
+    if quarter_filter:
+        grades = grades.filter(grading_period_id=quarter_filter)
+
+    # Group grades by school year and grading period (quarter)
+    quarter_groups = []
+    for key, group in groupby(
+        grades, key=lambda g: (g.school_year, g.grading_period)
+    ):
+        quarter_groups.append(
+            {
+                "school_year": key[0],
+                "grading_period": key[1],
+                "grades": list(group),
+            }
+        )
+
+    # Paginate by quarter group (one quarter per page)
+    paginator = Paginator(quarter_groups, 1)
+    page = request.GET.get("page", 1)
+    quarter_page = paginator.get_page(page)
+
+    # Distinct quarters for the dropdown (based on all student grades)
+    available_quarters = (
+        Grade.objects.filter(student=student)
+        .select_related("grading_period", "school_year")
+        .values_list("grading_period_id", "grading_period__name", "school_year__name")
+        .distinct()
+        .order_by("-school_year__name", "grading_period__order")
+    )
+
     return render(
-        request, "students/student_detail.html", {"student": student, "grades": grades}
+        request,
+        "students/student_detail.html",
+        {
+            "student": student,
+            "quarter_page": quarter_page,
+            "available_quarters": available_quarters,
+            "query": query,
+            "quarter_filter": quarter_filter,
+        },
     )
 
 
