@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\accounts\decorators.py
+# hypothesis_version: 6.135.26
+
+['accounts:login', 'admin', 'principal', 'registrar', 'teacher']

@@ -18,20 +18,6 @@ document.addEventListener('DOMContentLoaded', function() {
         e.detail.headers['X-CSRFToken'] = getCookie('csrftoken');
     });
 
-    // Theme toggle
-    const themeToggle = document.getElementById('theme-toggle');
-    const html = document.documentElement;
-    
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    html.classList.toggle('dark', savedTheme === 'dark');
-    
-    if (themeToggle) {
-        themeToggle.addEventListener('click', function() {
-            html.classList.toggle('dark');
-            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
-        });
-    }
-    
     // Toast notification system
     window.showToast = function(message, type = 'success') {
         const container = document.getElementById('toast-container');

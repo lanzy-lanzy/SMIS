@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\academics\migrations\0003_gradingperiod_is_submissions_open.py
+# hypothesis_version: 6.135.26
+
+['0002_initial', 'academics', 'gradingperiod', 'is_submissions_open']

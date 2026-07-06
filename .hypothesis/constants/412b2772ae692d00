@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\academics\urls.py
+# hypothesis_version: 6.135.26
+
+['academics', 'assignment_create', 'assignment_delete', 'assignment_edit', 'assignment_export', 'assignment_list', 'assignments/', 'assignments/create/', 'assignments/export/', 'grade-levels/', 'grade-levels/create/', 'grade_level_create', 'grade_level_delete', 'grade_level_edit', 'grade_level_list', 'grading-periods/', 'grading_period_list', 'index', 'school-years/', 'school-years/create/', 'school_year_create', 'school_year_delete', 'school_year_edit', 'school_year_list', 'section_create', 'section_delete', 'section_edit', 'section_list', 'sections/', 'sections/create/', 'subject_create', 'subject_delete', 'subject_edit', 'subject_list', 'subjects/', 'subjects/create/']

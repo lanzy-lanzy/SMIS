@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\grades\urls.py
+# hypothesis_version: 6.135.26
+
+['encode-all/', 'encode-modal/', 'encode-select/', 'encode_modal', 'export/', 'grade_encode', 'grade_encode_all', 'grade_encode_select', 'grade_export', 'grade_list', 'grade_save', 'grade_save_all', 'grades', 'save-all/', 'submission_list', 'submission_validate', 'submissions/']

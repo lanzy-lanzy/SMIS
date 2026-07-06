@@ -19,13 +19,13 @@ def grade_trends(request):
     gl_filter = request.GET.get('gl', '')
     
     grades = Grade.objects.filter(status__in=['validated', 'locked']).select_related(
-        'subject', 'grading_period', 'school_year', 'grade_level'
+        'subject', 'grading_period', 'school_year', 'section', 'section__grade_level'
     )
-    
+
     if sy_filter:
         grades = grades.filter(school_year_id=sy_filter)
     if gl_filter:
-        grades = grades.filter(grade_level_id=gl_filter)
+        grades = grades.filter(section__grade_level_id=gl_filter)
     
     subject_averages = grades.values('subject__name').annotate(
         avg_grade=Avg('quarter_grade')
@@ -105,12 +105,12 @@ def at_risk_students(request):
     grades = Grade.objects.filter(
         status__in=['validated', 'locked'],
         quarter_grade__lt=75
-    ).select_related('student', 'subject', 'school_year', 'grade_level')
-    
+    ).select_related('student', 'subject', 'school_year', 'section', 'section__grade_level')
+
     if sy_filter:
         grades = grades.filter(school_year_id=sy_filter)
     if gl_filter:
-        grades = grades.filter(grade_level_id=gl_filter)
+        grades = grades.filter(section__grade_level_id=gl_filter)
     
     at_risk = {}
     for grade in grades:

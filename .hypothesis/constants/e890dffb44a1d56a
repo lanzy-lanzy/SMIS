@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\accounts\urls.py
+# hypothesis_version: 6.135.26
+
+['accounts', 'audit-logs/', 'audit_log_list', 'change-password/', 'change_password', 'login', 'login/', 'logout', 'logout/', 'profile', 'profile/', 'user_create', 'user_delete', 'user_edit', 'user_list', 'users/', 'users/<int:pk>/edit/', 'users/create/']

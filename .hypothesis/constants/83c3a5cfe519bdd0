@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\reports\views.py
+# hypothesis_version: 6.135.26
+
+['-avg_grade', '-school_year__name', 'active', 'at_risk', 'average', 'avg', 'failing_grades', 'gl', 'gl_filter', 'grade', 'grade_level', 'grade_levels', 'grades', 'grading_period', 'grading_period__name', 'locked', 'period_averages', 'quarter_grade', 'remarks', 'reports/index.html', 'school_year', 'school_years', 'section', 'section_data', 'student', 'student_count', 'subject', 'subject__name', 'subject_averages', 'subject_data', 'sy', 'sy_filter', 'validated']

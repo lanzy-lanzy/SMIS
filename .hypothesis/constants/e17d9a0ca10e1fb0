@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\SMIS\students\urls.py
+# hypothesis_version: 6.135.26
+
+['<int:pk>/', '<int:pk>/delete/', '<int:pk>/edit/', 'add/', 'dashboard/', 'export/', 'student_create', 'student_dashboard', 'student_delete', 'student_detail', 'student_edit', 'student_export', 'student_list', 'students']
