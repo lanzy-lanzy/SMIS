@@ -4,48 +4,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - SMIS</title>
+    <meta name="theme-color" content="#0b1f33">
+    <meta name="description" content="Secure sign in to the School Management Information System.">
+    <title>Sign in | SMIS</title>
     <link rel="stylesheet" href="{% static 'css/output.css' %}">
-    <script defer src="{% static 'js/alpine.min.js' %}"></script>
 </head>
-<body class="h-full bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-    <div class="w-full max-w-md p-8">
-        <div class="text-center mb-8">
-            <div class="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-            </div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">SMIS</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Paquito S. Yu Memorial National High School</p>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-8">
-            <h2 class="text-xl font-semibold mb-6 text-center">Sign In</h2>
-            {% if form.errors %}
-            <div class="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
-                Invalid username or password.
-            </div>
-            {% endif %}
-            <form method="post" class="space-y-4">
-                {% csrf_token %}
-                <div>
-                    <label class="block text-sm font-medium mb-1">Username</label>
-                    {{ form.username }}
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Password</label>
-                    {{ form.password }}
-                </div>
-                <button type="submit" class="w-full bg-primary hover:bg-primary-700 text-white font-semibold py-3 rounded-lg transition">
-                    Sign In
-                </button>
-            </form>
-        </div>
-        <div class="mt-4 text-center">
-            <a href="{% url 'dashboard:landing' %}" class="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                Back to Home
+<body class="min-h-full bg-slate-50 text-slate-800 antialiased">
+    <main class="grid min-h-screen lg:grid-cols-[.9fr_1.1fr]">
+        <section class="relative hidden overflow-hidden bg-primary-dark px-10 py-12 text-white lg:flex lg:flex-col">
+            <div class="landing-grid pointer-events-none absolute inset-0 opacity-20"></div>
+            <div class="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-primary/30 blur-3xl"></div>
+            <a href="{% url 'dashboard:landing' %}" class="relative flex items-center gap-3">
+                <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-xs font-black tracking-tight text-primary-dark">SY</span>
+                <span>
+                    <span class="block text-lg font-black tracking-[0.14em]">SMIS</span>
+                    <span class="block text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-300">Paquito S. Yu Memorial NHS</span>
+                </span>
             </a>
-        </div>
-        <p class="text-center text-xs text-gray-400 mt-6">&copy; 2026 SMIS. All rights reserved.</p>
-    </div>
+
+            <div class="relative my-auto max-w-xl">
+                <p class="text-xs font-bold uppercase tracking-[0.16em] text-blue-300">Secure school workspace</p>
+                <h1 class="mt-4 text-4xl font-bold leading-tight tracking-[-0.04em] xl:text-5xl">Trusted academic records begin with responsible access.</h1>
+                <p class="mt-6 max-w-lg text-base leading-7 text-slate-300">Sign in to manage student information, academic workflows, grade validation, official records, and reporting according to your assigned role.</p>
+
+                <div class="mt-10 grid gap-3 sm:grid-cols-2">
+                    <div class="border border-white/10 bg-white/[0.045] p-4">
+                        <p class="text-sm font-bold">Role-based workspace</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-400">Access is aligned with school responsibilities.</p>
+                    </div>
+                    <div class="border border-white/10 bg-white/[0.045] p-4">
+                        <p class="text-sm font-bold">Traceable activity</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-400">Important record actions remain accountable.</p>
+                    </div>
+                </div>
+            </div>
+
+            <p class="relative text-xs text-slate-400">&copy; {% now "Y" %} Paquito S. Yu Memorial National High School</p>
+        </section>
+
+        <section class="relative flex items-center justify-center px-5 py-10 sm:px-8 lg:px-12">
+            <div class="absolute inset-x-0 top-0 flex h-20 items-center justify-between px-5 sm:px-8 lg:hidden">
+                <a href="{% url 'dashboard:landing' %}" class="flex items-center gap-2.5">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-md bg-primary-dark text-[10px] font-black text-white">SY</span>
+                    <span class="text-sm font-black tracking-[0.12em] text-primary-dark">SMIS</span>
+                </a>
+                <a href="{% url 'dashboard:landing' %}" class="text-sm font-semibold text-slate-500 hover:text-primary">Back to home</a>
+            </div>
+
+            <div class="w-full max-w-md pt-14 lg:pt-0">
+                <div class="mb-8">
+                    <p class="text-xs font-bold uppercase tracking-[0.16em] text-primary">Account access</p>
+                    <h2 class="mt-3 text-3xl font-bold tracking-[-0.035em] text-primary-dark">Welcome back</h2>
+                    <p class="mt-2 text-sm leading-6 text-slate-500">Enter your assigned credentials to continue to SMIS.</p>
+                </div>
+
+                {% if form.errors %}
+                <div role="alert" class="mb-5 border-l-4 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <p class="font-semibold">We could not sign you in.</p>
+                    <p class="mt-0.5 text-xs">Check your username and password, then try again.</p>
+                </div>
+                {% endif %}
+
+                <form method="post" class="space-y-5">
+                    {% csrf_token %}
+                    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                    <div>
+                        <label for="{{ form.username.id_for_label }}" class="mb-2 block text-sm font-semibold text-slate-700">Username</label>
+                        {{ form.username }}
+                    </div>
+                    <div>
+                        <div class="mb-2 flex items-center justify-between">
+                            <label for="{{ form.password.id_for_label }}" class="block text-sm font-semibold text-slate-700">Password</label>
+                            <span class="text-xs text-slate-400">Case sensitive</span>
+                        </div>
+                        {{ form.password }}
+                    </div>
+                    <button type="submit" class="formal-button formal-button-primary w-full">
+                        Sign in securely
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 12h14m-5-5l5 5-5 5"/></svg>
+                    </button>
+                </form>
+
+                <div class="mt-8 border-t border-slate-200 pt-5">
+                    <p class="text-xs leading-5 text-slate-500">This system is for authorized school personnel and registered student accounts. Contact the school administrator if you need access assistance.</p>
+                </div>
+            </div>
+        </section>
+    </main>
 </body>
 </html>

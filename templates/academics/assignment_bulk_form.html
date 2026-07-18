@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}Bulk Assign Teachers{% endblock %}
+{% block page_title %}Bulk Teacher Assignment{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-4xl">
+    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+            <h1 class="text-xl font-bold text-slate-900 dark:text-white">Create multiple assignments</h1>
+            <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">Assign one teacher to a selected combination of subjects and sections.</p>
+        </div>
+        <a href="{% url 'academics:assignment_list' %}" class="formal-button formal-button-secondary shrink-0">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 18l-6-6 6-6"/></svg>
+            Back to assignments
+        </a>
+    </div>
+
+    <form method="post" class="surface-card overflow-hidden">
+        {% csrf_token %}
+        <div class="grid gap-6 p-5 sm:p-7">
+            <div class="grid gap-5 sm:grid-cols-2">
+                <div>
+                    <label for="id_teacher" class="mb-2 block text-sm font-semibold">Teacher <span class="text-red-500">*</span></label>
+                    <select id="id_teacher" name="teacher" required class="w-full rounded-lg border px-3 py-2">
+                        <option value="">Select a teacher</option>
+                        {% for teacher in teachers %}
+                        <option value="{{ teacher.id }}">{{ teacher.get_full_name|default:teacher.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="id_school_year" class="mb-2 block text-sm font-semibold">School year <span class="text-red-500">*</span></label>
+                    <select id="id_school_year" name="school_year" required class="w-full rounded-lg border px-3 py-2">
+                        <option value="">Select a school year</option>
+                        {% for sy in school_years %}
+                        <option value="{{ sy.id }}" {% if sy.is_current %}selected{% endif %}>{{ sy.name }}{% if sy.is_current %} — Current{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid gap-5 lg:grid-cols-2">
+                <div>
+                    <div class="mb-2 flex items-end justify-between gap-3">
+                        <label for="id_subjects" class="block text-sm font-semibold">Subjects <span class="text-red-500">*</span></label>
+                        <span id="subject-count-label" class="text-xs font-medium text-slate-500">0 selected</span>
+                    </div>
+                    <select id="id_subjects" name="subjects" required multiple size="9" class="w-full rounded-lg border px-3 py-2">
+                        {% for subject in subjects %}
+                        <option value="{{ subject.id }}">{{ subject.code }} — {{ subject.name }} ({{ subject.grade_level }})</option>
+                        {% empty %}
+                        <option disabled>No active subjects available</option>
+                        {% endfor %}
+                    </select>
+                    <p class="mt-2 text-xs leading-5 text-slate-500">Hold Ctrl on Windows or Command on macOS to choose more than one subject.</p>
+                </div>
+
+                <div>
+                    <div class="mb-2 flex items-end justify-between gap-3">
+                        <label for="id_sections" class="block text-sm font-semibold">Sections <span class="text-red-500">*</span></label>
+                        <span id="section-count-label" class="text-xs font-medium text-slate-500">0 selected</span>
+                    </div>
+                    <select id="id_sections" name="sections" required multiple size="9" class="w-full rounded-lg border px-3 py-2">
+                        {% for section in sections %}
+                        <option value="{{ section.id }}">{{ section.name }} — {{ section.grade_level }}</option>
+                        {% empty %}
+                        <option disabled>No sections available for the current school year</option>
+                        {% endfor %}
+                    </select>
+                    <p class="mt-2 text-xs leading-5 text-slate-500">Only sections from the current school year are shown.</p>
+                </div>
+            </div>
+
+            <div class="border-l-4 border-primary bg-blue-50 px-4 py-3 dark:bg-blue-950/30">
+                <p class="text-sm font-semibold text-primary-dark dark:text-blue-100">Assignment preview</p>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                    This action will prepare up to <strong id="assignment-count" class="text-primary">0</strong> assignment combinations
+                    from <span id="subject-count">0</span> subject(s) and <span id="section-count">0</span> section(s).
+                    Existing combinations will not be duplicated.
+                </p>
+            </div>
+        </div>
+
+        <div class="flex flex-col-reverse gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/60 sm:flex-row sm:justify-end sm:px-7">
+            <a href="{% url 'academics:assignment_list' %}" class="formal-button formal-button-secondary">Cancel</a>
+            <button type="submit" class="formal-button formal-button-primary">Create assignments</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    (function () {
+        const subjects = document.getElementById('id_subjects');
+        const sections = document.getElementById('id_sections');
+        const subjectCount = document.getElementById('subject-count');
+        const sectionCount = document.getElementById('section-count');
+        const subjectLabel = document.getElementById('subject-count-label');
+        const sectionLabel = document.getElementById('section-count-label');
+        const assignmentCount = document.getElementById('assignment-count');
+
+        function updatePreview() {
+            const selectedSubjects = subjects.selectedOptions.length;
+            const selectedSections = sections.selectedOptions.length;
+            subjectCount.textContent = selectedSubjects;
+            sectionCount.textContent = selectedSections;
+            subjectLabel.textContent = `${selectedSubjects} selected`;
+            sectionLabel.textContent = `${selectedSections} selected`;
+            assignmentCount.textContent = selectedSubjects * selectedSections;
+        }
+
+        subjects.addEventListener('change', updatePreview);
+        sections.addEventListener('change', updatePreview);
+        updatePreview();
+    })();
+</script>
+{% endblock %}
