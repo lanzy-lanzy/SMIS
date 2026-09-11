@@ -1,6 +1,8 @@
 Django>=5.1,<5.2
 python-decouple>=3.8
 Pillow>=10.0
-weasyprint>=60.0
+whitenoise>=6.0
+dj-database-url>=2.0
+psycopg2-binary>=2.9
 hypothesis==6.135.26
 hypothesis[django]==6.135.26

@@ -7,11 +7,14 @@ dependencies = [
     "Django>=5.1,<5.2",
     "python-decouple>=3.8",
     "Pillow>=10.0",
+    "whitenoise>=6.0",
+    "dj-database-url>=2.0",
+    "psycopg2-binary>=2.9",
 ]
 
 [project.optional-dependencies]
 pdf = ["weasyprint>=60.0"]
-dev = ["black", "ruff"]
+dev = ["black", "ruff", "hypothesis==6.135.26", "hypothesis[django]==6.135.26"]
 
 [build-system]
 requires = ["hatchling"]
@@ -21,4 +24,4 @@ build-backend = "hatchling.build"
 packages = ["config", "accounts", "students", "academics", "grades", "reports", "form137", "dashboard", "templates"]
 
 [tool.uv]
-dev-dependencies = ["black", "ruff"]
+dev-dependencies = ["black", "ruff", "hypothesis==6.135.26", "hypothesis[django]==6.135.26"]
