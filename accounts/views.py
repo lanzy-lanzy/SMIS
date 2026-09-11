@@ -61,6 +61,14 @@ def user_list(request):
 
     users = User.objects.all()
 
+    stats = {
+        'total': users.count(),
+        'active': users.filter(is_active=True).count(),
+        'inactive': users.filter(is_active=False).count(),
+        'admins': users.filter(role='admin', is_active=True).count(),
+        'teachers': users.filter(role='teacher', is_active=True).count(),
+    }
+
     if query:
         users = users.filter(
             Q(username__icontains=query)
@@ -72,7 +80,7 @@ def user_list(request):
     if role_filter:
         users = users.filter(role=role_filter)
 
-    paginator = Paginator(users, 20)
+    paginator = Paginator(users, 12)
     page = request.GET.get("page", 1)
     users = paginator.get_page(page)
 
@@ -87,6 +95,7 @@ def user_list(request):
             "query": query,
             "role_filter": role_filter,
             "roles": User.ROLE_CHOICES,
+            "stats": stats,
         },
     )
 
@@ -132,26 +141,55 @@ def user_edit(request, pk):
     if request.method == "POST":
         form = UserEditForm(request.POST, instance=user_obj)
         if form.is_valid():
+            if user_obj.pk == request.user.pk:
+                if form.cleaned_data.get("role") != request.user.role:
+                    messages.error(request, "You cannot change your own role.")
+                    if request.headers.get("HX-Request"):
+                        return HttpResponse(
+                            "<script>closeModal();</script>",
+                            headers={"HX-Trigger": "closeModal"},
+                        )
+                    return redirect("accounts:user_list")
+                if not form.cleaned_data.get("is_active"):
+                    messages.error(request, "You cannot deactivate your own account.")
+                    if request.headers.get("HX-Request"):
+                        return HttpResponse(
+                            "<script>closeModal();</script>",
+                            headers={"HX-Trigger": "closeModal"},
+                        )
+                    return redirect("accounts:user_list")
             if (
-                user_obj.pk == request.user.pk
-                and form.cleaned_data.get("role") != request.user.role
+                user_obj.is_admin
+                and form.cleaned_data.get("role") != "admin"
+                and User.objects.filter(role="admin", is_active=True).count() <= 1
             ):
-                messages.error(request, "You cannot change your own role.")
+                messages.error(request, "Cannot demote the last admin user.")
                 if request.headers.get("HX-Request"):
                     return HttpResponse(
                         "<script>closeModal();</script>",
                         headers={"HX-Trigger": "closeModal"},
                     )
                 return redirect("accounts:user_list")
+            password_changed = bool(form.cleaned_data.get("new_password1"))
             form.save()
             AuditLog.objects.create(
                 user=request.user,
                 action="update",
                 model_name="User",
                 object_id=str(user_obj.id),
-                description=f"Updated user {user_obj.username}",
+                description=(
+                    f"Reset password for user {user_obj.username}"
+                    if password_changed
+                    else f"Updated user {user_obj.username}"
+                ),
             )
-            messages.success(request, f"User {user_obj.username} updated successfully.")
+            if password_changed:
+                messages.success(
+                    request,
+                    f"User {user_obj.username} updated and password has been reset.",
+                )
+            else:
+                messages.success(request, f"User {user_obj.username} updated successfully.")
             if request.headers.get("HX-Request"):
                 return HttpResponse(
                     '<script>closeModal(); htmx.trigger("#user-table", "refresh");</script>',

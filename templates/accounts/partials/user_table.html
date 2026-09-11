@@ -1,33 +1,101 @@
 <table class="w-full text-sm">
-    <thead class="bg-gray-50 dark:bg-slate-700">
+    <thead class="bg-gray-50 dark:bg-slate-700/60">
         <tr>
-            <th class="px-4 py-3 text-left font-medium">Username</th>
-            <th class="px-4 py-3 text-left font-medium">Name</th>
-            <th class="px-4 py-3 text-left font-medium">Email</th>
-            <th class="px-4 py-3 text-left font-medium">Role</th>
-            <th class="px-4 py-3 text-left font-medium">Status</th>
-            <th class="px-4 py-3 text-right font-medium">Actions</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">User</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">Contact</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">Role</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">Status</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">Last login</th>
+            <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">Actions</th>
         </tr>
     </thead>
     <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
         {% for u in users %}
-        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
-            <td class="px-4 py-3">{{ u.username }}</td>
-            <td class="px-4 py-3">{{ u.get_full_name }}</td>
-            <td class="px-4 py-3">{{ u.email }}</td>
-            <td class="px-4 py-3">{{ u.get_role_display }}</td>
+        <tr class="transition hover:bg-gray-50 dark:hover:bg-slate-700/50">
             <td class="px-4 py-3">
-                <span class="px-2 py-1 text-xs rounded-full {% if u.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
-                    {% if u.is_active %}Active{% else %}Inactive{% endif %}
-                </span>
+                <div class="flex items-center gap-3">
+                    {% if u.role == 'admin' %}
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-red-700 dark:bg-red-950/60 dark:text-red-300">
+                    {% elif u.role == 'registrar' %}
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                    {% elif u.role == 'teacher' %}
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-100 text-xs font-bold text-green-700 dark:bg-green-950/60 dark:text-green-300">
+                    {% elif u.role == 'principal' %}
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+                    {% else %}
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600 dark:bg-slate-600 dark:text-slate-200">
+                    {% endif %}
+                        {% if u.first_name or u.last_name %}{{ u.first_name|first }}{{ u.last_name|first }}{% else %}{{ u.username|first|upper }}{% endif %}
+                    </span>
+                    <div class="min-w-0">
+                        <p class="truncate font-semibold text-slate-800 dark:text-slate-100">{{ u.get_full_name|default:u.username }}</p>
+                        <p class="truncate text-xs text-slate-500 dark:text-slate-400">@{{ u.username }}</p>
+                    </div>
+                </div>
             </td>
-            <td class="px-4 py-3 text-right">
-                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'accounts:user_edit' u.pk %}' } }))" class="text-blue-600 hover:underline mr-2">Edit</button>
-                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'accounts:user_delete' u.pk %}' } }))" class="text-red-600 hover:underline">Delete</button>
+            <td class="px-4 py-3">
+                <p class="truncate text-slate-600 dark:text-slate-300">{{ u.email|default:"—" }}</p>
+                {% if u.phone %}<p class="text-xs text-slate-500 dark:text-slate-400">{{ u.phone }}</p>{% endif %}
+            </td>
+            <td class="px-4 py-3">
+                {% if u.role == 'admin' %}
+                <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-950/60 dark:text-red-300">{{ u.get_role_display }}</span>
+                {% elif u.role == 'registrar' %}
+                <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">{{ u.get_role_display }}</span>
+                {% elif u.role == 'teacher' %}
+                <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700 dark:bg-green-950/60 dark:text-green-300">{{ u.get_role_display }}</span>
+                {% elif u.role == 'principal' %}
+                <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">{{ u.get_role_display }}</span>
+                {% else %}
+                <span class="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-600 dark:text-slate-200">{{ u.get_role_display }}</span>
+                {% endif %}
+            </td>
+            <td class="px-4 py-3">
+                {% if u.is_active %}
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800 dark:bg-green-950/60 dark:text-green-300">
+                    <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>Active
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600 dark:bg-slate-600 dark:text-slate-300">
+                    <span class="h-1.5 w-1.5 rounded-full bg-gray-400"></span>Inactive
+                </span>
+                {% endif %}
+            </td>
+            <td class="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
+                {% if u.last_login %}{{ u.last_login|date:"M d, Y h:i A" }}{% else %}Never{% endif %}
+            </td>
+            <td class="px-4 py-3">
+                <div class="flex justify-end gap-1.5">
+                    <button type="button" title="Edit user" aria-label="Edit {{ u.username }}" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'accounts:user_edit' u.pk %}' } }))" class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/40">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 20h4L19.5 8.5a2.1 2.1 0 00-3-3L5 17v3zm2-2v-1.5L16.5 6l1.5 1.5L7.5 18H6z"/></svg>
+                    </button>
+                    <button type="button" title="Delete user" aria-label="Delete {{ u.username }}" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'accounts:user_delete' u.pk %}' } }))" class="rounded-lg p-2 text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7h16m-9-3h2m-8 3l1 13h12l1-13m-5 4v6m-4-6v6"/></svg>
+                    </button>
+                </div>
             </td>
         </tr>
         {% empty %}
-        <tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No users found</td></tr>
+        <tr><td colspan="6" class="px-4 py-10 text-center">
+            <p class="font-semibold text-slate-500 dark:text-slate-400">No users found</p>
+            <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Try adjusting your search or role filter.</p>
+        </td></tr>
         {% endfor %}
     </tbody>
 </table>
+{% if users.has_other_pages %}
+<div class="flex flex-col items-center justify-between gap-3 border-t border-gray-100 px-4 py-3 dark:border-slate-700 sm:flex-row">
+    <p class="text-xs text-slate-500 dark:text-slate-400">
+        Showing {{ users.start_index }}–{{ users.end_index }} of {{ users.paginator.count }} users
+    </p>
+    <div class="flex items-center gap-1">
+        {% if users.has_previous %}
+        <a href="?{% if query %}q={{ query|urlencode }}&amp;{% endif %}{% if role_filter %}role={{ role_filter }}&amp;{% endif %}page={{ users.previous_page_number }}" class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-gray-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">&laquo; Prev</a>
+        {% endif %}
+        <span class="px-2 text-xs font-semibold text-slate-600 dark:text-slate-300">Page {{ users.number }} of {{ users.paginator.num_pages }}</span>
+        {% if users.has_next %}
+        <a href="?{% if query %}q={{ query|urlencode }}&amp;{% endif %}{% if role_filter %}role={{ role_filter }}&amp;{% endif %}page={{ users.next_page_number }}" class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-gray-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Next &raquo;</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
