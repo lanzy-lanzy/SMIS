@@ -297,6 +297,12 @@ wheels = [
 ]
 
 [[package]]
+name = "django-shortcuts"
+version = "1.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/26/91/b4b7785279269559028e62831ca98bc45a5086236194314b43e39c227917/django-shortcuts-1.6.tar.gz", hash = "sha256:eac6f9e2f4acdba3856046405c21382d36b66414bcd14c390f6027ac15f28ca8", size = 3105, upload-time = "2018-07-11T07:39:10.339Z" }
+
+[[package]]
 name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
@@ -706,6 +712,7 @@ source = { editable = "." }
 dependencies = [
     { name = "dj-database-url" },
     { name = "django" },
+    { name = "django-shortcuts" },
     { name = "pillow" },
     { name = "psycopg2-binary" },
     { name = "python-decouple" },
@@ -713,11 +720,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-dev = [
-    { name = "black" },
-    { name = "hypothesis", extra = ["django"] },
-    { name = "ruff" },
-]
 pdf = [
     { name = "weasyprint" },
 ]
@@ -731,19 +733,16 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'" },
     { name = "dj-database-url", specifier = ">=2.0" },
     { name = "django", specifier = ">=5.1,<5.2" },
-    { name = "hypothesis", marker = "extra == 'dev'", specifier = "==6.135.26" },
-    { name = "hypothesis", extras = ["django"], marker = "extra == 'dev'", specifier = "==6.135.26" },
+    { name = "django-shortcuts", specifier = ">=1.6" },
     { name = "pillow", specifier = ">=10.0" },
     { name = "psycopg2-binary", specifier = ">=2.9" },
     { name = "python-decouple", specifier = ">=3.8" },
-    { name = "ruff", marker = "extra == 'dev'" },
     { name = "weasyprint", marker = "extra == 'pdf'", specifier = ">=60.0" },
     { name = "whitenoise", specifier = ">=6.0" },
 ]
-provides-extras = ["pdf", "dev"]
+provides-extras = ["pdf"]
 
 [package.metadata.requires-dev]
 dev = [
