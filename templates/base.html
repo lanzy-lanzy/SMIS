@@ -1,4 +1,5 @@
 {% load static %}
+{% load static_version %}
 <!DOCTYPE html>
 <html lang="en" class="h-full">
 <head>
@@ -12,10 +13,10 @@
             document.documentElement.classList.toggle('dark', dark);
         })();
     </script>
-    <link rel="stylesheet" href="{% static 'css/output.css' %}">
-    <script src="{% static 'js/htmx.min.js' %}"></script>
-    <script defer src="{% static 'js/alpine.min.js' %}"></script>
-    <script src="{% static 'js/app.js' %}"></script>
+    <link rel="stylesheet" href="{% versioned_static 'css/output.css' %}">
+    <script src="{% versioned_static 'js/htmx.min.js' %}"></script>
+    <script defer src="{% versioned_static 'js/alpine.min.js' %}"></script>
+    <script src="{% versioned_static 'js/app.js' %}"></script>
     {% block extra_head %}{% endblock %}
     <style>
         [x-cloak] { display: none !important; }

@@ -1,4 +1,5 @@
 {% load static %}
+{% load static_version %}
 <!DOCTYPE html>
 <html lang="en" class="h-full">
 <head>
@@ -7,7 +8,7 @@
     <meta name="theme-color" content="#0b1f33">
     <meta name="description" content="Secure sign in to the School Management Information System.">
     <title>Sign in | SMIS</title>
-    <link rel="stylesheet" href="{% static 'css/output.css' %}">
+    <link rel="stylesheet" href="{% versioned_static 'css/output.css' %}">
 </head>
 <body class="min-h-full bg-slate-50 text-slate-800 antialiased">
     <main class="grid min-h-screen lg:grid-cols-[.9fr_1.1fr]">

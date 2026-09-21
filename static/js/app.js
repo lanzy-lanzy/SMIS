@@ -44,14 +44,48 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
     };
     
-    // Auto-dismiss Django messages as toasts
-    const messages = document.querySelectorAll('[data-toast]');
-    messages.forEach(function(msg) {
+    // Auto-dismiss Django messages as toasts (initial page load).
+    document.querySelectorAll('[data-toast]').forEach(function (msg) {
+        if (msg.dataset.toastShown === '1') return;
+        msg.dataset.toastShown = '1';
         window.showToast(msg.textContent, msg.dataset.toast);
     });
 
+    // Bridge HTMX swaps with Alpine.js and the toast system.
+    //
+    // When HTMX injects a partial (e.g. a modal form, a filtered table) any
+    // Alpine component inside that fragment must be re-initialised -- Alpine's
+    // own MutationObserver occasionally misses nodes replaced via `outerHTML`
+    // swap or inserted with a click-outside/`x-cloak` still visible.
+    // `Alpine.initializeTree` is idempotent, safe to call on already-hydrated
+    // trees. Django [data-toast] markers injected via HTMX also need a
+    // re-scan because the top-level loop above only runs once at boot.
+    document.body.addEventListener('htmx:afterSwap', function (evt) {
+        const target = evt.detail && evt.detail.target;
+        if (!target || !target.querySelectorAll) return;
+
+        if (window.Alpine) {
+            // Alpine v3 exposes `initTree` (some builds alias it as
+            // `initializeTree`). Both are idempotent on already-hydrated nodes.
+            const initFn = window.Alpine.initTree || window.Alpine.initializeTree;
+            if (typeof initFn === 'function') {
+                try { initFn.call(window.Alpine, target); } catch (_) { /* no-op */ }
+            }
+        }
+
+        if (target.matches && target.matches('[data-toast]') && target.dataset.toastShown !== '1') {
+            target.dataset.toastShown = '1';
+            window.showToast(target.textContent, target.dataset.toast);
+        }
+        target.querySelectorAll('[data-toast]').forEach(function (msg) {
+            if (msg.dataset.toastShown === '1') return;
+            msg.dataset.toastShown = '1';
+            window.showToast(msg.textContent, msg.dataset.toast);
+        });
+    });
+
     // Close modal on successful HTMX response
-    document.body.addEventListener('htmx:beforeRequest', function(e) {
+    document.body.addEventListener('htmx:beforeRequest', function (e) {
         const target = e.detail.target;
         if (target && target.id === 'modal-content') {
             // Show loading state
