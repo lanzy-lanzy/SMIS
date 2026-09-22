@@ -7,7 +7,6 @@ class User(AbstractUser):
         ('admin', 'System Administrator'),
         ('registrar', 'Registrar'),
         ('teacher', 'Teacher'),
-        ('principal', 'Principal/Academic Head'),
         ('student', 'Student/Parent'),
     )
     
@@ -37,10 +36,6 @@ class User(AbstractUser):
         return self.role == 'teacher'
 
     @property
-    def is_principal(self):
-        return self.role == 'principal'
-
-    @property
     def is_student_user(self):
         return self.role == 'student'
 
@@ -58,6 +53,7 @@ class AuditLog(models.Model):
         ('grade_validate', 'Grade Validated'),
         ('grade_return', 'Grade Returned'),
         ('form137_generate', 'Form 137 Generated'),
+        ('form137_print', 'Form 137 Printed'),
     )
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)

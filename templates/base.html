@@ -134,7 +134,7 @@
                         <span>Dashboard</span>
                     </a>
 
-                    {% if user.is_admin or user.is_teacher or user.is_registrar or user.is_principal %}
+                    {% if user.is_admin or user.is_teacher or user.is_registrar %}
                     <a href="{% url 'students:student_list' %}" class="app-nav-link {% if request.resolver_match.app_name == 'students' %}is-active{% endif %}" @click="if (window.innerWidth < 1024) sidebarOpen = false">
                         <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 20v-1.5a4.5 4.5 0 00-4.5-4.5h-3A4.5 4.5 0 004 18.5V20m6-10a3 3 0 100-6 3 3 0 000 6zm7-1a2.5 2.5 0 10-2.4-3.2M17 14a4 4 0 013 3.5V19"/></svg>
                         <span>Students</span>
@@ -148,21 +148,25 @@
                     </a>
                     {% endif %}
 
-                    {% if user.is_admin or user.is_teacher or user.is_registrar or user.is_principal %}
-                    <a href="{% url 'grades:grade_list' %}" class="app-nav-link {% if request.resolver_match.app_name == 'grades' %}is-active{% endif %}" @click="if (window.innerWidth < 1024) sidebarOpen = false">
+                    {% if user.is_admin or user.is_teacher or user.is_registrar %}
+                    <a href="{% url 'grades:grade_list' %}" class="app-nav-link {% if request.resolver_match.app_name == 'grades' and request.resolver_match.url_name != 'submission_list' and request.resolver_match.url_name != 'submission_validate' %}is-active{% endif %}" @click="if (window.innerWidth < 1024) sidebarOpen = false">
                         <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 4h10a2 2 0 012 2v14H5V6a2 2 0 012-2zm2-1v3h6V3M8 11h8m-8 4h5"/></svg>
                         <span>Grades</span>
                     </a>
+                    <a href="{% url 'grades:submission_list' %}" class="app-nav-link {% if request.resolver_match.url_name == 'submission_list' or request.resolver_match.url_name == 'submission_validate' %}is-active{% endif %}" @click="if (window.innerWidth < 1024) sidebarOpen = false">
+                        <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                        <span>Submission Review</span>
+                    </a>
                     {% endif %}
 
-                    {% if user.is_admin or user.is_registrar or user.is_principal %}
+                    {% if user.is_admin or user.is_registrar %}
                     <a href="{% url 'form137:form137_list' %}" class="app-nav-link {% if request.resolver_match.app_name == 'form137' %}is-active{% endif %}" @click="if (window.innerWidth < 1024) sidebarOpen = false">
                         <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 3h7l5 5v13H7V3zm7 0v5h5M10 13h6m-6 4h6"/></svg>
                         <span>Form 137</span>
                     </a>
                     {% endif %}
 
-                    {% if user.is_admin or user.is_principal %}
+                    {% if user.is_admin or user.is_registrar %}
                     <a href="{% url 'reports:index' %}" class="app-nav-link {% if request.resolver_match.app_name == 'reports' %}is-active{% endif %}" @click="if (window.innerWidth < 1024) sidebarOpen = false">
                         <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 20V10h3v10H5zm6 0V4h3v16h-3zm6 0v-7h3v7h-3z"/></svg>
                         <span>Reports</span>

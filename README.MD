@@ -18,7 +18,7 @@ Web-Based School Management System with Automated Grade Management and Form 137 
 
 ## Features
 
-- Role-based access control (Admin, Registrar, Teacher, Principal, Student)
+- Role-based access control (Admin, Registrar, Teacher, Student) — see [docs/registrar-role.md](docs/registrar-role.md) for the Registrar's end-to-end workflow (student registry, grade validation, Form 137 issuance, reports)
 - Student information management
 - Grade encoding, submission, and validation workflow
 - Automatic Form 137 generation with PDF export
@@ -122,7 +122,6 @@ Visit: http://127.0.0.1:8000
 |-----------|-----------|-------------|
 | Admin     | admin     | admin123    |
 | Registrar | registrar | registrar123|
-| Principal | principal | principal123|
 | Teacher   | teacher1  | teacher123  |
 
 ---
@@ -136,7 +135,7 @@ Visit: http://127.0.0.1:8000
 5. Registrar reviews and validates/returns grades
 6. Validated grades are locked
 7. Registrar generates Form 137 from validated grades
-8. Principal views reports and analytics
+8. Registrar/Admin views reports and analytics
 
 ---
 

@@ -1,0 +1,4 @@
+# file: C:\Users\dttsi\2026\school\smis\accounts\views.py
+# hypothesis_version: 6.135.26
+
+['Create User', 'Edit User', 'HX-Request', 'HX-Trigger', 'POST', 'REMOTE_ADDR', 'User', 'accounts/login.html', 'accounts:login', 'accounts:profile', 'accounts:user_list', 'action', 'action_filter', 'actions', 'active', 'admin', 'admins', 'closeModal', 'create', 'dashboard:index', 'delete', 'form', 'inactive', 'is_active', 'login', 'logout', 'logs', 'model', 'model_filter', 'new_password1', 'new_password2', 'old_password', 'page', 'q', 'query', 'role', 'role_filter', 'roles', 'stats', 'teacher', 'teachers', 'title', 'total', 'update', 'user', 'user_obj', 'users']

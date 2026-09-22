@@ -16,7 +16,7 @@ from accounts.decorators import (
 )
 
 
-@role_required('admin', 'registrar', 'teacher', 'principal')
+@role_required('admin', 'registrar', 'teacher')
 def grade_list(request):
     from django.db.models import Count, Q
     
@@ -316,7 +316,7 @@ def grade_save(request, assignment_pk):
     return redirect(f'{reverse("grades:grade_encode_select")}?assignment={assignment_pk}&period={grading_period.pk}')
 
 
-@role_required('admin', 'registrar', 'teacher', 'principal')
+@role_required('admin', 'registrar', 'teacher')
 def submission_list(request):
     current_sy = SchoolYear.objects.filter(is_current=True).first()
     
@@ -329,7 +329,7 @@ def submission_list(request):
         submissions = GradeSubmission.objects.filter(
             teacher=request.user, school_year=current_sy
         ).select_related('subject', 'section', 'grading_period')
-    elif request.user.is_registrar or request.user.is_admin or request.user.is_principal:
+    elif request.user.is_registrar or request.user.is_admin:
         submissions = GradeSubmission.objects.filter(
             school_year=current_sy
         ).select_related('teacher', 'subject', 'section', 'grading_period')

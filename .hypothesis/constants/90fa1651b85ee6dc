@@ -1,0 +1,4 @@
+# file: C:\Users\dttsi\2026\school\smis\accounts\models.py
+# hypothesis_version: 6.135.26
+
+[100, '-created_at', '-timestamp', 'Created', 'Deleted', 'Form 137 Generated', 'Form 137 Printed', 'Grade Encoded', 'Grade Returned', 'Grade Submitted', 'Grade Updated', 'Grade Validated', 'Login', 'Logout', 'Registrar', 'Student/Parent', 'System Administrator', 'Teacher', 'Updated', 'admin', 'create', 'delete', 'form137_generate', 'form137_print', 'grade_encode', 'grade_return', 'grade_submit', 'grade_update', 'grade_validate', 'login', 'logout', 'profiles/', 'registrar', 'student', 'teacher', 'update']

@@ -1,0 +1,4 @@
+# file: C:\Users\dttsi\2026\school\smis\accounts\migrations\0003_retire_principal_demo_account.py
+# hypothesis_version: 6.135.26
+
+['0002_alter_user_role', 'User', 'accounts', 'is_active', 'principal', 'registrar2', 'username']

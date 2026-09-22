@@ -39,7 +39,7 @@ def _filter_students_by_role(queryset, user):
     return queryset
 
 
-@role_required('admin', 'registrar', 'teacher', 'principal')
+@role_required('admin', 'registrar', 'teacher')
 def student_list(request):
     query = request.GET.get("q", "")
     grade_filter = request.GET.get("grade", "")
@@ -243,7 +243,7 @@ def student_delete(request, pk):
     return render(request, "students/student_confirm_delete.html", {"student": student})
 
 
-@role_required('admin', 'registrar', 'teacher', 'principal')
+@role_required('admin', 'registrar', 'teacher')
 def student_detail(request, pk):
     student = get_object_or_404(Student, pk=pk)
     

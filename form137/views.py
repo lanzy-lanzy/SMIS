@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.utils import timezone
@@ -25,7 +26,7 @@ def _form137_print_context(student, school_year, record):
     }
 
 
-@role_required('admin', 'registrar', 'principal')
+@role_required('admin', 'registrar')
 def form137_list(request):
     school_years = SchoolYear.objects.all()
     grade_levels = GradeLevel.objects.all()
@@ -77,7 +78,7 @@ def form137_list(request):
     })
 
 
-@role_required('admin', 'registrar', 'principal')
+@role_required('admin', 'registrar')
 def form137_generate(request, student_pk, sy_pk):
     student = get_object_or_404(Student, pk=student_pk)
     school_year = get_object_or_404(SchoolYear, pk=sy_pk)
@@ -113,7 +114,7 @@ def form137_generate(request, student_pk, sy_pk):
     ))
 
 
-@role_required('admin', 'registrar', 'principal')
+@role_required('admin', 'registrar')
 def form137_preview(request, record_pk):
     record = get_object_or_404(Form137Record, pk=record_pk)
 
@@ -124,7 +125,33 @@ def form137_preview(request, record_pk):
     ))
 
 
-@role_required('admin', 'registrar', 'principal')
+@role_required('admin', 'registrar')
+@require_POST
+def form137_mark_printed(request, record_pk):
+    """Mark a Form 137 record as printed; called from the print view and record list."""
+    record = get_object_or_404(Form137Record, pk=record_pk)
+
+    was_printed = record.is_printed
+    if not was_printed:
+        record.is_printed = True
+        record.save(update_fields=['is_printed'])
+        AuditLog.objects.create(
+            user=request.user,
+            action='form137_print',
+            model_name='Form137Record',
+            object_id=str(record.id),
+            description=f'Marked Form 137 as printed for {record.student.full_name} ({record.school_year})'
+        )
+
+    return JsonResponse({
+        'status': 'ok',
+        'record_id': record.id,
+        'is_printed': record.is_printed,
+        'newly_marked': not was_printed,
+    })
+
+
+@role_required('admin', 'registrar')
 def form137_bulk_generate(request):
     if request.method == 'POST':
         sy_pk = request.POST.get('school_year')
@@ -163,7 +190,7 @@ def form137_bulk_generate(request):
     })
 
 
-@role_required('admin', 'registrar', 'principal')
+@role_required('admin', 'registrar')
 def form137_export(request):
     import csv
     

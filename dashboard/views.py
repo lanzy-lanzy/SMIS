@@ -184,6 +184,7 @@ def _describe_audit_action(log):
         'grade_validate': 'validated grades',
         'grade_return': 'returned grades',
         'form137_generate': 'generated Form 137',
+        'form137_print': 'marked Form 137 as printed',
     }
     verb = action_map.get(log.action, log.action)
     if log.model_name and log.object_id:
@@ -198,7 +199,7 @@ def _audit_action_icon(action):
         return 'check'
     if action == 'grade_return':
         return 'refresh'
-    if action == 'form137_generate':
+    if action in ('form137_generate', 'form137_print'):
         return 'file'
     if action == 'login':
         return 'login'
@@ -216,7 +217,7 @@ def _audit_action_color(action):
         return 'primary'
     if action == 'grade_return':
         return 'danger'
-    if action == 'form137_generate':
+    if action in ('form137_generate', 'form137_print'):
         return 'purple'
     return 'gray'
 

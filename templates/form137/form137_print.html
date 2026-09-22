@@ -49,6 +49,22 @@
             background: #4b5563;
         }
 
+        .print-status {
+            border-radius: 999px;
+            font: 600 11px Arial, Helvetica, sans-serif;
+            padding: 5px 12px;
+        }
+
+        .print-status.is-printed {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .print-status.is-unprinted {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
         .page {
             background: #fff;
             box-shadow: 0 4px 22px rgba(0, 0, 0, 0.22);
@@ -296,6 +312,9 @@
 </head>
 <body>
     <div class="actions">
+        <span id="print-status" class="print-status {% if record.is_printed %}is-printed{% else %}is-unprinted{% endif %}">
+            {% if record.is_printed %}Printed{% else %}Not printed{% endif %}
+        </span>
         <a href="javascript:history.back()" class="btn btn-secondary">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -308,7 +327,45 @@
             </svg>
             Print / Export PDF
         </button>
+        <button type="button" id="mark-printed-btn" class="btn btn-secondary"{% if record.is_printed %} style="display:none"{% endif %}>
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            Mark as Printed
+        </button>
     </div>
+
+    <script>
+        (function () {
+            const markUrl = "{% url 'form137:form137_mark_printed' record.pk %}";
+            const csrfToken = "{{ csrf_token }}";
+            let isPrinted = {% if record.is_printed %}true{% else %}false{% endif %};
+            const statusEl = document.getElementById('print-status');
+            const markBtn = document.getElementById('mark-printed-btn');
+
+            function renderStatus() {
+                statusEl.textContent = isPrinted ? 'Printed' : 'Not printed';
+                statusEl.className = 'print-status ' + (isPrinted ? 'is-printed' : 'is-unprinted');
+                markBtn.style.display = isPrinted ? 'none' : '';
+            }
+
+            function markPrinted() {
+                if (isPrinted) return;
+                isPrinted = true;
+                renderStatus();
+                fetch(markUrl, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken },
+                    keepalive: true
+                });
+            }
+
+            // Auto-close the issuance loop: any actual print (dialog or Ctrl+P)
+            // marks the record, plus a manual fallback button.
+            window.addEventListener('beforeprint', markPrinted);
+            markBtn.addEventListener('click', markPrinted);
+        })();
+    </script>
 
     <main class="page">
         <div class="page-topline">

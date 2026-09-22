@@ -1,0 +1,4 @@
+# file: C:\Users\dttsi\2026\school\smis\config\settings.py
+# hypothesis_version: 6.135.26
+
+[600, '*', ',', '.', '.vercel.app', '/media/', '/static/', '5432', 'ALLOWED_HOSTS', 'APP_DIRS', 'Asia/Manila', 'BACKEND', 'CONN_HEALTH_CHECKS', 'CONN_MAX_AGE', 'CSRF_TRUSTED_ORIGINS', 'DATABASE_URL', 'DEBUG', 'DIRS', 'ENGINE', 'HOST', 'NAME', 'OPTIONS', 'PASSWORD', 'PORT', 'POSTGRES_DB', 'POSTGRES_HOST', 'POSTGRES_PASSWORD', 'POSTGRES_PORT', 'POSTGRES_USER', 'SECRET_KEY', 'SECURE_SSL_REDIRECT', 'USER', 'academics', 'accounts', 'accounts.User', 'accounts:login', 'config.urls', 'context_processors', 'dashboard', 'dashboard:index', 'db.sqlite3', 'default', 'django.contrib.admin', 'django.contrib.auth', 'en-us', 'form137', 'grades', 'https', 'media', 'postgres', 'reports', 'require', 'sslmode', 'static', 'staticfiles', 'students', 'templates', 'vercel.app']

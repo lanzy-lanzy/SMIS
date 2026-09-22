@@ -36,8 +36,3 @@ def registrar_or_admin_required(view_func):
 def teacher_or_admin_required(view_func):
     """Shortcut for teacher/admin views."""
     return role_required('teacher', 'admin')(view_func)
-
-
-def principal_or_admin_required(view_func):
-    """Shortcut for principal/admin views."""
-    return role_required('principal', 'admin')(view_func)

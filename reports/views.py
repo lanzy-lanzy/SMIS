@@ -5,15 +5,15 @@ from students.models import Student
 from grades.models import Grade, GradeSubmission
 from academics.models import SchoolYear, GradeLevel, Section, Subject
 from accounts.models import User
-from accounts.decorators import principal_or_admin_required
+from accounts.decorators import registrar_or_admin_required
 
 
-@principal_or_admin_required
+@registrar_or_admin_required
 def reports_index(request):
     return render(request, 'reports/index.html')
 
 
-@principal_or_admin_required
+@registrar_or_admin_required
 def grade_trends(request):
     sy_filter = request.GET.get('sy', '')
     gl_filter = request.GET.get('gl', '')
@@ -48,7 +48,7 @@ def grade_trends(request):
     })
 
 
-@principal_or_admin_required
+@registrar_or_admin_required
 def section_performance(request):
     sy_filter = request.GET.get('sy', '')
     
@@ -77,7 +77,7 @@ def section_performance(request):
     })
 
 
-@principal_or_admin_required
+@registrar_or_admin_required
 def subject_performance(request):
     subjects = Subject.objects.all()
     
@@ -97,7 +97,7 @@ def subject_performance(request):
     })
 
 
-@principal_or_admin_required
+@registrar_or_admin_required
 def at_risk_students(request):
     sy_filter = request.GET.get('sy', '')
     gl_filter = request.GET.get('gl', '')
@@ -143,7 +143,7 @@ def at_risk_students(request):
     })
 
 
-@principal_or_admin_required
+@registrar_or_admin_required
 def student_history(request, student_pk):
     from students.models import Student
     student = Student.objects.get(pk=student_pk)

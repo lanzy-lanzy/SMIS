@@ -1,0 +1,4 @@
+# file: C:\Users\dttsi\2026\school\smis\grades\migrations\0003_migrate_locked_to_validated.py
+# hypothesis_version: 6.135.26
+
+['Grade', 'grades', 'locked', 'validated']

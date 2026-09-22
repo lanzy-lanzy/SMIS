@@ -105,20 +105,6 @@ class Command(BaseCommand):
         registrar.save()
         users['registrar'] = registrar
 
-        # Principal
-        principal, _ = User.objects.get_or_create(
-            username='principal',
-            defaults={
-                'first_name': 'Roberto',
-                'last_name': 'Cruz',
-                'email': 'principal@smis.edu',
-                'role': 'principal',
-            }
-        )
-        principal.set_password('principal123')
-        principal.save()
-        users['principal'] = principal
-
         # Teachers
         teacher_data = [
             ('reyes', 'Ana', 'Reyes'),
