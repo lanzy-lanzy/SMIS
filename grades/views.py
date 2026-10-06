@@ -5,7 +5,10 @@ from django.core.paginator import Paginator
 from django.views.decorators.cache import never_cache
 from django.db.models import Q, Avg, Count, Subquery, OuterRef, Case, When, Value, IntegerField, DecimalField
 from django.utils import timezone
-from .models import Grade, GradeSubmission, GradeValidation, weighted_quarter_grade
+from .models import (
+    Grade, GradeSubmission, GradeValidation, weighted_quarter_grade,
+    WW_WEIGHT, PT_WEIGHT, AS_WEIGHT,
+)
 from academics.models import TeacherAssignment, GradingPeriod, SchoolYear, Section, Subject
 from students.models import Student
 from accounts.models import AuditLog
@@ -129,6 +132,131 @@ def grade_list(request):
 
 
 IMMUTABLE_GRADE_STATUSES = ('validated', 'locked')
+
+
+def _parse_weights(post_data, prefix=''):
+    """Read the three category weight inputs (percent) from POST data.
+
+    Returns ``(weights, error)``. Missing inputs fall back to the defaults
+    (WW 20 / PT 50 / QA 30). Weights must be non-negative and total 100 so the
+    weighted scores aggregate into a proper 0-100 quarter grade.
+    """
+    try:
+        ww = float(post_data.get(f'{prefix}written_weight', '') or WW_WEIGHT)
+        pt = float(post_data.get(f'{prefix}performance_weight', '') or PT_WEIGHT)
+        as_ = float(post_data.get(f'{prefix}assessment_weight', '') or AS_WEIGHT)
+    except (ValueError, TypeError):
+        return None, 'Category weights must be valid numbers.'
+    if ww < 0 or pt < 0 or as_ < 0:
+        return None, 'Category weights cannot be negative.'
+    if round(ww + pt + as_, 2) != 100:
+        return None, (
+            f'Category weights must total 100% (got {ww:g}% + {pt:g}% + {as_:g}% = '
+            f'{ww + pt + as_:g}%).'
+        )
+    return {'ww': ww, 'pt': pt, 'as': as_}, None
+
+
+def _parse_maxes(post_data, prefix='', fallback=None):
+    """Read the class-wide per-item 'highest possible score' from POST data.
+
+    Each item column has its own maximum (the same test for every learner); the
+    category maximum that drives the percentage score is the SUM of its items'
+    maxima. Returns ``(maxes, error)`` where ``maxes`` carries the per-item lists
+    (``ww_items`` etc., ``None`` where nothing was entered) and the summed totals
+    (``ww`` etc.). A category with no item values posted falls back to ``fallback``
+    (the currently stored maximum) or 100, so a save that omits a category never
+    silently resets it.
+    """
+    fallback = fallback or {}
+
+    def items(cat, n):
+        out, any_entered = [], False
+        for i in range(1, n + 1):
+            raw = post_data.get(f'{prefix}{cat}_highest_{i}', '')
+            if str(raw).strip():
+                any_entered = True
+            try:
+                out.append(float(raw) if str(raw).strip() else 0)
+            except (ValueError, TypeError):
+                return None, False
+        if any(v < 0 for v in out):
+            return 'negative', any_entered
+        return out, any_entered
+
+    ww_items, ww_any = items('written', 5)
+    pt_items, pt_any = items('performance', 3)
+    as_items, as_any = items('assessment', 3)
+    for vals in (ww_items, pt_items, as_items):
+        if vals == 'negative':
+            return None, 'Highest possible scores must be greater than 0.'
+        if vals is None:
+            return None, 'Highest possible scores must be valid numbers.'
+
+    def total(vals, any_entered, key):
+        s = sum(vals)
+        if not any_entered or s <= 0:
+            return float(fallback.get(key) or 100)
+        return s
+
+    return {
+        'ww': total(ww_items, ww_any, 'ww'),
+        'pt': total(pt_items, pt_any, 'pt'),
+        'qa': total(as_items, as_any, 'qa'),
+        'ww_items': ww_items if ww_any else [None] * 5,
+        'pt_items': pt_items if pt_any else [None] * 3,
+        'as_items': as_items if as_any else [None] * 3,
+    }, None
+
+
+def _weights_from_grades(grades):
+    """Derive the class weight config for display from the first encoded grade.
+
+    Weights are stored per Grade row but configured per class, so any row's
+    values represent the class setup. Falls back to the model defaults.
+    """
+    first = next((g for g in grades if g is not None), None)
+    if first is None:
+        return {
+            'ww': float(WW_WEIGHT), 'pt': float(PT_WEIGHT), 'as': float(AS_WEIGHT),
+            'total': 100.0,
+        }
+    ww = float(first.written_work_weight)
+    pt = float(first.performance_task_weight)
+    as_ = float(first.assessment_weight)
+    return {'ww': ww, 'pt': pt, 'as': as_, 'total': round(ww + pt + as_, 2)}
+
+
+def _maxes_from_grades(grades):
+    """Derive the class-wide per-item 'highest possible score' for display.
+
+    Like the weights, the maxima are a single class setting (the same test for
+    every learner), so they are read from the first encoded grade. Returns the
+    per-item lists (``ww_items`` etc.) plus the summed category totals (``ww``
+    etc.). Falls back to 100 (with empty item lists) when nothing is encoded yet.
+    """
+    empty = {'ww': 100.0, 'pt': 100.0, 'qa': 100.0,
+             'ww_items': [None] * 5, 'pt_items': [None] * 3, 'as_items': [None] * 3}
+    first = next((g for g in grades if g is not None), None)
+    if first is None:
+        return empty
+
+    def pick(names):
+        return [float(getattr(first, n)) if getattr(first, n) is not None else None
+                for n in names]
+
+    return {
+        'ww': float(first.written_work_highest or 100),
+        'pt': float(first.performance_task_highest or 100),
+        'qa': float(first.assessment_highest or 100),
+        'ww_items': pick(['written_work_1_highest', 'written_work_2_highest',
+                          'written_work_3_highest', 'written_work_4_highest',
+                          'written_work_5_highest']),
+        'pt_items': pick(['performance_task_1_highest', 'performance_task_2_highest',
+                          'performance_task_3_highest']),
+        'as_items': pick(['assessment_1_highest', 'assessment_2_highest',
+                          'assessment_3_highest']),
+    }
 
 
 def _can_submit(submission):
@@ -311,6 +439,8 @@ def grade_encode(request, assignment_pk):
         'current_period': grading_period,
         'grade_data': grade_data,
         'students': students,
+        'weights': _weights_from_grades(item['grade'] for item in grade_data),
+        'maxes': _maxes_from_grades(item['grade'] for item in grade_data),
     }
     context.update(_sequence_context(assignment, all_periods, grading_period))
 
@@ -383,6 +513,20 @@ def grade_save(request, assignment_pk):
 
     action = request.POST.get('action', 'draft')
 
+    weights, weight_error = _parse_weights(request.POST)
+    if weight_error:
+        messages.error(request, weight_error)
+        return redirect(f'{reverse("grades:grade_encode", args=[assignment.pk])}?period={grading_period.pk}')
+
+    existing_maxes = _maxes_from_grades(Grade.objects.filter(
+        subject=assignment.subject, section=assignment.section,
+        school_year=assignment.school_year, grading_period=grading_period,
+    ))
+    maxes, max_error = _parse_maxes(request.POST, fallback=existing_maxes)
+    if max_error:
+        messages.error(request, max_error)
+        return redirect(f'{reverse("grades:grade_encode", args=[assignment.pk])}?period={grading_period.pk}')
+
     students = Student.objects.filter(
         grade_level=assignment.section.grade_level,
         section=assignment.section,
@@ -394,12 +538,9 @@ def grade_save(request, assignment_pk):
 
     for student in students:
         prefix = f'student_{student.id}'
-        ww_items = [request.POST.get(f'{prefix}_written_{i}', '') for i in (1, 2, 3)]
+        ww_items = [request.POST.get(f'{prefix}_written_{i}', '') for i in (1, 2, 3, 4, 5)]
         pt_items = [request.POST.get(f'{prefix}_performance_{i}', '') for i in (1, 2, 3)]
         as_items = [request.POST.get(f'{prefix}_assessment_{i}', '') for i in (1, 2, 3)]
-        written_highest = request.POST.get(f'{prefix}_written_highest', '')
-        performance_highest = request.POST.get(f'{prefix}_performance_highest', '')
-        assessment_highest = request.POST.get(f'{prefix}_assessment_highest', '')
 
         if not any(v.strip() for v in ww_items + pt_items + as_items):
             continue
@@ -422,20 +563,18 @@ def grade_save(request, assignment_pk):
             ww_vals = [float(v) if v.strip() else 0 for v in ww_items]
             pt_vals = [float(v) if v.strip() else 0 for v in pt_items]
             as_vals = [float(v) if v.strip() else 0 for v in as_items]
-            written_highest = float(written_highest) if written_highest else 100
-            performance_highest = float(performance_highest) if performance_highest else 100
-            assessment_highest = float(assessment_highest) if assessment_highest else 100
         except (ValueError, TypeError):
             messages.error(request, f'Invalid grade values for {student.full_name}.')
             continue
 
+        # Class-wide maxima (configured once) apply to every learner.
+        written_highest = maxes['ww']
+        performance_highest = maxes['pt']
+        assessment_highest = maxes['qa']
+
         written = sum(ww_vals)
         performance = sum(pt_vals)
         assessment = sum(as_vals)
-
-        if written_highest <= 0 or performance_highest <= 0 or assessment_highest <= 0:
-            messages.error(request, f'Highest possible scores for {student.full_name} must be greater than 0.')
-            continue
 
         if any(v < 0 for v in ww_vals + pt_vals + as_vals):
             messages.error(request, f'Item scores for {student.full_name} cannot be negative.')
@@ -451,6 +590,7 @@ def grade_save(request, assignment_pk):
             written, written_highest,
             performance, performance_highest,
             assessment, assessment_highest,
+            weights['ww'], weights['pt'], weights['as'],
         )
         remarks = 'Passed' if quarter_grade >= 75 else ('Incomplete' if quarter_grade >= 60 else 'Failed')
         
@@ -464,14 +604,25 @@ def grade_save(request, assignment_pk):
             defaults={
                 'section': assignment.section,
                 'written_work_1': ww_vals[0], 'written_work_2': ww_vals[1], 'written_work_3': ww_vals[2],
+                'written_work_4': ww_vals[3], 'written_work_5': ww_vals[4],
+                'written_work_1_highest': maxes['ww_items'][0], 'written_work_2_highest': maxes['ww_items'][1],
+                'written_work_3_highest': maxes['ww_items'][2], 'written_work_4_highest': maxes['ww_items'][3],
+                'written_work_5_highest': maxes['ww_items'][4],
                 'written_work': written,
                 'written_work_highest': written_highest,
                 'performance_task_1': pt_vals[0], 'performance_task_2': pt_vals[1], 'performance_task_3': pt_vals[2],
+                'performance_task_1_highest': maxes['pt_items'][0], 'performance_task_2_highest': maxes['pt_items'][1],
+                'performance_task_3_highest': maxes['pt_items'][2],
                 'performance_task': performance,
                 'performance_task_highest': performance_highest,
                 'assessment_1': as_vals[0], 'assessment_2': as_vals[1], 'assessment_3': as_vals[2],
+                'assessment_1_highest': maxes['as_items'][0], 'assessment_2_highest': maxes['as_items'][1],
+                'assessment_3_highest': maxes['as_items'][2],
                 'assessment': assessment,
                 'assessment_highest': assessment_highest,
+                'written_work_weight': weights['ww'],
+                'performance_task_weight': weights['pt'],
+                'assessment_weight': weights['as'],
                 'quarter_grade': quarter_grade,
                 'final_grade': quarter_grade,
                 'remarks': remarks,
@@ -935,6 +1086,9 @@ def grade_encode_select(request):
                 'student': student,
                 'grade': existing_grades.get(student.id)
             })
+
+        weights = _weights_from_grades(item['grade'] for item in grade_data)
+        maxes = _maxes_from_grades(item['grade'] for item in grade_data)
         
         submission = GradeSubmission.objects.filter(
             teacher=request.user,
@@ -947,6 +1101,8 @@ def grade_encode_select(request):
         context.update({
             'students': students,
             'grade_data': grade_data,
+            'weights': weights,
+            'maxes': maxes,
             'submission': submission,
             'can_submit': _can_submit(submission),
         })
@@ -1028,6 +1184,9 @@ def grade_encode_all(request):
                 'student': student,
                 'grade': existing_grades.get(student.id)
             })
+
+        weights = _weights_from_grades(sg['grade'] for sg in student_grades)
+        maxes = _maxes_from_grades(sg['grade'] for sg in student_grades)
         
         submission = GradeSubmission.objects.filter(
             teacher=request.user,
@@ -1041,6 +1200,8 @@ def grade_encode_all(request):
         assignment_data.append({
             'assignment': assignment,
             'student_grades': student_grades,
+            'weights': weights,
+            'maxes': maxes,
             'submission': submission,
             'locked': current_state == 'locked',
             'blocked': current_state == 'blocked',
@@ -1142,17 +1303,34 @@ def grade_save_all(request):
             status='active'
         )
         
+        # Per-class weight config (each assignment's table posts its own weights).
+        weights, weight_error = _parse_weights(request.POST, prefix=f'assignment_{assignment.pk}_')
+        if weight_error:
+            messages.error(request, f'{assignment.subject} — {assignment.section}: {weight_error}')
+            continue
+
+        # Class-wide 'highest possible score' per category, posted once per
+        # assignment's table and applied to every learner (mirrors grade_save).
+        existing_maxes = _maxes_from_grades(Grade.objects.filter(
+            subject=assignment.subject, section=assignment.section,
+            school_year=assignment.school_year, grading_period=grading_period,
+        ))
+        maxes, max_error = _parse_maxes(request.POST, prefix=f'assignment_{assignment.pk}_', fallback=existing_maxes)
+        if max_error:
+            messages.error(request, f'{assignment.subject} — {assignment.section}: {max_error}')
+            continue
+        written_highest = maxes['ww']
+        performance_highest = maxes['pt']
+        assessment_highest = maxes['qa']
+
         student_ids_with_data = []
         has_data = False
         
         for student in students:
             prefix = f'assignment_{assignment.pk}_student_{student.id}'
-            ww_items = [request.POST.get(f'{prefix}_written_{i}', '') for i in (1, 2, 3)]
+            ww_items = [request.POST.get(f'{prefix}_written_{i}', '') for i in (1, 2, 3, 4, 5)]
             pt_items = [request.POST.get(f'{prefix}_performance_{i}', '') for i in (1, 2, 3)]
             as_items = [request.POST.get(f'{prefix}_assessment_{i}', '') for i in (1, 2, 3)]
-            written_highest = request.POST.get(f'{prefix}_written_highest', '')
-            performance_highest = request.POST.get(f'{prefix}_performance_highest', '')
-            assessment_highest = request.POST.get(f'{prefix}_assessment_highest', '')
             
             if not any(v.strip() for v in ww_items + pt_items + as_items):
                 continue
@@ -1174,9 +1352,6 @@ def grade_save_all(request):
                 ww_vals = [float(v) if v.strip() else 0 for v in ww_items]
                 pt_vals = [float(v) if v.strip() else 0 for v in pt_items]
                 as_vals = [float(v) if v.strip() else 0 for v in as_items]
-                written_highest = float(written_highest) if written_highest else 100
-                performance_highest = float(performance_highest) if performance_highest else 100
-                assessment_highest = float(assessment_highest) if assessment_highest else 100
             except (ValueError, TypeError):
                 messages.error(request, f'Invalid grade values for {student.full_name} in {assignment.subject}.')
                 continue
@@ -1184,10 +1359,6 @@ def grade_save_all(request):
             written = sum(ww_vals)
             performance = sum(pt_vals)
             assessment = sum(as_vals)
-            
-            if written_highest <= 0 or performance_highest <= 0 or assessment_highest <= 0:
-                messages.error(request, f'Highest possible scores for {student.full_name} in {assignment.subject} must be greater than 0.')
-                continue
             
             if any(v < 0 for v in ww_vals + pt_vals + as_vals):
                 messages.error(request, f'Item scores for {student.full_name} in {assignment.subject} cannot be negative.')
@@ -1204,6 +1375,7 @@ def grade_save_all(request):
                 written, written_highest,
                 performance, performance_highest,
                 assessment, assessment_highest,
+                weights['ww'], weights['pt'], weights['as'],
             )
             remarks = 'Passed' if quarter_grade >= 75 else ('Incomplete' if quarter_grade >= 60 else 'Failed')
             status = 'submitted' if action == 'submit' else 'draft'
@@ -1216,14 +1388,25 @@ def grade_save_all(request):
                 defaults={
                     'section': assignment.section,
                     'written_work_1': ww_vals[0], 'written_work_2': ww_vals[1], 'written_work_3': ww_vals[2],
+                    'written_work_4': ww_vals[3], 'written_work_5': ww_vals[4],
+                    'written_work_1_highest': maxes['ww_items'][0], 'written_work_2_highest': maxes['ww_items'][1],
+                    'written_work_3_highest': maxes['ww_items'][2], 'written_work_4_highest': maxes['ww_items'][3],
+                    'written_work_5_highest': maxes['ww_items'][4],
                     'written_work': written,
                     'written_work_highest': written_highest,
                     'performance_task_1': pt_vals[0], 'performance_task_2': pt_vals[1], 'performance_task_3': pt_vals[2],
+                    'performance_task_1_highest': maxes['pt_items'][0], 'performance_task_2_highest': maxes['pt_items'][1],
+                    'performance_task_3_highest': maxes['pt_items'][2],
                     'performance_task': performance,
                     'performance_task_highest': performance_highest,
                     'assessment_1': as_vals[0], 'assessment_2': as_vals[1], 'assessment_3': as_vals[2],
+                    'assessment_1_highest': maxes['as_items'][0], 'assessment_2_highest': maxes['as_items'][1],
+                    'assessment_3_highest': maxes['as_items'][2],
                     'assessment': assessment,
                     'assessment_highest': assessment_highest,
+                    'written_work_weight': weights['ww'],
+                    'performance_task_weight': weights['pt'],
+                    'assessment_weight': weights['as'],
                     'quarter_grade': quarter_grade,
                     'final_grade': quarter_grade,
                     'remarks': remarks,
@@ -1232,7 +1415,7 @@ def grade_save_all(request):
                     'updated_by': request.user,
                 }
             )
-            
+
             action_desc = 'grade_encode' if created else 'grade_update'
             AuditLog.objects.create(
                 user=request.user,

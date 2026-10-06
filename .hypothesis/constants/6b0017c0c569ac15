@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\smis\grades\migrations\0009_backfill_legacy_grade_weights.py
+# hypothesis_version: 6.135.26
+
+['Grade', 'grades']

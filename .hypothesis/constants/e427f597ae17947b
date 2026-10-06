@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\smis\grades\migrations\0011_grade_assessment_1_highest_and_more.py
+# hypothesis_version: 6.135.26
+
+['assessment_1_highest', 'assessment_2_highest', 'assessment_3_highest', 'grade', 'grades']

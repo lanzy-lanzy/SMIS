@@ -1,16 +1,39 @@
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import models
 from django.conf import settings
 
 
-# DepEd Home-School quarterly weights: Written Work 20%, Performance Tasks 50%,
-# Quarterly Assessment 30%. Each category's percentage score (PS) is the raw
-# total expressed as a % of its highest possible score; the weighted score (WS)
-# is PS x weight, and the quarterly grade is the sum of the three weighted scores.
-WW_WEIGHT = Decimal('0.20')
-PT_WEIGHT = Decimal('0.50')
-AS_WEIGHT = Decimal('0.30')
+# Default category weights (percent of 100): Written Work 20%, Performance Task
+# 50%, Quarterly Assessment 30% (matches the class-record / DepEd format). Each
+# category's percentage score (PS) is the raw total expressed as a % of its
+# highest possible score; the weighted score (WS) is PS x weight, and the
+# quarterly grade is the sum of the three weighted scores. Weights are
+# configurable per class by the teacher (stored on each Grade row); these
+# constants are only the defaults.
+WW_WEIGHT = Decimal('20')
+PT_WEIGHT = Decimal('50')
+AS_WEIGHT = Decimal('30')
+
+
+def grade_to_letter(value):
+    """DepEd Order 8/2015 grading scale, as the letter used on the class record.
+
+    The term grade is the initial (weighted) grade rounded to the nearest whole
+    number; the letter is that grade's descriptor band:
+      90-100 A (Outstanding) | 85-89 B (Very Satisfactory) |
+      80-84 C (Satisfactory) | 75-79 D (Fairly Satisfactory) | <75 E.
+    """
+    g = int(Decimal(value or 0).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+    if g >= 90:
+        return 'A'
+    if g >= 85:
+        return 'B'
+    if g >= 80:
+        return 'C'
+    if g >= 75:
+        return 'D'
+    return 'E'
 
 
 def category_ps(score, highest):
@@ -27,11 +50,20 @@ def category_ps(score, highest):
 
 
 def weighted_quarter_grade(written, written_max, performance, performance_max,
-                           assessment, assessment_max):
-    """Sum of the three categories' weighted scores (WW 20% + PT 50% + QA 30%)."""
-    return (category_ps(written, written_max) * WW_WEIGHT
-            + category_ps(performance, performance_max) * PT_WEIGHT
-            + category_ps(assessment, assessment_max) * AS_WEIGHT)
+                           assessment, assessment_max,
+                           ww_weight=WW_WEIGHT, pt_weight=PT_WEIGHT, as_weight=AS_WEIGHT):
+    """Sum of the three categories' weighted scores.
+
+    Weights are percentages that should total 100 (default WW 20 + PT 50 + QA 30);
+    they are normalised so the aggregate always reflects the student's share of
+    the configured weight total.
+    """
+    total_weight = Decimal(ww_weight or 0) + Decimal(pt_weight or 0) + Decimal(as_weight or 0)
+    if total_weight <= 0:
+        return Decimal('0')
+    return (category_ps(written, written_max) * Decimal(ww_weight)
+            + category_ps(performance, performance_max) * Decimal(pt_weight)
+            + category_ps(assessment, assessment_max) * Decimal(as_weight)) / total_weight
 
 
 class Grade(models.Model):
@@ -49,25 +81,45 @@ class Grade(models.Model):
     school_year = models.ForeignKey('academics.SchoolYear', on_delete=models.CASCADE, related_name='grades')
     section = models.ForeignKey('academics.Section', on_delete=models.CASCADE, related_name='grades')
     
-    # Written Work (20%): three component scores summed into written_work (total).
+    # Written Work (20%): five component scores summed into written_work (total).
+    # Each item also has a class-wide "highest possible score"; the category max
+    # (written_work_highest) is the sum of the item maxima and drives the PS.
     written_work_1 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     written_work_2 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     written_work_3 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_4 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_5 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_1_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_2_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_3_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_4_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_5_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     written_work = models.DecimalField(max_digits=6, decimal_places=2, default=0)
     written_work_highest = models.DecimalField(max_digits=6, decimal_places=2, default=100)
     # Performance Tasks (50%): three component scores summed into performance_task.
     performance_task_1 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     performance_task_2 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     performance_task_3 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    performance_task_1_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    performance_task_2_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    performance_task_3_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     performance_task = models.DecimalField(max_digits=6, decimal_places=2, default=0)
     performance_task_highest = models.DecimalField(max_digits=6, decimal_places=2, default=100)
     # Quarterly Assessment (30%): three component scores summed into assessment.
     assessment_1 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     assessment_2 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     assessment_3 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    assessment_1_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    assessment_2_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    assessment_3_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     assessment = models.DecimalField(max_digits=6, decimal_places=2, default=0)
     assessment_highest = models.DecimalField(max_digits=6, decimal_places=2, default=100)
     
+    # Configurable category weights (percent, teacher-set; default WW 20 / PT 20 / QA 50).
+    written_work_weight = models.DecimalField(max_digits=5, decimal_places=2, default=WW_WEIGHT)
+    performance_task_weight = models.DecimalField(max_digits=5, decimal_places=2, default=PT_WEIGHT)
+    assessment_weight = models.DecimalField(max_digits=5, decimal_places=2, default=AS_WEIGHT)
+
     quarter_grade = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     final_grade = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     remarks = models.CharField(max_length=20, blank=True)
@@ -101,21 +153,32 @@ class Grade(models.Model):
 
     @property
     def written_work_ws(self):
-        return self.written_work_ps * WW_WEIGHT
+        return self.written_work_ps * self.written_work_weight / 100
 
     @property
     def performance_task_ws(self):
-        return self.performance_task_ps * PT_WEIGHT
+        return self.performance_task_ps * self.performance_task_weight / 100
 
     @property
     def assessment_ws(self):
-        return self.assessment_ps * AS_WEIGHT
+        return self.assessment_ps * self.assessment_weight / 100
+
+    @property
+    def term_grade(self):
+        """The initial (weighted) quarter grade rounded to the nearest whole number."""
+        return int(self.quarter_grade.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+
+    @property
+    def description(self):
+        """DepEd letter descriptor for the term grade (A/B/C/D/E)."""
+        return grade_to_letter(self.quarter_grade)
 
     def compute_quarter_grade(self):
         self.quarter_grade = weighted_quarter_grade(
             self.written_work, self.written_work_highest,
             self.performance_task, self.performance_task_highest,
             self.assessment, self.assessment_highest,
+            self.written_work_weight, self.performance_task_weight, self.assessment_weight,
         )
         self.compute_remarks()
         self.save()

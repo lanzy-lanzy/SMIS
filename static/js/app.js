@@ -114,6 +114,69 @@ function modal() {
     };
 }
 
+// Alpine.js grade-entry row component: dynamic item-count (scored/highest) badge,
+// live percentage & weighted score per category, the live weighted quarter
+// (initial) grade, and the DepEd letter description. `init` is
+// { w: { v: [v1..v5] }, p: { v: [v1..v3] }, a: { v: [v1..v3] } } seeded from the
+// saved grade. The per-row numerator (raw total) is owned by the row; the
+// denominator ("highest possible score") and the category weights (ww/pt/qa and
+// wwMax/ptMax/qaMax, teacher-configured once on the <table> scope) resolve
+// through the Alpine prototype-chain scope, so every row's badge reflects the
+// class-wide maximum rather than a hardcoded 100.
+function gradeRow(init) {
+    init = init || {};
+    function cat(seed) {
+        seed = seed || {};
+        const vals = Array.isArray(seed.v) ? seed.v : [];
+        return {
+            // Fixed 5 slots so array-index x-model bindings stay reactive; extra
+            // slots render as empty inputs (performance/assessment use 1-3).
+            v: [0, 1, 2, 3, 4].map(i => (vals[i] != null && vals[i] !== '' ? vals[i] : '')),
+            get total() { return this.v.reduce((s, x) => s + (parseFloat(x) || 0), 0); },
+        };
+    }
+    return {
+        _w: cat(init.w),
+        _p: cat(init.p),
+        _a: cat(init.a),
+        fmt(n) {
+            if (!isFinite(n)) return '0';
+            return String(Math.round(n * 100) / 100);
+        },
+        // ww/pt/qa (weights) and wwMax/ptMax/qaMax (class maxima) come from the
+        // parent <table> Alpine scope (merged via the prototype chain); these
+        // getters read them with safe DepEd defaults (20 / 50 / 30).
+        get _ww() { return (this.ww !== undefined ? this.ww : 20) || 0; },
+        get _pt() { return (this.pt !== undefined ? this.pt : 50) || 0; },
+        get _qa() { return (this.qa !== undefined ? this.qa : 30) || 0; },
+        // Percentage score: raw total as a % of the class maximum (falls back to
+        // treating the total as an already-percentage score when no max is set).
+        ps(c, max) {
+            const m = parseFloat(max);
+            return (isFinite(m) && m > 0) ? c.total / m * 100 : c.total;
+        },
+        ws(c, weight, max) { return this.ps(c, max) * (weight || 0) / 100; },
+        get liveQG() {
+            const w = this._ww + this._pt + this._qa;
+            if (w <= 0) return 0;
+            return (this.ps(this._w, this.wwMax) * this._ww
+                  + this.ps(this._p, this.ptMax) * this._pt
+                  + this.ps(this._a, this.qaMax) * this._qa) / w;
+        },
+        // Term grade = initial (weighted) grade rounded to nearest whole number.
+        get termGrade() { return Math.round(this.liveQG); },
+        // DepEd Order 8/2015 letter descriptor from the term grade.
+        get description() {
+            const g = this.termGrade;
+            if (g >= 90) return 'A';
+            if (g >= 85) return 'B';
+            if (g >= 80) return 'C';
+            if (g >= 75) return 'D';
+            return 'E';
+        },
+    };
+}
+
 // Global function to close modal from HTMX responses
 function closeModal() {
     window.dispatchEvent(new CustomEvent('close-modal'));

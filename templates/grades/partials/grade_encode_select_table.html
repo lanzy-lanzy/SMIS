@@ -69,21 +69,67 @@
         {% endif %}
 
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table class="w-full text-sm" x-data="{ ww: {{ weights.ww|floatformat:"g" }}, pt: {{ weights.pt|floatformat:"g" }}, qa: {{ weights.as|floatformat:"g" }}, wwMaxItems: [{{ maxes.ww_items.0|default:'null' }}, {{ maxes.ww_items.1|default:'null' }}, {{ maxes.ww_items.2|default:'null' }}, {{ maxes.ww_items.3|default:'null' }}, {{ maxes.ww_items.4|default:'null' }}], ptMaxItems: [{{ maxes.pt_items.0|default:'null' }}, {{ maxes.pt_items.1|default:'null' }}, {{ maxes.pt_items.2|default:'null' }}], qaMaxItems: [{{ maxes.as_items.0|default:'null' }}, {{ maxes.as_items.1|default:'null' }}, {{ maxes.as_items.2|default:'null' }}], get wwMax(){ const s = this.wwMaxItems.reduce((a, x) => a + (parseFloat(x) || 0), 0); return s > 0 ? s : {{ maxes.ww|floatformat:"g" }}; }, get ptMax(){ const s = this.ptMaxItems.reduce((a, x) => a + (parseFloat(x) || 0), 0); return s > 0 ? s : {{ maxes.pt|floatformat:"g" }}; }, get qaMax(){ const s = this.qaMaxItems.reduce((a, x) => a + (parseFloat(x) || 0), 0); return s > 0 ? s : {{ maxes.qa|floatformat:"g" }}; } }">
                 <thead class="bg-gray-50 dark:bg-slate-700">
                     <tr>
                         <th class="px-4 py-3 text-left font-medium">Student</th>
-                        <th class="px-4 py-3 text-left font-medium">Written Work <span class="text-xs font-normal text-gray-400">(20%)</span><br><span class="text-[10px] font-normal text-gray-400">Items 1–3 / Highest</span></th>
-                        <th class="px-4 py-3 text-left font-medium">Performance Task <span class="text-xs font-normal text-gray-400">(50%)</span><br><span class="text-[10px] font-normal text-gray-400">Items 1–3 / Highest</span></th>
-                        <th class="px-4 py-3 text-left font-medium">Assessment <span class="text-xs font-normal text-gray-400">(30%)</span><br><span class="text-[10px] font-normal text-gray-400">Items 1–3 / Highest</span></th>
-                        <th class="px-4 py-3 text-left font-medium">Quarter Grade</th>
+                        <th class="px-4 py-3 text-left font-medium">Written Work <span class="text-xs font-normal text-gray-400" x-text="`${ww} %`">({{ weights.ww|floatformat:"g" }}%)</span><br><span class="text-[10px] font-normal text-gray-400">Items 1–5</span></th>
+                        <th class="px-4 py-3 text-left font-medium">Performance Task <span class="text-xs font-normal text-gray-400" x-text="`${pt} %`">({{ weights.pt|floatformat:"g" }}%)</span><br><span class="text-[10px] font-normal text-gray-400">Items 1–3</span></th>
+                        <th class="px-4 py-3 text-left font-medium">Assessment <span class="text-xs font-normal text-gray-400" x-text="`${qa} %`">({{ weights.as|floatformat:"g" }}%)</span><br><span class="text-[10px] font-normal text-gray-400">Items 1–3</span></th>
+                        <th class="px-4 py-3 text-left font-medium">Quarter Grade<br><span class="text-[10px] font-normal text-gray-400">Weighted total</span></th>
+                        <th class="px-4 py-3 text-left font-medium">Description<br><span class="text-[10px] font-normal text-gray-400">Term grade</span></th>
                         <th class="px-4 py-3 text-left font-medium">Status</th>
+                    </tr>
+                    <!-- Category weight configuration: teacher-assigned % weights (must total 100%) -->
+                    <tr>
+                        <td class="px-4 py-2 text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700">Weights:</td>
+                        <td class="px-4 py-2 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700">
+                            <div class="flex items-center gap-1 text-xs"><input type="number" name="written_weight" min="0" max="100" step="1" x-model.number="ww" value="{{ weights.ww|floatformat:"g" }}" class="w-12 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 text-xs dark:bg-gray-700 dark:text-white"><span class="text-gray-400">%</span></div>
+                        </td>
+                        <td class="px-4 py-2 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700">
+                            <div class="flex items-center gap-1 text-xs"><input type="number" name="performance_weight" min="0" max="100" step="1" x-model.number="pt" value="{{ weights.pt|floatformat:"g" }}" class="w-12 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 text-xs dark:bg-gray-700 dark:text-white"><span class="text-gray-400">%</span></div>
+                        </td>
+                        <td class="px-4 py-2 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700">
+                            <div class="flex items-center gap-1 text-xs"><input type="number" name="assessment_weight" min="0" max="100" step="1" x-model.number="qa" value="{{ weights.as|floatformat:"g" }}" class="w-12 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 text-xs dark:bg-gray-700 dark:text-white"><span class="text-gray-400">%</span></div>
+                        </td>
+                        <td colspan="3" class="px-4 py-2 text-xs bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700">
+                            <span class="font-medium" :class="Math.round((ww || 0) + (pt || 0) + (qa || 0)) === 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">Total: <span x-text="(ww || 0) + (pt || 0) + (qa || 0)"></span>%</span>
+                            <span x-show="Math.round((ww || 0) + (pt || 0) + (qa || 0)) !== 100" class="text-red-500"> — weights must total 100%</span>
+                        </td>
+                    </tr>
+                    <!-- Class-wide 'highest possible score' entered PER ITEM column; the category maximum (badge denominator & PS) is the SUM of its items. Same test for every learner. -->
+                    <tr>
+                        <td class="px-4 py-2 text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700">Highest:</td>
+                        <td class="px-4 py-2 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700">
+                            <div class="flex items-center gap-1 text-xs">
+                                <input type="number" name="written_highest_1" min="0" step="0.01" x-model.number="wwMaxItems[0]" class="w-12 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 text-xs dark:bg-gray-700 dark:text-white">
+                                <input type="number" name="written_highest_2" min="0" step="0.01" x-model.number="wwMaxItems[1]" class="w-12 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 text-xs dark:bg-gray-700 dark:text-white">
+                                <input type="number" name="written_highest_3" min="0" step="0.01" x-model.number="wwMaxItems[2]" class="w-12 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 text-xs dark:bg-gray-700 dark:text-white">
+                                <input type="number" name="written_highest_4" min="0" step="0.01" x-model.number="wwMaxItems[3]" class="w-12 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 text-xs dark:bg-gray-700 dark:text-white">
+                                <input type="number" name="written_highest_5" min="0" step="0.01" x-model.number="wwMaxItems[4]" class="w-12 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 text-xs dark:bg-gray-700 dark:text-white">
+                            </div>
+                        </td>
+                        <td class="px-4 py-2 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700">
+                            <div class="flex items-center gap-1 text-xs">
+                                <input type="number" name="performance_highest_1" min="0" step="0.01" x-model.number="ptMaxItems[0]" class="w-12 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 text-xs dark:bg-gray-700 dark:text-white">
+                                <input type="number" name="performance_highest_2" min="0" step="0.01" x-model.number="ptMaxItems[1]" class="w-12 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 text-xs dark:bg-gray-700 dark:text-white">
+                                <input type="number" name="performance_highest_3" min="0" step="0.01" x-model.number="ptMaxItems[2]" class="w-12 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 text-xs dark:bg-gray-700 dark:text-white">
+                            </div>
+                        </td>
+                        <td class="px-4 py-2 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700">
+                            <div class="flex items-center gap-1 text-xs">
+                                <input type="number" name="assessment_highest_1" min="0" step="0.01" x-model.number="qaMaxItems[0]" class="w-12 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 text-xs dark:bg-gray-700 dark:text-white">
+                                <input type="number" name="assessment_highest_2" min="0" step="0.01" x-model.number="qaMaxItems[1]" class="w-12 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 text-xs dark:bg-gray-700 dark:text-white">
+                                <input type="number" name="assessment_highest_3" min="0" step="0.01" x-model.number="qaMaxItems[2]" class="w-12 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 text-xs dark:bg-gray-700 dark:text-white">
+                            </div>
+                        </td>
+                        <td colspan="3" class="px-4 py-2 text-xs text-gray-400 dark:text-gray-500 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700">Per-item highest possible score. Totals: WW <span class="font-medium text-gray-600 dark:text-gray-300" x-text="Math.round(wwMax * 100) / 100">{{ maxes.ww|floatformat:"g" }}</span> · PT <span class="font-medium text-gray-600 dark:text-gray-300" x-text="Math.round(ptMax * 100) / 100">{{ maxes.pt|floatformat:"g" }}</span> · QA <span class="font-medium text-gray-600 dark:text-gray-300" x-text="Math.round(qaMax * 100) / 100">{{ maxes.qa|floatformat:"g" }}</span></td>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
                     {% for item in grade_data %}
                     {% with student=item.student grade=item.grade %}
-                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors" x-data="gradeRow({w:{v:[{{ grade.written_work_1|default:'null' }},{{ grade.written_work_2|default:'null' }},{{ grade.written_work_3|default:'null' }},{{ grade.written_work_4|default:'null' }},{{ grade.written_work_5|default:'null' }}]},p:{v:[{{ grade.performance_task_1|default:'null' }},{{ grade.performance_task_2|default:'null' }},{{ grade.performance_task_3|default:'null' }}]},a:{v:[{{ grade.assessment_1|default:'null' }},{{ grade.assessment_2|default:'null' }},{{ grade.assessment_3|default:'null' }}]}})">
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white text-xs font-bold">
@@ -96,72 +142,68 @@
                             </div>
                         </td>
                         <td class="px-4 py-3">
-                            <div class="flex items-center gap-1">
-                                <input type="number" name="student_{{ student.id }}_written_1" step="0.01" min="0"
-                                       value="{{ grade.written_work_1|default:'' }}"
-                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
-                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
-                                <input type="number" name="student_{{ student.id }}_written_2" step="0.01" min="0"
-                                       value="{{ grade.written_work_2|default:'' }}"
-                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
-                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
-                                <input type="number" name="student_{{ student.id }}_written_3" step="0.01" min="0"
-                                       value="{{ grade.written_work_3|default:'' }}"
-                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
-                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
-                                <span class="text-gray-400 text-xs">/</span>
-                                <input type="number" name="student_{{ student.id }}_written_highest" step="0.01" min="1"
-                                       value="{{ grade.written_work_highest|default:100 }}"
-                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
-                                       class="w-14 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
+                            <div class="mb-1">
+                                <span class="inline-flex items-center px-2 py-0.5 text-[11px] font-semibold rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300" x-text="`${fmt(_w.total)}/${fmt(wwMax)}`"></span>
                             </div>
-                            {% if grade %}<div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Σ {{ grade.written_work }} · PS {{ grade.written_work_ps|floatformat:2 }} · WS {{ grade.written_work_ws|floatformat:2 }}</div>{% endif %}
+                            <div class="flex items-center gap-1">
+                                <input type="number" name="student_{{ student.id }}_written_1" step="0.01" min="0" x-model="_w.v[0]"
+                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
+                                <input type="number" name="student_{{ student.id }}_written_2" step="0.01" min="0" x-model="_w.v[1]"
+                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
+                                <input type="number" name="student_{{ student.id }}_written_3" step="0.01" min="0" x-model="_w.v[2]"
+                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
+                                <input type="number" name="student_{{ student.id }}_written_4" step="0.01" min="0" x-model="_w.v[3]"
+                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
+                                <input type="number" name="student_{{ student.id }}_written_5" step="0.01" min="0" x-model="_w.v[4]"
+                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
+                            </div>
+                            <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Σ <span x-text="fmt(_w.total)">{{ grade.written_work }}</span> · PS <span x-text="fmt(ps(_w, wwMax))">{{ grade.written_work_ps|floatformat:2 }}</span> · WS <span x-text="fmt(ws(_w, ww, wwMax))">{{ grade.written_work_ws|floatformat:2 }}</span></div>
                         </td>
                         <td class="px-4 py-3">
-                            <div class="flex items-center gap-1">
-                                <input type="number" name="student_{{ student.id }}_performance_1" step="0.01" min="0"
-                                       value="{{ grade.performance_task_1|default:'' }}"
-                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
-                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
-                                <input type="number" name="student_{{ student.id }}_performance_2" step="0.01" min="0"
-                                       value="{{ grade.performance_task_2|default:'' }}"
-                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
-                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
-                                <input type="number" name="student_{{ student.id }}_performance_3" step="0.01" min="0"
-                                       value="{{ grade.performance_task_3|default:'' }}"
-                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
-                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
-                                <span class="text-gray-400 text-xs">/</span>
-                                <input type="number" name="student_{{ student.id }}_performance_highest" step="0.01" min="1"
-                                       value="{{ grade.performance_task_highest|default:100 }}"
-                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
-                                       class="w-14 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
+                            <div class="mb-1">
+                                <span class="inline-flex items-center px-2 py-0.5 text-[11px] font-semibold rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300" x-text="`${fmt(_p.total)}/${fmt(ptMax)}`"></span>
                             </div>
-                            {% if grade %}<div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Σ {{ grade.performance_task }} · PS {{ grade.performance_task_ps|floatformat:2 }} · WS {{ grade.performance_task_ws|floatformat:2 }}</div>{% endif %}
+                            <div class="flex items-center gap-1">
+                                <input type="number" name="student_{{ student.id }}_performance_1" step="0.01" min="0" x-model="_p.v[0]"
+                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
+                                <input type="number" name="student_{{ student.id }}_performance_2" step="0.01" min="0" x-model="_p.v[1]"
+                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
+                                <input type="number" name="student_{{ student.id }}_performance_3" step="0.01" min="0" x-model="_p.v[2]"
+                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
+                            </div>
+                            <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Σ <span x-text="fmt(_p.total)">{{ grade.performance_task }}</span> · PS <span x-text="fmt(ps(_p, ptMax))">{{ grade.performance_task_ps|floatformat:2 }}</span> · WS <span x-text="fmt(ws(_p, pt, ptMax))">{{ grade.performance_task_ws|floatformat:2 }}</span></div>
                         </td>
                         <td class="px-4 py-3">
-                            <div class="flex items-center gap-1">
-                                <input type="number" name="student_{{ student.id }}_assessment_1" step="0.01" min="0"
-                                       value="{{ grade.assessment_1|default:'' }}"
-                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
-                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
-                                <input type="number" name="student_{{ student.id }}_assessment_2" step="0.01" min="0"
-                                       value="{{ grade.assessment_2|default:'' }}"
-                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
-                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
-                                <input type="number" name="student_{{ student.id }}_assessment_3" step="0.01" min="0"
-                                       value="{{ grade.assessment_3|default:'' }}"
-                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
-                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
-                                <span class="text-gray-400 text-xs">/</span>
-                                <input type="number" name="student_{{ student.id }}_assessment_highest" step="0.01" min="1"
-                                       value="{{ grade.assessment_highest|default:100 }}"
-                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
-                                       class="w-14 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
+                            <div class="mb-1">
+                                <span class="inline-flex items-center px-2 py-0.5 text-[11px] font-semibold rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300" x-text="`${fmt(_a.total)}/${fmt(qaMax)}`"></span>
                             </div>
-                            {% if grade %}<div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Σ {{ grade.assessment }} · PS {{ grade.assessment_ps|floatformat:2 }} · WS {{ grade.assessment_ws|floatformat:2 }}</div>{% endif %}
+                            <div class="flex items-center gap-1">
+                                <input type="number" name="student_{{ student.id }}_assessment_1" step="0.01" min="0" x-model="_a.v[0]"
+                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
+                                <input type="number" name="student_{{ student.id }}_assessment_2" step="0.01" min="0" x-model="_a.v[1]"
+                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
+                                <input type="number" name="student_{{ student.id }}_assessment_3" step="0.01" min="0" x-model="_a.v[2]"
+                                       {% if not current_period_editable or not can_submit or grade.status == 'locked' or grade.status == 'validated' %}disabled{% endif %}
+                                       class="w-12 px-1.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500">
+                            </div>
+                            <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Σ <span x-text="fmt(_a.total)">{{ grade.assessment }}</span> · PS <span x-text="fmt(ps(_a, qaMax))">{{ grade.assessment_ps|floatformat:2 }}</span> · WS <span x-text="fmt(ws(_a, qa, qaMax))">{{ grade.assessment_ws|floatformat:2 }}</span></div>
                         </td>
-                        <td class="px-4 py-3 font-bold text-primary">{{ grade.quarter_grade|default:"-" }}</td>
+                        <td class="px-4 py-3 font-bold text-primary">
+                            <span x-text="liveQG > 0 ? liveQG.toFixed(2) : '{{ grade.quarter_grade|default:"-" }}'">{{ grade.quarter_grade|default:"-" }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold bg-primary/10 text-primary" x-text="liveQG > 0 ? description : '{{ grade.description|default:"-" }}'">{{ grade.description|default:"-" }}</span>
+                        </td>
                         <td class="px-4 py-3">
                             {% if grade.status == 'locked' or grade.status == 'validated' %}
                             <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium">

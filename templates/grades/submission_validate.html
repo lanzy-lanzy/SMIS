@@ -17,9 +17,9 @@
                 <thead class="bg-gray-50 dark:bg-slate-700">
                     <tr>
                         <th class="px-4 py-3 text-left font-medium">Student</th>
-                        <th class="px-4 py-3 text-left font-medium">Written <span class="text-xs font-normal text-gray-400">(20%)</span></th>
-                        <th class="px-4 py-3 text-left font-medium">Performance <span class="text-xs font-normal text-gray-400">(50%)</span></th>
-                        <th class="px-4 py-3 text-left font-medium">Assessment <span class="text-xs font-normal text-gray-400">(30%)</span></th>
+                        <th class="px-4 py-3 text-left font-medium">Written <span class="text-xs font-normal text-gray-400">({{ grades.0.written_work_weight|floatformat:"g" }}%)</span></th>
+                        <th class="px-4 py-3 text-left font-medium">Performance <span class="text-xs font-normal text-gray-400">({{ grades.0.performance_task_weight|floatformat:"g" }}%)</span></th>
+                        <th class="px-4 py-3 text-left font-medium">Assessment <span class="text-xs font-normal text-gray-400">({{ grades.0.assessment_weight|floatformat:"g" }}%)</span></th>
                         <th class="px-4 py-3 text-left font-medium">Grade</th>
                         <th class="px-4 py-3 text-left font-medium">Remarks</th>
                     </tr>

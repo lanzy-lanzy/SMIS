@@ -1,0 +1,4 @@
+# file: C:\Users\gerla\2026\smis\grades\models.py
+# hypothesis_version: 6.135.26
+
+[100, '-submitted_at', '0', '100', '20', '50', 'Approved', 'Draft', 'Failed', 'Incomplete', 'Locked', 'Passed', 'Returned', 'Submitted', 'Under Review', 'Validated', 'academics.SchoolYear', 'academics.Section', 'academics.Subject', 'approved', 'draft', 'encoded_grades', 'grade_submissions', 'grades', 'grading_period', 'locked', 'pending', 'returned', 'school_year', 'section', 'student', 'student__last_name', 'students.Student', 'subject', 'subject__name', 'submitted', 'teacher', 'updated_grades', 'validated', 'validation']
