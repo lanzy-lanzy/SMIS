@@ -2,6 +2,9 @@
     <td class="px-4 py-3">{{ gp.name }}</td>
     <td class="px-4 py-3">{{ gp.school_year }}</td>
     <td class="px-4 py-3">
+        {% if gp.month_range %}<span class="text-gray-700 dark:text-gray-200">{{ gp.month_range }}</span>{% else %}<span class="text-gray-400 italic">Not set</span>{% endif %}
+    </td>
+    <td class="px-4 py-3">
         {% if gp.is_current %}
         <button hx-post="{% url 'academics:grading_period_toggle_current' gp.pk %}" hx-target="#gp-row-{{ gp.pk }}" hx-swap="outerHTML" class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 hover:bg-green-200 transition">
             Active
@@ -20,8 +23,15 @@
         {% endif %}
     </td>
     <td class="px-4 py-3">
-        <button hx-post="{% url 'academics:grading_period_toggle_submissions' gp.pk %}" hx-target="#gp-row-{{ gp.pk }}" hx-swap="outerHTML" class="px-3 py-1 text-xs rounded-lg {% if gp.is_submissions_open %}bg-red-100 text-red-700 hover:bg-red-200{% else %}bg-green-100 text-green-700 hover:bg-green-200{% endif %} transition">
-            {% if gp.is_submissions_open %}Close Submissions{% else %}Open Submissions{% endif %}
-        </button>
+        <div class="flex items-center gap-2">
+            <button onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:grading_period_edit' gp.pk %}' } }))" class="px-3 py-1 text-xs rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-700 dark:text-gray-200 dark:hover:bg-slate-600 transition">Edit</button>
+            <button hx-post="{% url 'academics:grading_period_toggle_submissions' gp.pk %}" hx-target="#gp-row-{{ gp.pk }}" hx-swap="outerHTML" class="px-3 py-1 text-xs rounded-lg {% if gp.is_submissions_open %}bg-red-100 text-red-700 hover:bg-red-200{% else %}bg-green-100 text-green-700 hover:bg-green-200{% endif %} transition">
+                {% if gp.is_submissions_open %}Close Submissions{% else %}Open Submissions{% endif %}
+            </button>
+            <form method="post" action="{% url 'academics:grading_period_delete' gp.pk %}" class="inline" onsubmit="return confirm('Delete {{ gp.name }} ({{ gp.school_year }})? This permanently removes ALL grades and submissions recorded for this quarter and cannot be undone.');">
+                {% csrf_token %}
+                <button type="submit" class="px-3 py-1 text-xs rounded-lg border border-red-200 text-red-600 hover:bg-red-600 hover:text-white transition">Delete</button>
+            </form>
+        </div>
     </td>
 </tr>

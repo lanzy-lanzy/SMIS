@@ -1,0 +1,4 @@
+# file: C:\Users\dttsi\2026\school\smis\grades\migrations\0006_grade_assessment_highest_and_more.py
+# hypothesis_version: 6.135.26
+
+[100, 'assessment', 'assessment_highest', 'grade', 'grades', 'performance_task', 'written_work', 'written_work_highest']

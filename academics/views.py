@@ -19,7 +19,7 @@ from .forms import (
     GradingPeriodForm,
 )
 from accounts.models import AuditLog
-from accounts.decorators import admin_required
+from accounts.decorators import admin_required, registrar_or_admin_required
 
 
 @admin_required
@@ -27,7 +27,7 @@ def academics_index(request):
     return render(request, "academics/index.html")
 
 
-@admin_required
+@registrar_or_admin_required
 def school_year_list(request):
     school_years = SchoolYear.objects.all()
     paginator = Paginator(school_years, 15)
@@ -44,7 +44,7 @@ def school_year_list(request):
     )
 
 
-@admin_required
+@registrar_or_admin_required
 def school_year_create(request):
     if request.method == "POST":
         form = SchoolYearForm(request.POST)
@@ -79,7 +79,7 @@ def school_year_create(request):
     )
 
 
-@admin_required
+@registrar_or_admin_required
 def school_year_edit(request, pk):
     sy = get_object_or_404(SchoolYear, pk=pk)
     if request.method == "POST":
@@ -115,7 +115,7 @@ def school_year_edit(request, pk):
     )
 
 
-@admin_required
+@registrar_or_admin_required
 def school_year_delete(request, pk):
     sy = get_object_or_404(SchoolYear, pk=pk)
     if request.method == "POST":
@@ -788,9 +788,9 @@ def assignment_delete(request, pk):
     )
 
 
-@admin_required
+@registrar_or_admin_required
 def grading_period_list(request):
-    periods = GradingPeriod.objects.select_related("school_year").all()
+    periods = GradingPeriod.objects.select_related("school_year").order_by("school_year__name", "order")
     paginator = Paginator(periods, 15)
     page = request.GET.get("page", 1)
     periods_page = paginator.get_page(page)
@@ -803,7 +803,7 @@ def grading_period_list(request):
     return render(request, "academics/grading_period_list.html", {"periods": periods_page})
 
 
-@admin_required
+@registrar_or_admin_required
 def grading_period_create(request):
     if request.method == "POST":
         form = GradingPeriodForm(request.POST)
@@ -838,7 +838,66 @@ def grading_period_create(request):
     )
 
 
-@admin_required
+@registrar_or_admin_required
+def grading_period_edit(request, pk):
+    period = get_object_or_404(GradingPeriod, pk=pk)
+    if request.method == "POST":
+        form = GradingPeriodForm(request.POST, instance=period)
+        if form.is_valid():
+            form.save()
+            AuditLog.objects.create(
+                user=request.user,
+                action="update",
+                model_name="GradingPeriod",
+                object_id=str(period.id),
+                description=f"Updated grading period {period.name} ({period.month_range or 'no months'})",
+            )
+            messages.success(request, f"Grading period {period.name} updated.")
+            if request.headers.get("HX-Request"):
+                return HttpResponse(
+                    '<script>closeModal(); htmx.trigger("#grading-period-table", "refresh");</script>',
+                    headers={"HX-Trigger": "closeModal,refreshTable"},
+                )
+            return redirect("academics:grading_period_list")
+    else:
+        form = GradingPeriodForm(instance=period)
+    if request.headers.get("HX-Request"):
+        return render(
+            request,
+            "academics/partials/grading_period_form.html",
+            {"form": form, "title": "Edit Grading Period"},
+        )
+    return render(
+        request,
+        "academics/grading_period_form.html",
+        {"form": form, "title": "Edit Grading Period"},
+    )
+
+
+@registrar_or_admin_required
+def grading_period_delete(request, pk):
+    if request.method != "POST":
+        return HttpResponse(status=405)
+
+    period = get_object_or_404(GradingPeriod, pk=pk)
+    name = period.name
+    year = period.school_year.name
+    # WARNING: GradingPeriod is a CASCADE target for Grade and GradeSubmission,
+    # so this permanently removes all grades and submissions for the quarter.
+    period.delete()
+
+    AuditLog.objects.create(
+        user=request.user,
+        action="delete",
+        model_name="GradingPeriod",
+        object_id=str(pk),
+        description=f"Deleted grading period {name} ({year})",
+    )
+    messages.success(request, f"Grading period {name} ({year}) deleted.")
+    return redirect("academics:grading_period_list")
+
+
+@registrar_or_admin_required
 def grading_period_toggle_submissions(request, pk):
     if request.method != 'POST':
         return HttpResponse(status=405)
@@ -866,7 +925,7 @@ def grading_period_toggle_submissions(request, pk):
     return redirect("academics:grading_period_list")
 
 
-@admin_required
+@registrar_or_admin_required
 def grading_period_toggle_current(request, pk):
     if request.method != 'POST':
         return HttpResponse(status=405)
@@ -892,3 +951,40 @@ def grading_period_toggle_current(request, pk):
             {"gp": period},
         )
     return redirect("academics:grading_period_list")
+
+
+@registrar_or_admin_required
+def grading_period_open_next(request, pk):
+    """Advance the academic calendar: close the completed quarter's submissions and
+    open + activate the next quarter so teachers can begin encoding it."""
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    current_period = get_object_or_404(GradingPeriod, pk=pk)
+    next_period = GradingPeriod.objects.filter(
+        school_year=current_period.school_year,
+        order__gt=current_period.order,
+    ).order_by('order').first()
+
+    if not next_period:
+        messages.info(request, f"{current_period.name} is the final quarter — there is no next quarter to open.")
+        return redirect(request.POST.get('next') or 'academics:grading_period_list')
+
+    # Close the finished quarter, then open and activate the next one.
+    current_period.is_submissions_open = False
+    current_period.is_current = False
+    current_period.save(update_fields=['is_submissions_open', 'is_current'])
+
+    next_period.is_submissions_open = True
+    next_period.is_current = True
+    next_period.save()  # save() enforces a single is_current per school year
+
+    AuditLog.objects.create(
+        user=request.user,
+        action="update",
+        model_name="GradingPeriod",
+        object_id=str(next_period.id),
+        description=f"Advanced calendar: closed {current_period.name}, opened {next_period.name} for grade submissions",
+    )
+    messages.success(request, f"{current_period.name} closed. {next_period.name} is now open for grade submissions.")
+    return redirect(request.POST.get('next') or 'academics:grading_period_list')

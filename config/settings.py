@@ -16,10 +16,15 @@ SECRET_KEY = config('SECRET_KEY', default='').strip() or 'django-insecure-change
 DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = [h.strip() for h in config('ALLOWED_HOSTS', default='*').split(',') if h.strip()] or ['*']
+
+# In development mode, allow any host/IP (e.g. LAN IPs like 192.168.100.98).
+if DEBUG:
+    ALLOWED_HOSTS = ['*']
+
 # Allow Vercel preview/production domains even if env wasn't updated
 # (leading dot = wildcard subdomains in Django).
 if '*' not in ALLOWED_HOSTS and not any(h.lstrip('.').endswith('vercel.app') for h in ALLOWED_HOSTS):
-    ALLOWED_HOSTS.append('.vercel.app')
+    ALLOWED_HOSTS.append('.vercel.app,')
 
 INSTALLED_APPS = [
     'django.contrib.admin',

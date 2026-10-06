@@ -33,7 +33,7 @@
                 <p class="text-sm text-gray-500">{{ assignment.section.grade_level }} - {{ assignment.section.name }}</p>
                 {% if sub_status %}
                 <span class="inline-flex mt-2 px-2 py-1 text-xs rounded-full {% if sub_status == 'approved' %}bg-emerald-100 text-emerald-800{% elif sub_status == 'pending' %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endif %}">
-                    {{ sub_status|title }}
+                    {% if sub_status == 'pending' %}Under Review{% else %}{{ sub_status|title }}{% endif %}
                 </span>
                 {% else %}
                 <span class="inline-flex mt-2 text-xs text-gray-400">No submission yet</span>

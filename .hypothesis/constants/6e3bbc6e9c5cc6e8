@@ -1,0 +1,4 @@
+# file: C:\Users\dttsi\2026\school\smis\academics\models.py
+# hypothesis_version: 6.135.26
+
+[100, 200, '-name', 'April', 'August', 'December', 'End Month', 'February', 'First Quarter', 'Fourth Quarter', 'January', 'July', 'June', 'March', 'May', 'November', 'October', 'Second Quarter', 'September', 'Start Month', 'Third Quarter', 'advised_sections', 'assignments', 'grade_level', 'grading_periods', 'level', 'name', 'order', 'school_year', 'section', 'sections', 'subject', 'subjects', 'teacher']

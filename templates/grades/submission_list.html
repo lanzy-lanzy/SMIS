@@ -54,28 +54,93 @@
     </div>
     {% endif %}
 
+    <!-- Registrar Triage Summary -->
+    {% if not user.is_teacher %}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <a href="?status=pending{% if period_filter %}&period={{ period_filter }}{% endif %}{% if query %}&q={{ query|urlencode }}{% endif %}"
+           class="rounded-xl p-4 border shadow-sm transition {% if status_filter == 'pending' %}bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700{% else %}bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-amber-200{% endif %}">
+            <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ summary_counts.pending }}</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">Under Review</p>
+        </a>
+        <a href="?status=approved{% if period_filter %}&period={{ period_filter }}{% endif %}{% if query %}&q={{ query|urlencode }}{% endif %}"
+           class="rounded-xl p-4 border shadow-sm transition {% if status_filter == 'approved' %}bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700{% else %}bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-emerald-200{% endif %}">
+            <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ summary_counts.approved }}</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">Approved</p>
+        </a>
+        <a href="?status=returned{% if period_filter %}&period={{ period_filter }}{% endif %}{% if query %}&q={{ query|urlencode }}{% endif %}"
+           class="rounded-xl p-4 border shadow-sm transition {% if status_filter == 'returned' %}bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700{% else %}bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-red-200{% endif %}">
+            <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ summary_counts.returned }}</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">Returned</p>
+        </a>
+        <a href="?{% if period_filter %}period={{ period_filter }}{% endif %}{% if query %}&q={{ query|urlencode }}{% endif %}"
+           class="rounded-xl p-4 border shadow-sm transition {% if not status_filter %}bg-blue-50 dark:bg-blue-900/20 border-primary/30 dark:border-primary{% else %}bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-blue-200{% endif %}">
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ summary_total }}</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">All Submissions</p>
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Quarter fully approved → advance calendar prompt (Registrar/Admin) -->
+    {% if period_completion %}
+    <div class="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50">
+                <svg class="h-6 w-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-base font-semibold text-emerald-900 dark:text-emerald-100">{{ period_completion.period.name }} is fully approved</h3>
+                <p class="text-sm text-emerald-700 dark:text-emerald-300 mt-0.5">
+                    All {{ period_completion.total }} submission{{ period_completion.total|pluralize }} for {{ period_completion.period.name }} have been validated by the Registrar.
+                    {% if not period_completion.next_period %} This is the final quarter — records are ready for Form 137 processing.{% endif %}
+                </p>
+            </div>
+            {% if period_completion.next_period %}
+                {% if period_completion.next_period.is_submissions_open %}
+                <span class="inline-flex items-center gap-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 px-4 py-2.5 text-sm font-medium text-emerald-800 dark:text-emerald-200 whitespace-nowrap">
+                    {{ period_completion.next_period.name }} is already open
+                </span>
+                {% else %}
+                <form method="post" action="{% url 'academics:grading_period_open_next' period_completion.period.pk %}" class="shrink-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{% url 'grades:submission_list' %}?period={{ period_completion.next_period.pk }}">
+                    <button type="submit" class="inline-flex items-center gap-2 bg-primary hover:bg-blue-800 text-white px-5 py-2.5 rounded-lg transition font-medium shadow-sm whitespace-nowrap">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5-5 5M6 7l5 5-5 5"></path></svg>
+                        Close {{ period_completion.period.name }} &amp; Open {{ period_completion.next_period.name }}
+                    </button>
+                </form>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
-        <div class="p-4 border-b border-gray-100 dark:border-slate-700 flex flex-wrap gap-3">
-            <!-- Period Filter -->
+        <div class="p-4 border-b border-gray-100 dark:border-slate-700 flex flex-col lg:flex-row lg:items-center gap-3">
+            <!-- Period Filter (preserves status + search) -->
             {% if all_periods %}
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-sm text-gray-500">Quarter:</span>
-                <a href="{% url 'grades:submission_list' %}" class="px-3 py-1.5 text-xs rounded-lg font-medium transition {% if not selected_period %}bg-primary text-white{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}">All</a>
+                <a href="?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if query %}q={{ query|urlencode }}{% endif %}" class="px-3 py-1.5 text-xs rounded-lg font-medium transition {% if not selected_period %}bg-primary text-white{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}">All</a>
                 {% for period in all_periods %}
-                <a href="{% url 'grades:submission_list' %}?period={{ period.pk }}" class="px-3 py-1.5 text-xs rounded-lg font-medium transition {% if selected_period.pk == period.pk %}bg-primary text-white{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}">
+                <a href="?period={{ period.pk }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if query %}&q={{ query|urlencode }}{% endif %}" class="px-3 py-1.5 text-xs rounded-lg font-medium transition {% if selected_period.pk == period.pk %}bg-primary text-white{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}">
                     {{ period.name }}
                 </a>
                 {% endfor %}
             </div>
             {% endif %}
-            <!-- Status Filter -->
-            <select name="status" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
-                    hx-get="{% url 'grades:submission_list' %}" hx-target="#submission-table" hx-trigger="change" hx-include="[name='status']">
-                <option value="">All Status</option>
-                {% for val, label in status_choices %}
-                <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
+            <!-- Status + Search (compose via hx-include) -->
+            <div id="submission-filters" class="flex items-center gap-2 lg:ml-auto flex-wrap">
+                <select name="status" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                        hx-get="{% url 'grades:submission_list' %}?{% if period_filter %}period={{ period_filter }}{% endif %}" hx-target="#submission-table" hx-trigger="change" hx-include="#submission-filters">
+                    <option value="">All Status</option>
+                    {% for val, label in status_choices %}
+                    <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <input type="search" name="q" value="{{ query }}" placeholder="Search teacher, subject, section…"
+                       class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                       hx-get="{% url 'grades:submission_list' %}?{% if period_filter %}period={{ period_filter }}{% endif %}" hx-target="#submission-table" hx-trigger="keyup changed delay:400ms" hx-include="#submission-filters">
+            </div>
         </div>
         <div class="overflow-x-auto" id="submission-table">
             {% include 'grades/partials/submission_table.html' %}

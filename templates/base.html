@@ -159,6 +159,20 @@
                     </a>
                     {% endif %}
 
+                    {% if user.is_registrar %}
+                    <div class="px-1 pb-2 pt-5">
+                        <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Calendar</p>
+                    </div>
+                    <a href="{% url 'academics:grading_period_list' %}" class="app-nav-link {% if request.resolver_match.url_name == 'grading_period_list' or request.resolver_match.url_name == 'grading_period_create' %}is-active{% endif %}" @click="if (window.innerWidth < 1024) sidebarOpen = false">
+                        <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 5h12v15H6V5zm3-2v4m6-4v4M6 10h12M9 14h2m2 0h2M9 17h2"/></svg>
+                        <span>Quarters</span>
+                    </a>
+                    <a href="{% url 'academics:school_year_list' %}" class="app-nav-link {% if request.resolver_match.url_name == 'school_year_list' or request.resolver_match.url_name == 'school_year_create' or request.resolver_match.url_name == 'school_year_edit' %}is-active{% endif %}" @click="if (window.innerWidth < 1024) sidebarOpen = false">
+                        <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 14l9-5-9-5-9 5 9 5zm0 0v6m-5-3l5 3 5-3M5 9v5"/></svg>
+                        <span>School Years</span>
+                    </a>
+                    {% endif %}
+
                     {% if user.is_admin or user.is_registrar %}
                     <a href="{% url 'form137:form137_list' %}" class="app-nav-link {% if request.resolver_match.app_name == 'form137' %}is-active{% endif %}" @click="if (window.innerWidth < 1024) sidebarOpen = false">
                         <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 3h7l5 5v13H7V3zm7 0v5h5M10 13h6m-6 4h6"/></svg>

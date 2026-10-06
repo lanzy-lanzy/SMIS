@@ -1,0 +1,4 @@
+# file: C:\Users\dttsi\2026\school\smis\grades\migrations\0004_alter_gradesubmission_status_and_more.py
+# hypothesis_version: 6.135.26
+
+['Approved', 'Returned', 'Under Review', 'approved', 'grades', 'gradesubmission', 'gradevalidation', 'pending', 'returned', 'status']

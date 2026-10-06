@@ -21,10 +21,12 @@
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Grading Period:</span>
             <div class="flex flex-wrap gap-2">
                 {% for period in all_periods %}
-                <a href="?period={{ period.pk }}"
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition {% if grading_period.pk == period.pk %}bg-primary text-white shadow-sm{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}">
+                <a href="?period={{ period.pk }}{% if selected_assignment %}&assignment={{ selected_assignment.pk }}{% endif %}"
+                   class="px-4 py-2 rounded-lg text-sm font-medium transition {% if grading_period.pk == period.pk %}bg-primary text-white shadow-sm{% elif period.access_state == 'locked' %}bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-gray-400 cursor-not-allowed{% elif period.access_state == 'blocked' %}bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-gray-500 cursor-not-allowed{% elif not period.is_submissions_open %}bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-gray-500{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}"
+                   title="{% if period.access_state == 'locked' %}Validated &amp; locked{% elif period.access_state == 'blocked' %}Locked until prior quarters are validated{% elif not period.is_submissions_open %}Submissions closed — contact the Registrar/Admin to open this quarter{% endif %}">
+                    {% if period.access_state == 'locked' or period.access_state == 'blocked' %}<svg class="w-3 h-3 inline-block -mt-0.5 mr-0.5 {% if period.access_state == 'blocked' %}opacity-60{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>{% elif not period.is_submissions_open %}<svg class="w-3 h-3 inline-block -mt-0.5 mr-0.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>{% endif %}
                     {{ period.name }}
-                    {% if period.is_submissions_open %}
+                    {% if period.access_state == 'current' and period.is_submissions_open %}
                         <span class="ml-1 w-2 h-2 inline-block rounded-full bg-green-400"></span>
                     {% endif %}
                 </a>

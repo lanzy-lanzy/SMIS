@@ -18,15 +18,17 @@
                         <th class="px-4 py-3 text-left font-medium">Teacher</th>
                         <th class="px-4 py-3 text-left font-medium">Subject</th>
                         <th class="px-4 py-3 text-left font-medium">Section</th>
+                        <th class="px-4 py-3 text-center font-medium">Students</th>
+                        <th class="px-4 py-3 text-center font-medium">Class Avg</th>
                         <th class="px-4 py-3 text-left font-medium">Status</th>
-                        <th class="px-4 py-3 text-left font-medium">Date</th>
+                        <th class="px-4 py-3 text-left font-medium">Submitted</th>
                         <th class="px-4 py-3 text-right font-medium">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
                     {% for sub in group.list %}
-                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 group transition-colors">
-                        <td class="px-4 py-3">
+                    <tr class="group transition-colors {% if sub.status == 'pending' %}bg-amber-50/60 dark:bg-amber-900/10 hover:bg-amber-100/60 dark:hover:bg-amber-900/20{% else %}hover:bg-gray-50 dark:hover:bg-slate-700/50{% endif %}">
+                        <td class="px-4 py-3 {% if sub.status == 'pending' %}border-l-4 border-l-amber-400{% else %}border-l-4 border-l-transparent{% endif %}">
                             <div class="flex items-center gap-2">
                                 <div class="w-7 h-7 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary text-xs font-bold">
                                     {{ sub.teacher.first_name|first }}{{ sub.teacher.last_name|first }}
@@ -38,11 +40,20 @@
                         <td class="px-4 py-3">
                             <span class="px-2 py-1 text-xs rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium">{{ sub.section }}</span>
                         </td>
+                        <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-200">{{ sub.student_count|default:0 }}</td>
+                        <td class="px-4 py-3 text-center">
+                            <div class="font-medium text-gray-900 dark:text-white">{% if sub.class_avg %}{{ sub.class_avg|floatformat:1 }}{% else %}—{% endif %}</div>
+                            {% if sub.at_risk_count %}
+                            <span class="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 text-[10px] rounded bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium">
+                                {{ sub.at_risk_count }} at-risk
+                            </span>
+                            {% endif %}
+                        </td>
                         <td class="px-4 py-3">
                             {% if sub.status == 'pending' %}
                             <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 font-medium">
                                 <span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
-                                Pending
+                                Under Review
                             </span>
                             {% elif sub.status == 'approved' %}
                             <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 font-medium">
@@ -56,16 +67,28 @@
                             </span>
                             {% endif %}
                         </td>
-                        <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ sub.submitted_at|date:"M d, Y" }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400" title="{{ sub.submitted_at|date:"M d, Y H:i" }}">{{ sub.submitted_at|timesince }} ago</td>
                         <td class="px-4 py-3 text-right">
-                            {% if sub.status == 'pending' %}
-                                {% if user.is_registrar or user.is_admin %}
-                                <a href="{% url 'grades:submission_validate' sub.pk %}" class="inline-flex items-center gap-1 bg-primary hover:bg-blue-800 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                    Review
-                                </a>
+                            <div class="inline-flex items-center gap-2">
+                                {% if sub.status == 'pending' %}
+                                    {% if user.is_registrar or user.is_admin %}
+                                    <a href="{% url 'grades:submission_validate' sub.pk %}" class="inline-flex items-center gap-1 bg-primary hover:bg-blue-800 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                        Review
+                                    </a>
+                                    {% endif %}
                                 {% endif %}
-                            {% endif %}
+                                {% if user.is_registrar or user.is_admin %}
+                                <form method="post" action="{% url 'grades:submission_delete' sub.pk %}" class="inline" onsubmit="return confirm('Delete this submission? The encoded grades are kept, but this review record will be removed.');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{% url 'grades:submission_list' %}{% if selected_period %}?period={{ selected_period.pk }}{% endif %}">
+                                    <button type="submit" class="inline-flex items-center gap-1 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        Delete
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                 {% endfor %}
@@ -81,13 +104,13 @@
     <p class="text-sm text-gray-500">Showing {{ submissions.start_index }}-{{ submissions.end_index }} of {{ submissions.paginator.count }}</p>
     <div class="flex gap-1">
         {% if submissions.has_previous %}
-        <a href="?page={{ submissions.previous_page_number }}{% if selected_period %}&period={{ selected_period.pk }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+        <a href="?page={{ submissions.previous_page_number }}{% if selected_period %}&period={{ selected_period.pk }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if query %}&q={{ query|urlencode }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
         {% endif %}
         {% for num in submissions.paginator.page_range %}
-        <a href="?page={{ num }}{% if selected_period %}&period={{ selected_period.pk }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="px-3 py-1 border rounded {% if submissions.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+        <a href="?page={{ num }}{% if selected_period %}&period={{ selected_period.pk }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if query %}&q={{ query|urlencode }}{% endif %}" class="px-3 py-1 border rounded {% if submissions.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
         {% endfor %}
         {% if submissions.has_next %}
-        <a href="?page={{ submissions.next_page_number }}{% if selected_period %}&period={{ selected_period.pk }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+        <a href="?page={{ submissions.next_page_number }}{% if selected_period %}&period={{ selected_period.pk }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if query %}&q={{ query|urlencode }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
         {% endif %}
     </div>
 </div>

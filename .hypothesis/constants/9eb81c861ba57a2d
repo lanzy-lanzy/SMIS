@@ -1,0 +1,4 @@
+# file: C:\Users\dttsi\2026\school\smis\grades\migrations\0005_reconcile_grade_status_with_submission.py
+# hypothesis_version: 6.135.26
+
+['Grade', 'GradeSubmission', 'approved', 'draft', 'grades', 'grading_period', 'returned', 'school_year', 'section', 'subject', 'submitted', 'validated']

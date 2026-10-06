@@ -2,9 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404, reverse
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator
-from django.db.models import Q, Avg, Count
+from django.views.decorators.cache import never_cache
+from django.db.models import Q, Avg, Count, Subquery, OuterRef, Case, When, Value, IntegerField, DecimalField
 from django.utils import timezone
-from .models import Grade, GradeSubmission, GradeValidation
+from .models import Grade, GradeSubmission, GradeValidation, weighted_quarter_grade
 from academics.models import TeacherAssignment, GradingPeriod, SchoolYear, Section, Subject
 from students.models import Student
 from accounts.models import AuditLog
@@ -127,6 +128,139 @@ def grade_list(request):
     })
 
 
+IMMUTABLE_GRADE_STATUSES = ('validated', 'locked')
+
+
+def _can_submit(submission):
+    """Whether a grade-entry form may (re)submit for validation.
+
+    A submission can only be created or resubmitted when there is no existing
+    GradeSubmission yet, or when the Registrar returned it for correction.
+    A pending (under review) or approved (validated) submission is frozen, so
+    the submit button must be disabled on page load to reflect the true status.
+    """
+    return submission is None or submission.status == 'returned'
+
+
+def _locked_period_pks(assignment):
+    """Return the pks of grading periods that are fully finalized for the given
+    teacher assignment.
+
+    A period counts as locked only when it has at least one grade AND *every*
+    grade for that (subject, section, school_year, period) is in an immutable
+    state ('validated'/'locked'). Partially-validated quarters are NOT treated as
+    finalized, so the Q1 -> Q2 -> ... sequence advances correctly and a quarter is
+    only read-only history once the Registrar has validated it end to end.
+    """
+    rows = (
+        Grade.objects.filter(
+            subject=assignment.subject,
+            section=assignment.section,
+            school_year=assignment.school_year,
+        )
+        .values('grading_period_id')
+        .annotate(
+            total=Count('id'),
+            finalized=Count('id', filter=Q(status__in=IMMUTABLE_GRADE_STATUSES)),
+        )
+    )
+    return {
+        row['grading_period_id']
+        for row in rows
+        if row['total'] and row['total'] == row['finalized']
+    }
+
+
+def _period_access(assignment, all_periods):
+    """Strict Q1 -> Q2 -> Q3 -> Q4 sequential gate for a single assignment.
+
+    Returns ``(access, locked_pks)`` where ``access`` maps every grading period
+    pk to one of:
+      * ``'locked'``  – contains finalized (validated/locked) grades -> read-only history
+      * ``'current'`` – the active quarter the teacher may enter (all prior
+        quarters finalized, this one not yet finalized)
+      * ``'blocked'`` – a later quarter whose prior quarters are not finalized yet
+    """
+    locked = _locked_period_pks(assignment)
+    access = {}
+    awaiting_current = True
+    for period in all_periods:  # expected to be ordered by `order`
+        if period.pk in locked:
+            access[period.pk] = 'locked'
+        elif awaiting_current:
+            access[period.pk] = 'current'
+            awaiting_current = False
+        else:
+            access[period.pk] = 'blocked'
+    return access, locked
+
+
+def _sequence_context(assignment, all_periods, current_period):
+    """Build the sequential-lock context shared by the grade entry views.
+
+    Annotates each period object with ``access_state`` so templates can render
+    tabs/rows without dict lookups, and derives flags for the current period.
+    """
+    access, locked = _period_access(assignment, all_periods)
+    for period in all_periods:
+        period.access_state = access.get(period.pk, 'blocked')
+
+    current_state = access.get(current_period.pk, 'blocked')
+    next_actionable = next(
+        (p for p in all_periods if access.get(p.pk) == 'current'), None
+    )
+
+    return {
+        'all_periods': all_periods,
+        'period_access': access,
+        'locked_periods': locked,
+        'current_state': current_state,
+        'current_period_locked': current_state == 'locked',
+        'current_period_editable': current_state == 'current',
+        'current_period_blocked': current_state == 'blocked',
+        'prior_periods_locked': [
+            p for p in all_periods
+            if p.access_state == 'locked' and p.order < current_period.order
+        ],
+        'next_actionable_period': next_actionable,
+    }
+
+
+def _sequential_save_block(assignment, grading_period):
+    """Return a user-facing error string when `grading_period` may not be edited
+    for this assignment under the strict Q1 -> Q2 -> Q3 -> Q4 sequence, else None.
+
+    Uses ``_locked_period_pks`` (via ``_period_access``) to detect finalized
+    quarters and enforce that a quarter is only editable once every prior
+    quarter has been validated by the Registrar.
+    """
+    all_periods = list(GradingPeriod.objects.filter(
+        school_year=assignment.school_year
+    ).order_by('order'))
+    access, _ = _period_access(assignment, all_periods)
+    state = access.get(grading_period.pk, 'blocked')
+
+    if state == 'locked':
+        return (
+            f'{grading_period.name} has been validated and locked. Finalized grades are '
+            'read-only and cannot be modified — contact the Registrar to return it for correction.'
+        )
+    if state == 'blocked':
+        actionable = next((p for p in all_periods if access.get(p.pk) == 'current'), None)
+        if actionable:
+            return (
+                f'You cannot edit {grading_period.name} yet. Complete and submit '
+                f'{actionable.name} for validation first — quarters follow the '
+                'Q1 → Q2 → Q3 → Q4 sequence.'
+            )
+        return (
+            f'{grading_period.name} is not the active quarter. Quarters must be '
+            'completed in order (Q1 → Q2 → Q3 → Q4).'
+        )
+    return None
+
+
+@never_cache
 @teacher_or_admin_required
 def grade_encode(request, assignment_pk):
     assignment = get_object_or_404(TeacherAssignment, pk=assignment_pk)
@@ -168,26 +302,28 @@ def grade_encode(request, assignment_pk):
             'grade': grade
         })
     
-    all_periods = GradingPeriod.objects.filter(
+    all_periods = list(GradingPeriod.objects.filter(
         school_year=assignment.school_year
-    ).order_by('order')
-    
-    submission = GradeSubmission.objects.filter(
+    ).order_by('order'))
+
+    context = {
+        'assignment': assignment,
+        'current_period': grading_period,
+        'grade_data': grade_data,
+        'students': students,
+    }
+    context.update(_sequence_context(assignment, all_periods, grading_period))
+
+    context['submission'] = GradeSubmission.objects.filter(
         teacher=request.user,
         subject=assignment.subject,
         section=assignment.section,
         school_year=assignment.school_year,
         grading_period=grading_period
     ).first()
-    
-    return render(request, 'grades/grade_encode.html', {
-        'assignment': assignment,
-        'current_period': grading_period,
-        'all_periods': all_periods,
-        'grade_data': grade_data,
-        'students': students,
-        'submission': submission,
-    })
+    context['can_submit'] = _can_submit(context['submission'])
+
+    return render(request, 'grades/grade_encode.html', context)
 
 
 @teacher_or_admin_required
@@ -211,43 +347,62 @@ def grade_save(request, assignment_pk):
         messages.error(request, 'Grade submissions are not open for this grading period.')
         return redirect('grades:grade_list')
 
+    # Backend enforcement of the strict Q1 -> Q2 -> Q3 -> Q4 sequence: reject edits
+    # to finalized quarters or to quarters whose prior quarters are not yet validated,
+    # even when the current period's submissions are open.
+    block_msg = _sequential_save_block(assignment, grading_period)
+    if block_msg:
+        messages.error(request, block_msg)
+        return redirect(f'{reverse("grades:grade_encode", args=[assignment.pk])}?period={grading_period.pk}')
+
+    # Prevent duplicate submissions: once the teacher has submitted for validation
+    # (pending) or the Registrar has approved it (approved), the submission is frozen
+    # and cannot be re-submitted. Only a missing submission or one that was returned
+    # for correction may be (re)submitted.
+    existing_submission = GradeSubmission.objects.filter(
+        teacher=request.user,
+        subject=assignment.subject,
+        section=assignment.section,
+        school_year=assignment.school_year,
+        grading_period=grading_period,
+    ).first()
+    if existing_submission and existing_submission.status == 'pending':
+        messages.warning(
+            request,
+            f'Grades for {grading_period.name} are already submitted and under review by the Registrar. '
+            'Editing and duplicate submissions are locked until a decision is made.'
+        )
+        return redirect(f'{reverse("grades:grade_encode_select")}?assignment={assignment_pk}&period={grading_period.pk}')
+    if existing_submission and existing_submission.status == 'approved':
+        messages.warning(
+            request,
+            f'Grades for {grading_period.name} have already been validated by the Registrar. '
+            'Contact the Registrar to return them before editing or resubmitting.'
+        )
+        return redirect(f'{reverse("grades:grade_encode_select")}?assignment={assignment_pk}&period={grading_period.pk}')
+
     action = request.POST.get('action', 'draft')
-    
+
     students = Student.objects.filter(
         grade_level=assignment.section.grade_level,
         section=assignment.section,
         status='active'
     )
-    
+
     student_ids_with_data = []
+    locked_skipped = 0
 
     for student in students:
         prefix = f'student_{student.id}'
-        written = request.POST.get(f'{prefix}_written', '')
-        performance = request.POST.get(f'{prefix}_performance', '')
-        assessment = request.POST.get(f'{prefix}_assessment', '')
+        ww_items = [request.POST.get(f'{prefix}_written_{i}', '') for i in (1, 2, 3)]
+        pt_items = [request.POST.get(f'{prefix}_performance_{i}', '') for i in (1, 2, 3)]
+        as_items = [request.POST.get(f'{prefix}_assessment_{i}', '') for i in (1, 2, 3)]
+        written_highest = request.POST.get(f'{prefix}_written_highest', '')
+        performance_highest = request.POST.get(f'{prefix}_performance_highest', '')
+        assessment_highest = request.POST.get(f'{prefix}_assessment_highest', '')
 
-        if written == '' and performance == '' and assessment == '':
+        if not any(v.strip() for v in ww_items + pt_items + as_items):
             continue
-
-        try:
-            written = float(written) if written else 0
-            performance = float(performance) if performance else 0
-            assessment = float(assessment) if assessment else 0
-        except (ValueError, TypeError):
-            messages.error(request, f'Invalid grade values for {student.full_name}.')
-            continue
-
-        if not (0 <= written <= 100 and 0 <= performance <= 100 and 0 <= assessment <= 100):
-            messages.error(request, f'Grade values for {student.full_name} must be between 0 and 100.')
-            continue
-
-        student_ids_with_data.append(student.id)
-
-        quarter_grade = (written + performance + assessment) / 3
-        remarks = 'Passed' if quarter_grade >= 75 else ('Incomplete' if quarter_grade >= 60 else 'Failed')
-        
-        status = 'submitted' if action == 'submit' else 'draft'
 
         existing_grade = Grade.objects.filter(
             student=student,
@@ -255,7 +410,52 @@ def grade_save(request, assignment_pk):
             grading_period=grading_period,
             school_year=assignment.school_year,
         ).first()
+
+        # Backend enforcement of sequential locking: validated/locked grades are
+        # immutable to teachers even while the current period's submissions remain
+        # open. They can only be changed after the Registrar returns them.
+        if existing_grade and existing_grade.status in IMMUTABLE_GRADE_STATUSES:
+            locked_skipped += 1
+            continue
+
+        try:
+            ww_vals = [float(v) if v.strip() else 0 for v in ww_items]
+            pt_vals = [float(v) if v.strip() else 0 for v in pt_items]
+            as_vals = [float(v) if v.strip() else 0 for v in as_items]
+            written_highest = float(written_highest) if written_highest else 100
+            performance_highest = float(performance_highest) if performance_highest else 100
+            assessment_highest = float(assessment_highest) if assessment_highest else 100
+        except (ValueError, TypeError):
+            messages.error(request, f'Invalid grade values for {student.full_name}.')
+            continue
+
+        written = sum(ww_vals)
+        performance = sum(pt_vals)
+        assessment = sum(as_vals)
+
+        if written_highest <= 0 or performance_highest <= 0 or assessment_highest <= 0:
+            messages.error(request, f'Highest possible scores for {student.full_name} must be greater than 0.')
+            continue
+
+        if any(v < 0 for v in ww_vals + pt_vals + as_vals):
+            messages.error(request, f'Item scores for {student.full_name} cannot be negative.')
+            continue
+
+        if not (written <= written_highest and performance <= performance_highest and assessment <= assessment_highest):
+            messages.error(request, f'Total scores for {student.full_name} cannot exceed their highest possible score.')
+            continue
+
+        student_ids_with_data.append(student.id)
+
+        quarter_grade = weighted_quarter_grade(
+            written, written_highest,
+            performance, performance_highest,
+            assessment, assessment_highest,
+        )
+        remarks = 'Passed' if quarter_grade >= 75 else ('Incomplete' if quarter_grade >= 60 else 'Failed')
         
+        status = 'submitted' if action == 'submit' else 'draft'
+
         grade, created = Grade.objects.update_or_create(
             student=student,
             subject=assignment.subject,
@@ -263,9 +463,15 @@ def grade_save(request, assignment_pk):
             school_year=assignment.school_year,
             defaults={
                 'section': assignment.section,
+                'written_work_1': ww_vals[0], 'written_work_2': ww_vals[1], 'written_work_3': ww_vals[2],
                 'written_work': written,
+                'written_work_highest': written_highest,
+                'performance_task_1': pt_vals[0], 'performance_task_2': pt_vals[1], 'performance_task_3': pt_vals[2],
                 'performance_task': performance,
+                'performance_task_highest': performance_highest,
+                'assessment_1': as_vals[0], 'assessment_2': as_vals[1], 'assessment_3': as_vals[2],
                 'assessment': assessment,
+                'assessment_highest': assessment_highest,
                 'quarter_grade': quarter_grade,
                 'final_grade': quarter_grade,
                 'remarks': remarks,
@@ -284,8 +490,15 @@ def grade_save(request, assignment_pk):
             description=f'{"Encoded" if created else "Updated"} grade for {student.full_name} in {assignment.subject}'
         )
     
+    if locked_skipped:
+        messages.warning(
+            request,
+            f'{locked_skipped} validated grade(s) are locked and could not be modified. '
+            'Contact the Registrar to return them for correction.'
+        )
+    
     if action == 'submit':
-        submission, _ = GradeSubmission.objects.get_or_create(
+        submission, created = GradeSubmission.objects.get_or_create(
             teacher=request.user,
             subject=assignment.subject,
             section=assignment.section,
@@ -293,6 +506,13 @@ def grade_save(request, assignment_pk):
             grading_period=grading_period,
             defaults={'status': 'pending'}
         )
+        if not created:
+            # Resubmission after the Registrar returned the grades: reset the
+            # status so it immediately reflects as under review for the Registrar.
+            submission.status = 'pending'
+            submission.reviewed_at = None
+            submission.submitted_at = timezone.now()
+            submission.save(update_fields=['status', 'reviewed_at', 'submitted_at'])
         Grade.objects.filter(
             student__id__in=student_ids_with_data,
             subject=assignment.subject,
@@ -309,7 +529,7 @@ def grade_save(request, assignment_pk):
             object_id=str(submission.id),
             description=f'Submitted grades for {assignment.subject} - {assignment.section} ({grading_period.name})'
         )
-        messages.success(request, f'Grades submitted for {grading_period.name}.')
+        messages.success(request, f'Grades submitted for {grading_period.name}. Status: Under Review — awaiting Registrar validation.')
     else:
         messages.success(request, 'Grades saved as draft.')
     
@@ -339,9 +559,83 @@ def submission_list(request):
     if selected_period:
         submissions = submissions.filter(grading_period=selected_period)
     
+    # Search across teacher, subject and section (composes with the period filter).
+    query = request.GET.get('q', '')
+    if query:
+        submissions = submissions.filter(
+            Q(teacher__first_name__icontains=query)
+            | Q(teacher__last_name__icontains=query)
+            | Q(subject__name__icontains=query)
+            | Q(subject__code__icontains=query)
+            | Q(section__name__icontains=query)
+        )
+    
+    # Status summary is computed BEFORE the status filter so the triage cards
+    # always reflect the full workload for the current period/search selection.
+    summary_counts = {'pending': 0, 'approved': 0, 'returned': 0}
+    for row in submissions.values('status').annotate(c=Count('id')):
+        if row['status'] in summary_counts:
+            summary_counts[row['status']] = row['c']
+    summary_total = sum(summary_counts.values())
+    
+    # Quarter-completion detection for the Registrar's "advance calendar" prompt.
+    # Evaluated for the selected quarter (or the current one) independent of the
+    # status/search filters: it is complete when every submission is approved
+    # (nothing pending or returned remains) and at least one submission exists.
+    period_completion = None
+    if not request.user.is_teacher and current_sy:
+        eval_period = selected_period or GradingPeriod.objects.filter(
+            school_year=current_sy, is_current=True
+        ).first()
+        if eval_period:
+            period_subs = GradeSubmission.objects.filter(
+                school_year=current_sy, grading_period=eval_period
+            )
+            total = period_subs.count()
+            unresolved = period_subs.filter(status__in=['pending', 'returned']).count()
+            if total > 0 and unresolved == 0:
+                next_period = GradingPeriod.objects.filter(
+                    school_year=current_sy, order__gt=eval_period.order
+                ).order_by('order').first()
+                period_completion = {
+                    'period': eval_period,
+                    'total': total,
+                    'next_period': next_period,
+                }
+    
     status_filter = request.GET.get('status', '')
     if status_filter:
         submissions = submissions.filter(status=status_filter)
+    
+    # Per-submission context (student count, class average, at-risk count) via a
+    # single correlated Subquery — avoids N+1 lookups in the template.
+    grade_stats = (
+        Grade.objects.filter(
+            subject=OuterRef('subject'),
+            section=OuterRef('section'),
+            school_year=OuterRef('school_year'),
+            grading_period=OuterRef('grading_period'),
+        )
+        .values('subject')
+        .annotate(
+            n=Count('id'),
+            avg=Avg('quarter_grade'),
+            at_risk=Count('id', filter=Q(quarter_grade__lt=75)),
+        )
+    )
+    submissions = submissions.annotate(
+        student_count=Subquery(grade_stats.values('n'), output_field=IntegerField()),
+        class_avg=Subquery(grade_stats.values('avg'), output_field=DecimalField(max_digits=5, decimal_places=2)),
+        at_risk_count=Subquery(grade_stats.values('at_risk'), output_field=IntegerField()),
+        # Triage ordering: pending first, then returned, then approved; oldest
+        # submissions surface before newer ones within each status bucket.
+        status_priority=Case(
+            When(status='pending', then=Value(0)),
+            When(status='returned', then=Value(1)),
+            default=Value(2),
+            output_field=IntegerField(),
+        ),
+    ).order_by('status_priority', 'submitted_at')
     
     all_periods = GradingPeriod.objects.filter(school_year=current_sy).order_by('order') if current_sy else GradingPeriod.objects.none()
 
@@ -349,20 +643,23 @@ def submission_list(request):
     page = request.GET.get('page', 1)
     submissions_page = paginator.get_page(page)
 
-    if request.headers.get('HX-Request'):
-        return render(request, 'grades/partials/submission_table.html', {
-            'submissions': submissions_page,
-            'status_filter': status_filter,
-            'selected_period': selected_period,
-        })
-
-    return render(request, 'grades/submission_list.html', {
+    context = {
         'submissions': submissions_page,
         'status_filter': status_filter,
         'status_choices': GradeSubmission.STATUS_CHOICES,
         'all_periods': all_periods,
         'selected_period': selected_period,
-    })
+        'period_filter': period_filter,
+        'query': query,
+        'summary_counts': summary_counts,
+        'summary_total': summary_total,
+        'period_completion': period_completion,
+    }
+
+    if request.headers.get('HX-Request'):
+        return render(request, 'grades/partials/submission_table.html', context)
+
+    return render(request, 'grades/submission_list.html', context)
 
 
 @registrar_or_admin_required
@@ -383,12 +680,15 @@ def submission_validate(request, pk):
             submission.remarks = remarks
             submission.save()
             
+            # Approving finalizes the entire class scope for this period, so any
+            # grade still in draft/submitted/returned is validated together. This
+            # keeps Grade.status in sync with the approved GradeSubmission.
             Grade.objects.filter(
                 subject=submission.subject,
                 section=submission.section,
                 school_year=submission.school_year,
                 grading_period=submission.grading_period,
-                status__in=['submitted', 'returned']
+                status__in=['draft', 'submitted', 'returned']
             ).update(status='validated')
             
             GradeValidation.objects.filter(submission=submission).delete()
@@ -414,12 +714,14 @@ def submission_validate(request, pk):
             submission.remarks = remarks
             submission.save()
             
+            # Returning reopens the class scope: every not-yet-finalized grade
+            # (draft/submitted) becomes returned so the teacher can edit and resubmit.
             Grade.objects.filter(
                 subject=submission.subject,
                 section=submission.section,
                 school_year=submission.school_year,
                 grading_period=submission.grading_period,
-                status='submitted'
+                status__in=['draft', 'submitted']
             ).update(status='returned')
             
             GradeValidation.objects.filter(submission=submission).delete()
@@ -455,6 +757,29 @@ def submission_validate(request, pk):
 
 
 @registrar_or_admin_required
+def submission_delete(request, pk):
+    """Delete a grade submission (and its validation record). Grade rows themselves
+    are not linked to the submission and remain untouched."""
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    submission = get_object_or_404(GradeSubmission, pk=pk)
+    description = (f'{submission.teacher.get_full_name()} - {submission.subject} '
+                   f'- {submission.section} - {submission.grading_period}')
+    submission.delete()  # cascades to the related GradeValidation
+
+    AuditLog.objects.create(
+        user=request.user,
+        action='delete',
+        model_name='GradeSubmission',
+        object_id=str(pk),
+        description=f'Deleted grade submission: {description}',
+    )
+    messages.success(request, 'Submission deleted.')
+    return redirect(request.POST.get('next') or 'grades:submission_list')
+
+
+@registrar_or_admin_required
 def grade_export(request):
     import csv
     from django.http import HttpResponse
@@ -463,7 +788,7 @@ def grade_export(request):
     response['Content-Disposition'] = 'attachment; filename="grades_export.csv"'
     
     writer = csv.writer(response)
-    writer.writerow(['Student', 'LRN', 'Subject', 'Section', 'Grade Level', 'School Year', 'Grading Period', 'Written Work', 'Performance Task', 'Assessment', 'Quarter Grade', 'Final Grade', 'Remarks', 'Status'])
+    writer.writerow(['Student', 'LRN', 'Subject', 'Section', 'Grade Level', 'School Year', 'Grading Period', 'WW 1', 'WW 2', 'WW 3', 'WW Total', 'WW Highest', 'PT 1', 'PT 2', 'PT 3', 'PT Total', 'PT Highest', 'QA 1', 'QA 2', 'QA 3', 'QA Total', 'QA Highest', 'Quarter Grade', 'Final Grade', 'Remarks', 'Status'])
     
     grades = Grade.objects.select_related(
         'student', 'subject', 'section', 'section__grade_level', 'school_year', 'grading_period'
@@ -478,9 +803,15 @@ def grade_export(request):
             grade.section.grade_level,
             grade.school_year.name,
             grade.grading_period.name,
+            grade.written_work_1, grade.written_work_2, grade.written_work_3,
             grade.written_work,
+            grade.written_work_highest,
+            grade.performance_task_1, grade.performance_task_2, grade.performance_task_3,
             grade.performance_task,
+            grade.performance_task_highest,
+            grade.assessment_1, grade.assessment_2, grade.assessment_3,
             grade.assessment,
+            grade.assessment_highest,
             grade.quarter_grade,
             grade.final_grade,
             grade.remarks,
@@ -533,12 +864,13 @@ def encode_modal(request):
     })
 
 
+@never_cache
 @teacher_or_admin_required
 def grade_encode_select(request):
     """Teacher selects a subject from dropdown and dynamically loads the grade entry table."""
     current_sy = SchoolYear.objects.filter(is_current=True).first()
     current_period = GradingPeriod.objects.filter(is_current=True).first()
-    all_periods = GradingPeriod.objects.filter(school_year=current_sy).order_by('order') if current_sy else GradingPeriod.objects.none()
+    all_periods = list(GradingPeriod.objects.filter(school_year=current_sy).order_by('order')) if current_sy else []
     
     period_pk = request.GET.get('period')
     if period_pk:
@@ -580,6 +912,8 @@ def grade_encode_select(request):
     }
     
     if selected_assignment:
+        context.update(_sequence_context(selected_assignment, all_periods, grading_period))
+
         students = Student.objects.filter(
             grade_level=selected_assignment.section.grade_level,
             section=selected_assignment.section,
@@ -614,6 +948,7 @@ def grade_encode_select(request):
             'students': students,
             'grade_data': grade_data,
             'submission': submission,
+            'can_submit': _can_submit(submission),
         })
         
         if request.headers.get('HX-Request'):
@@ -622,12 +957,13 @@ def grade_encode_select(request):
     return render(request, 'grades/grade_encode_select.html', context)
 
 
+@never_cache
 @teacher_or_admin_required
 def grade_encode_all(request):
     """Show all teacher assignments with students so teacher can enter all grades at once."""
     current_sy = SchoolYear.objects.filter(is_current=True).first()
     current_period = GradingPeriod.objects.filter(is_current=True).first()
-    all_periods = GradingPeriod.objects.filter(school_year=current_sy).order_by('order') if current_sy else GradingPeriod.objects.none()
+    all_periods = list(GradingPeriod.objects.filter(school_year=current_sy).order_by('order')) if current_sy else []
     
     period_pk = request.GET.get('period')
     if period_pk:
@@ -653,8 +989,24 @@ def grade_encode_all(request):
         ).select_related('teacher', 'subject', 'section', 'section__grade_level')
     
     # Build data structure: assignment -> list of {student, grade}
+    # Also compute the strict Q1->Q4 sequential state per assignment and aggregate
+    # a shared state for the period tabs at the top of the page.
     assignment_data = []
+    locked_periods = set()
+    total_assignments = 0
+    period_locked_count = {p.pk: 0 for p in all_periods}
+    period_has_current = {p.pk: False for p in all_periods}
+
     for assignment in assignments:
+        total_assignments += 1
+        access, assignment_locked = _period_access(assignment, all_periods)
+        locked_periods |= assignment_locked
+        for p in all_periods:
+            if access.get(p.pk) == 'locked':
+                period_locked_count[p.pk] += 1
+            elif access.get(p.pk) == 'current':
+                period_has_current[p.pk] = True
+
         students = Student.objects.filter(
             grade_level=assignment.section.grade_level,
             section=assignment.section,
@@ -684,17 +1036,45 @@ def grade_encode_all(request):
             school_year=assignment.school_year,
             grading_period=grading_period
         ).first()
-        
+
+        current_state = access.get(grading_period.pk, 'blocked')
         assignment_data.append({
             'assignment': assignment,
             'student_grades': student_grades,
             'submission': submission,
+            'locked': current_state == 'locked',
+            'blocked': current_state == 'blocked',
+            'editable': current_state == 'current',
+            'can_submit': current_state == 'current' and _can_submit(submission),
         })
-    
+
+    # Aggregate tab state across all of the teacher's assignments.
+    for p in all_periods:
+        if total_assignments and period_locked_count[p.pk] == total_assignments:
+            p.access_state = 'locked'
+        elif period_has_current[p.pk]:
+            p.access_state = 'current'
+        else:
+            p.access_state = 'blocked'
+
+    current_all_locked = total_assignments > 0 and period_locked_count.get(grading_period.pk, 0) == total_assignments
+    next_actionable = next((p for p in all_periods if p.access_state == 'current'), None)
+    any_submittable = any(item['can_submit'] for item in assignment_data)
+
     return render(request, 'grades/grade_encode_all.html', {
         'grading_period': grading_period,
         'all_periods': all_periods,
         'assignment_data': assignment_data,
+        'locked_periods': locked_periods,
+        'any_submittable': any_submittable,
+        'current_period_locked': current_all_locked,
+        'current_period_editable': period_has_current.get(grading_period.pk, False),
+        'current_period_blocked': (not current_all_locked) and not period_has_current.get(grading_period.pk, False),
+        'next_actionable_period': next_actionable,
+        'prior_periods_locked': [
+            p for p in all_periods
+            if p.access_state == 'locked' and p.order < grading_period.order
+        ],
     })
 
 
@@ -731,8 +1111,31 @@ def grade_save_all(request):
     
     action = request.POST.get('action', 'draft')
     saved_assignments = []
+    locked_skipped_total = 0
+    blocked_assignments = 0
+    under_review_skipped = 0
     
     for assignment in assignments:
+        # Backend enforcement of the strict Q1 -> Q2 -> Q3 -> Q4 sequence: skip any
+        # assignment whose target quarter is finalized or out of sequence.
+        if _sequential_save_block(assignment, grading_period):
+            blocked_assignments += 1
+            continue
+
+        # Prevent duplicate submissions: skip assignments already under review
+        # (pending) or already validated (approved). Only missing/returned may submit.
+        under_review = GradeSubmission.objects.filter(
+            teacher=request.user,
+            subject=assignment.subject,
+            section=assignment.section,
+            school_year=assignment.school_year,
+            grading_period=grading_period,
+            status__in=['pending', 'approved'],
+        ).exists()
+        if under_review:
+            under_review_skipped += 1
+            continue
+
         students = Student.objects.filter(
             grade_level=assignment.section.grade_level,
             section=assignment.section,
@@ -744,31 +1147,15 @@ def grade_save_all(request):
         
         for student in students:
             prefix = f'assignment_{assignment.pk}_student_{student.id}'
-            written = request.POST.get(f'{prefix}_written', '')
-            performance = request.POST.get(f'{prefix}_performance', '')
-            assessment = request.POST.get(f'{prefix}_assessment', '')
+            ww_items = [request.POST.get(f'{prefix}_written_{i}', '') for i in (1, 2, 3)]
+            pt_items = [request.POST.get(f'{prefix}_performance_{i}', '') for i in (1, 2, 3)]
+            as_items = [request.POST.get(f'{prefix}_assessment_{i}', '') for i in (1, 2, 3)]
+            written_highest = request.POST.get(f'{prefix}_written_highest', '')
+            performance_highest = request.POST.get(f'{prefix}_performance_highest', '')
+            assessment_highest = request.POST.get(f'{prefix}_assessment_highest', '')
             
-            if written == '' and performance == '' and assessment == '':
+            if not any(v.strip() for v in ww_items + pt_items + as_items):
                 continue
-            
-            try:
-                written = float(written) if written else 0
-                performance = float(performance) if performance else 0
-                assessment = float(assessment) if assessment else 0
-            except (ValueError, TypeError):
-                messages.error(request, f'Invalid grade values for {student.full_name} in {assignment.subject}.')
-                continue
-            
-            if not (0 <= written <= 100 and 0 <= performance <= 100 and 0 <= assessment <= 100):
-                messages.error(request, f'Grade values for {student.full_name} in {assignment.subject} must be between 0 and 100.')
-                continue
-            
-            student_ids_with_data.append(student.id)
-            has_data = True
-            
-            quarter_grade = (written + performance + assessment) / 3
-            remarks = 'Passed' if quarter_grade >= 75 else ('Incomplete' if quarter_grade >= 60 else 'Failed')
-            status = 'submitted' if action == 'submit' else 'draft'
             
             existing_grade = Grade.objects.filter(
                 student=student,
@@ -777,6 +1164,50 @@ def grade_save_all(request):
                 school_year=assignment.school_year,
             ).first()
             
+            # Backend enforcement of sequential locking: validated/locked grades
+            # stay immutable to teachers even while submissions are open.
+            if existing_grade and existing_grade.status in IMMUTABLE_GRADE_STATUSES:
+                locked_skipped_total += 1
+                continue
+            
+            try:
+                ww_vals = [float(v) if v.strip() else 0 for v in ww_items]
+                pt_vals = [float(v) if v.strip() else 0 for v in pt_items]
+                as_vals = [float(v) if v.strip() else 0 for v in as_items]
+                written_highest = float(written_highest) if written_highest else 100
+                performance_highest = float(performance_highest) if performance_highest else 100
+                assessment_highest = float(assessment_highest) if assessment_highest else 100
+            except (ValueError, TypeError):
+                messages.error(request, f'Invalid grade values for {student.full_name} in {assignment.subject}.')
+                continue
+            
+            written = sum(ww_vals)
+            performance = sum(pt_vals)
+            assessment = sum(as_vals)
+            
+            if written_highest <= 0 or performance_highest <= 0 or assessment_highest <= 0:
+                messages.error(request, f'Highest possible scores for {student.full_name} in {assignment.subject} must be greater than 0.')
+                continue
+            
+            if any(v < 0 for v in ww_vals + pt_vals + as_vals):
+                messages.error(request, f'Item scores for {student.full_name} in {assignment.subject} cannot be negative.')
+                continue
+            
+            if not (written <= written_highest and performance <= performance_highest and assessment <= assessment_highest):
+                messages.error(request, f'Total scores for {student.full_name} in {assignment.subject} cannot exceed their highest possible score.')
+                continue
+            
+            student_ids_with_data.append(student.id)
+            has_data = True
+            
+            quarter_grade = weighted_quarter_grade(
+                written, written_highest,
+                performance, performance_highest,
+                assessment, assessment_highest,
+            )
+            remarks = 'Passed' if quarter_grade >= 75 else ('Incomplete' if quarter_grade >= 60 else 'Failed')
+            status = 'submitted' if action == 'submit' else 'draft'
+            
             grade, created = Grade.objects.update_or_create(
                 student=student,
                 subject=assignment.subject,
@@ -784,9 +1215,15 @@ def grade_save_all(request):
                 school_year=assignment.school_year,
                 defaults={
                     'section': assignment.section,
+                    'written_work_1': ww_vals[0], 'written_work_2': ww_vals[1], 'written_work_3': ww_vals[2],
                     'written_work': written,
+                    'written_work_highest': written_highest,
+                    'performance_task_1': pt_vals[0], 'performance_task_2': pt_vals[1], 'performance_task_3': pt_vals[2],
                     'performance_task': performance,
+                    'performance_task_highest': performance_highest,
+                    'assessment_1': as_vals[0], 'assessment_2': as_vals[1], 'assessment_3': as_vals[2],
                     'assessment': assessment,
+                    'assessment_highest': assessment_highest,
                     'quarter_grade': quarter_grade,
                     'final_grade': quarter_grade,
                     'remarks': remarks,
@@ -806,7 +1243,7 @@ def grade_save_all(request):
             )
         
         if action == 'submit' and has_data:
-            submission, _ = GradeSubmission.objects.get_or_create(
+            submission, created = GradeSubmission.objects.get_or_create(
                 teacher=request.user,
                 subject=assignment.subject,
                 section=assignment.section,
@@ -814,6 +1251,12 @@ def grade_save_all(request):
                 grading_period=grading_period,
                 defaults={'status': 'pending'}
             )
+            if not created:
+                # Resubmission after return: reset so it immediately shows under review.
+                submission.status = 'pending'
+                submission.reviewed_at = None
+                submission.submitted_at = timezone.now()
+                submission.save(update_fields=['status', 'reviewed_at', 'submitted_at'])
             Grade.objects.filter(
                 student__id__in=student_ids_with_data,
                 subject=assignment.subject,
@@ -831,6 +1274,27 @@ def grade_save_all(request):
                 description=f'Submitted grades for {assignment.subject} - {assignment.section} ({grading_period.name})'
             )
             saved_assignments.append(assignment.subject.name)
+    
+    if locked_skipped_total:
+        messages.warning(
+            request,
+            f'{locked_skipped_total} validated grade(s) are locked and could not be modified. '
+            'Contact the Registrar to return them for correction.'
+        )
+    
+    if under_review_skipped:
+        messages.warning(
+            request,
+            f'{under_review_skipped} class(es) were skipped for {grading_period.name}: '
+            'already submitted and under review by the Registrar. Duplicate submissions are not allowed.'
+        )
+    
+    if blocked_assignments:
+        messages.warning(
+            request,
+            f'{blocked_assignments} class(es) were skipped for {grading_period.name}: finalized or '
+            'not yet reachable in the Q1 → Q2 → Q3 → Q4 sequence.'
+        )
     
     if action == 'submit':
         if saved_assignments:

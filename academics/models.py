@@ -81,9 +81,23 @@ class GradingPeriod(models.Model):
         (3, 'Third Quarter'),
         (4, 'Fourth Quarter'),
     )
+
+    MONTH_CHOICES = (
+        (1, 'January'), (2, 'February'), (3, 'March'), (4, 'April'),
+        (5, 'May'), (6, 'June'), (7, 'July'), (8, 'August'),
+        (9, 'September'), (10, 'October'), (11, 'November'), (12, 'December'),
+    )
     
     name = models.CharField(max_length=50)
     order = models.IntegerField(choices=PERIOD_CHOICES)
+    start_month = models.IntegerField(
+        choices=MONTH_CHOICES, null=True, blank=True, verbose_name="Start Month",
+        help_text="First calendar month this quarter covers (e.g. June).",
+    )
+    end_month = models.IntegerField(
+        choices=MONTH_CHOICES, null=True, blank=True, verbose_name="End Month",
+        help_text="Last calendar month this quarter covers (e.g. August).",
+    )
     school_year = models.ForeignKey(SchoolYear, on_delete=models.CASCADE, related_name='grading_periods')
     is_current = models.BooleanField(default=False)
     is_submissions_open = models.BooleanField(default=False, verbose_name="Open for Grade Submissions")
@@ -95,6 +109,18 @@ class GradingPeriod(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.school_year}"
+
+    @property
+    def month_range(self):
+        """Human-readable month coverage, e.g. 'June \u2013 August'. Empty if unset."""
+        labels = dict(self.MONTH_CHOICES)
+        if self.start_month and self.end_month:
+            return f"{labels[self.start_month]} \u2013 {labels[self.end_month]}"
+        if self.start_month:
+            return labels[self.start_month]
+        if self.end_month:
+            return labels[self.end_month]
+        return ""
 
     def save(self, *args, **kwargs):
         if self.is_current:
