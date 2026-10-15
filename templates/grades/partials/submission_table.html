@@ -38,7 +38,7 @@
                         </td>
                         <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ sub.subject }}</td>
                         <td class="px-4 py-3">
-                            <span class="px-2 py-1 text-xs rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium">{{ sub.section }}</span>
+                            <span class="px-2 py-1 text-xs rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium">{{ sub.section }}</span>
                         </td>
                         <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-200">{{ sub.student_count|default:0 }}</td>
                         <td class="px-4 py-3 text-center">
@@ -72,7 +72,7 @@
                             <div class="inline-flex items-center gap-2">
                                 {% if sub.status == 'pending' %}
                                     {% if user.is_registrar or user.is_admin %}
-                                    <a href="{% url 'grades:submission_validate' sub.pk %}" class="inline-flex items-center gap-1 bg-primary hover:bg-blue-800 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm">
+                                    <a href="{% url 'grades:submission_validate' sub.pk %}" class="inline-flex items-center gap-1 bg-primary hover:bg-primary-800 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                         Review
                                     </a>
@@ -118,8 +118,8 @@
 
 {% else %}
 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-12 text-center">
-    <div class="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mx-auto mb-4">
-        <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+    <div class="w-16 h-16 rounded-2xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
     </div>
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No submissions found</h3>
     <p class="text-sm text-gray-500 dark:text-gray-400">Grade submissions will appear here once teachers submit them for validation.</p>

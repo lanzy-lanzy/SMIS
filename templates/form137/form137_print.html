@@ -33,7 +33,7 @@
 
         .btn {
             align-items: center;
-            background: #1d4ed8;
+            background: #7b1e3b;
             border: 0;
             border-radius: 6px;
             color: #fff;
@@ -160,7 +160,7 @@
         }
 
         .grades-table .quarter {
-            width: 6.9%;
+            width: 9.2%;
         }
 
         .grades-table .final {
@@ -405,7 +405,7 @@
                 <thead>
                     <tr>
                         <th rowspan="2" class="learning">LEARNING AREAS</th>
-                        <th colspan="4">QUARTER{% if block.is_blank %}LY RATING{% endif %}</th>
+                        <th colspan="3">TERM{% if block.is_blank %} RATING{% endif %}</th>
                         <th rowspan="2" class="final">FINAL<br>RATING</th>
                         <th rowspan="2" class="remarks">REMARKS</th>
                     </tr>
@@ -413,7 +413,6 @@
                         <th class="quarter">1</th>
                         <th class="quarter">2</th>
                         <th class="quarter">3</th>
-                        <th class="quarter">4</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -423,7 +422,6 @@
                         <td>{% if row.q1 is not None %}{{ row.q1|floatformat:0 }}{% endif %}</td>
                         <td>{% if row.q2 is not None %}{{ row.q2|floatformat:0 }}{% endif %}</td>
                         <td>{% if row.q3 is not None %}{{ row.q3|floatformat:0 }}{% endif %}</td>
-                        <td>{% if row.q4 is not None %}{{ row.q4|floatformat:0 }}{% endif %}</td>
                         <td class="final-rating">{% if row.final_grade is not None %}{{ row.final_grade|floatformat:0 }}{% endif %}</td>
                         <td class="remarks-cell">{{ row.remarks }}</td>
                     </tr>
@@ -435,11 +433,10 @@
                         <td></td>
                         <td></td>
                         <td></td>
-                        <td></td>
                     </tr>
                     <tr class="general-average">
                         <td></td>
-                        <td colspan="4">General Average</td>
+                        <td colspan="3">General Average</td>
                         <td class="final-rating">{% if block.general_average is not None %}{{ block.general_average|floatformat:0 }}{% endif %}</td>
                         <td class="remarks-cell">{% if block.general_average is not None %}{% if block.general_average >= 75 %}PROMOTED{% else %}RETAINED{% endif %}{% endif %}</td>
                     </tr>

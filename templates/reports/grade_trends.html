@@ -12,7 +12,7 @@
             <option value="">All Grade Levels</option>
             {% for gl in grade_levels %}<option value="{{ gl.id }}" {% if gl_filter == gl.id|stringformat:"d" %}selected{% endif %}>{{ gl.name }}</option>{% endfor %}
         </select>
-        <button type="submit" class="bg-secondary hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition">Filter</button>
+        <button type="submit" class="bg-secondary hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition">Filter</button>
     </form>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

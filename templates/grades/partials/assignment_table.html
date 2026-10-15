@@ -16,7 +16,7 @@
         <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 group">
             <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                         {{ assignment.subject.code|truncatechars:3 }}
                     </div>
                     <div>
@@ -26,7 +26,7 @@
                 </div>
             </td>
             <td class="px-4 py-3">
-                <span class="px-2 py-1 text-xs rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium">{{ assignment.section.name }}</span>
+                <span class="px-2 py-1 text-xs rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium">{{ assignment.section.name }}</span>
             </td>
             <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ assignment.section.grade_level }}</td>
             <td class="px-4 py-3">
@@ -71,7 +71,7 @@
             <td class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-2">
                     {% if user.is_teacher or user.is_admin %}
-                    <a href="{% url 'grades:grade_encode' assignment.pk %}?period={{ current_period.pk }}" class="inline-flex items-center gap-1 bg-primary hover:bg-blue-800 text-white px-3 py-1.5 rounded-lg transition text-xs font-medium">
+                    <a href="{% url 'grades:grade_encode' assignment.pk %}?period={{ current_period.pk }}" class="inline-flex items-center gap-1 bg-primary hover:bg-primary-800 text-white px-3 py-1.5 rounded-lg transition text-xs font-medium">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                         Encode
                     </a>

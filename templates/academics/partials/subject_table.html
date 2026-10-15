@@ -16,7 +16,7 @@
             <td class="px-4 py-3">{{ subj.grade_level }}</td>
             <td class="px-4 py-3">{% if subj.is_active %}<span class="text-green-600">Yes</span>{% else %}No{% endif %}</td>
             <td class="px-4 py-3 text-right">
-                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:subject_edit' subj.pk %}' } }))" class="text-blue-600 hover:underline mr-2">Edit</button>
+                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:subject_edit' subj.pk %}' } }))" class="text-primary-600 hover:underline mr-2">Edit</button>
                 <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:subject_delete' subj.pk %}' } }))" class="text-red-600 hover:underline">Delete</button>
             </td>
         </tr>

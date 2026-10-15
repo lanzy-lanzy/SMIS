@@ -10,4 +10,6 @@ urlpatterns = [
     path('subject-performance/', views.subject_performance, name='subject_performance'),
     path('at-risk-students/', views.at_risk_students, name='at_risk_students'),
     path('student-history/<int:student_pk>/', views.student_history, name='student_history'),
+    path('report-cards/', views.report_card_select, name='report_card_select'),
+    path('report-card/<int:student_pk>/', views.report_card, name='report_card'),
 ]

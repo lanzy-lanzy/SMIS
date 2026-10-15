@@ -243,13 +243,13 @@ class Command(BaseCommand):
         return subjects
 
     def _create_grading_periods(self, school_years):
-        """Create Q1-Q4 grading periods for each school year."""
+        """Create Term 1-3 grading periods for each school year."""
         periods = {}
-        period_names = {1: 'Quarter 1', 2: 'Quarter 2', 3: 'Quarter 3', 4: 'Quarter 4'}
+        period_names = {1: 'Term 1', 2: 'Term 2', 3: 'Term 3'}
 
         for sy_name, sy in school_years.items():
             periods[sy_name] = {}
-            for order in range(1, 5):
+            for order in range(1, 4):
                 is_current = (sy_name == '2025-2026' and order == 1)
                 gp, _ = GradingPeriod.objects.get_or_create(
                     order=order,
@@ -353,7 +353,7 @@ class Command(BaseCommand):
         return students
 
     def _create_grades_and_submissions(self, students, assignments, grading_periods, school_years, sections, users):
-        """Create grades for all quarters with realistic workflow statuses."""
+        """Create grades for all terms with realistic workflow statuses."""
         teachers = users['teachers']
         registrar = users['registrar']
         current_sy = school_years['2025-2026']
@@ -364,7 +364,7 @@ class Command(BaseCommand):
             key = (a.section_id, a.subject_id)
             assignment_map[key] = a
 
-        # For current school year, create grades for all quarters
+        # For current school year, create grades for all terms
         for student in students:
             if student.status != 'active':
                 continue
@@ -379,22 +379,19 @@ class Command(BaseCommand):
 
                 teacher = assignment.teacher
 
-                for order in range(1, 5):
+                for order in range(1, 4):
                     gp = grading_periods['2025-2026'][order]
 
-                    # Determine grade workflow status based on quarter
+                    # Determine grade workflow status based on term
                     if order == 1:
-                        # Q1: fully validated (closed workflow)
+                        # Term 1: fully validated (closed workflow)
                         status = 'validated'
                     elif order == 2:
-                        # Q2: mix of pending submissions and validated
+                        # Term 2: mix of pending submissions and validated
                         status = random.choice(['validated', 'submitted'])
-                    elif order == 3:
-                        # Q3: some drafts, some submitted
-                        status = random.choice(['draft', 'submitted', 'validated'])
                     else:
-                        # Q4: mostly drafts
-                        status = random.choice(['draft', 'draft', 'submitted'])
+                        # Term 3: some drafts, some submitted
+                        status = random.choice(['draft', 'submitted', 'validated'])
 
                     # Generate realistic grades
                     written = random.randint(70, 95)
@@ -465,7 +462,7 @@ class Command(BaseCommand):
             prev_section = prev_sections[prev_level][0] if prev_sections.get(prev_level) else student.section
 
             for subject in self._get_subjects_for_level(prev_level):
-                for order in range(1, 5):
+                for order in range(1, 4):
                     gp = grading_periods['2024-2025'][order]
                     quarter_grade = Decimal(random.randint(75, 92))
                     Grade.objects.get_or_create(

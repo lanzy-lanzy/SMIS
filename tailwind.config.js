@@ -8,21 +8,21 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                // Formal SMIS brand palette: institutional navy + academic blue
+                // Formal SMIS brand palette: institutional maroon + academic gold
                 primary: {
-                    DEFAULT: '#1D4ED8',
-                    dark: '#0B1F33',
-                    light: '#60A5FA',
-                    50: '#EFF6FF',
-                    100: '#DBEAFE',
-                    200: '#BFDBFE',
-                    300: '#93C5FD',
-                    400: '#60A5FA',
-                    500: '#3B82F6',
-                    600: '#2563EB',
-                    700: '#1D4ED8',
-                    800: '#1E40AF',
-                    900: '#1E3A8A',
+                    DEFAULT: '#7B1E3B',
+                    dark: '#2E0B18',
+                    light: '#D05C77',
+                    50: '#FCF2F4',
+                    100: '#F8DFE4',
+                    200: '#F0BEC9',
+                    300: '#E393A5',
+                    400: '#D05C77',
+                    500: '#B23A54',
+                    600: '#972842',
+                    700: '#7B1E3B',
+                    800: '#6A1A33',
+                    900: '#4C1226',
                 },
                 secondary: {
                     DEFAULT: '#0F766E',
@@ -55,7 +55,7 @@ module.exports = {
                     600: '#8E24AA',
                     700: '#7B1FA2',
                 },
-                surface: '#F4F6F9',
+                surface: '#F6F3F4',
             },
             fontFamily: {
                 sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],

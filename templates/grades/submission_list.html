@@ -14,7 +14,7 @@
             {% endif %}
         </div>
         {% if user.is_teacher %}
-        <a href="{% url 'grades:grade_encode_select' %}{% if selected_period %}?period={{ selected_period.pk }}{% endif %}" class="inline-flex items-center gap-2 bg-primary hover:bg-blue-800 text-white px-5 py-2.5 rounded-lg transition font-medium shadow-sm">
+        <a href="{% url 'grades:grade_encode_select' %}{% if selected_period %}?period={{ selected_period.pk }}{% endif %}" class="inline-flex items-center gap-2 bg-primary hover:bg-primary-800 text-white px-5 py-2.5 rounded-lg transition font-medium shadow-sm">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
             Encode Grades
         </a>
@@ -23,14 +23,14 @@
 
     <!-- Teacher Empty State / Workflow -->
     {% if user.is_teacher and not submissions %}
-    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
+    <div class="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl p-6">
         <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
-            <div class="w-16 h-16 rounded-2xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
-                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <div class="w-16 h-16 rounded-2xl bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center flex-shrink-0">
+                <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
             </div>
             <div class="flex-1">
-                <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-100">No Grade Submissions Yet</h3>
-                <p class="text-sm text-blue-700 dark:text-blue-300 mt-1">This page shows grades you have already submitted. Here's how to submit grades for a quarter:</p>
+                <h3 class="text-lg font-semibold text-primary-900 dark:text-primary-100">No Grade Submissions Yet</h3>
+                <p class="text-sm text-primary-700 dark:text-primary-300 mt-1">This page shows grades you have already submitted. Here's how to submit grades for a term:</p>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
                     <div class="bg-white/70 dark:bg-slate-800/70 rounded-lg p-3 text-sm">
                         <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-bold mr-2">1</span>
@@ -46,7 +46,7 @@
                     </div>
                 </div>
             </div>
-            <a href="{% url 'grades:grade_encode_select' %}{% if selected_period %}?period={{ selected_period.pk }}{% endif %}" class="inline-flex items-center justify-center gap-2 bg-primary hover:bg-blue-800 text-white px-6 py-3 rounded-lg transition font-medium shadow-sm whitespace-nowrap">
+            <a href="{% url 'grades:grade_encode_select' %}{% if selected_period %}?period={{ selected_period.pk }}{% endif %}" class="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-800 text-white px-6 py-3 rounded-lg transition font-medium shadow-sm whitespace-nowrap">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                 Start Encoding
             </a>
@@ -73,14 +73,14 @@
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">Returned</p>
         </a>
         <a href="?{% if period_filter %}period={{ period_filter }}{% endif %}{% if query %}&q={{ query|urlencode }}{% endif %}"
-           class="rounded-xl p-4 border shadow-sm transition {% if not status_filter %}bg-blue-50 dark:bg-blue-900/20 border-primary/30 dark:border-primary{% else %}bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-blue-200{% endif %}">
+           class="rounded-xl p-4 border shadow-sm transition {% if not status_filter %}bg-primary-50 dark:bg-primary-900/20 border-primary/30 dark:border-primary{% else %}bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-primary-200{% endif %}">
             <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ summary_total }}</p>
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">All Submissions</p>
         </a>
     </div>
     {% endif %}
 
-    <!-- Quarter fully approved → advance calendar prompt (Registrar/Admin) -->
+    <!-- Term fully approved → advance calendar prompt (Registrar/Admin) -->
     {% if period_completion %}
     <div class="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-5">
         <div class="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -91,7 +91,7 @@
                 <h3 class="text-base font-semibold text-emerald-900 dark:text-emerald-100">{{ period_completion.period.name }} is fully approved</h3>
                 <p class="text-sm text-emerald-700 dark:text-emerald-300 mt-0.5">
                     All {{ period_completion.total }} submission{{ period_completion.total|pluralize }} for {{ period_completion.period.name }} have been validated by the Registrar.
-                    {% if not period_completion.next_period %} This is the final quarter — records are ready for Form 137 processing.{% endif %}
+                    {% if not period_completion.next_period %} This is the final term — records are ready for Form 137 processing.{% endif %}
                 </p>
             </div>
             {% if period_completion.next_period %}
@@ -103,7 +103,7 @@
                 <form method="post" action="{% url 'academics:grading_period_open_next' period_completion.period.pk %}" class="shrink-0">
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{% url 'grades:submission_list' %}?period={{ period_completion.next_period.pk }}">
-                    <button type="submit" class="inline-flex items-center gap-2 bg-primary hover:bg-blue-800 text-white px-5 py-2.5 rounded-lg transition font-medium shadow-sm whitespace-nowrap">
+                    <button type="submit" class="inline-flex items-center gap-2 bg-primary hover:bg-primary-800 text-white px-5 py-2.5 rounded-lg transition font-medium shadow-sm whitespace-nowrap">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5-5 5M6 7l5 5-5 5"></path></svg>
                         Close {{ period_completion.period.name }} &amp; Open {{ period_completion.next_period.name }}
                     </button>
@@ -119,7 +119,7 @@
             <!-- Period Filter (preserves status + search) -->
             {% if all_periods %}
             <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-sm text-gray-500">Quarter:</span>
+                <span class="text-sm text-gray-500">Term:</span>
                 <a href="?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if query %}q={{ query|urlencode }}{% endif %}" class="px-3 py-1.5 text-xs rounded-lg font-medium transition {% if not selected_period %}bg-primary text-white{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}">All</a>
                 {% for period in all_periods %}
                 <a href="?period={{ period.pk }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if query %}&q={{ query|urlencode }}{% endif %}" class="px-3 py-1.5 text-xs rounded-lg font-medium transition {% if selected_period.pk == period.pk %}bg-primary text-white{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}">

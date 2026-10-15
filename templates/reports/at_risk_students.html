@@ -12,7 +12,7 @@
             <option value="">All Grade Levels</option>
             {% for gl in grade_levels %}<option value="{{ gl.id }}" {% if gl_filter == gl.id|stringformat:"d" %}selected{% endif %}>{{ gl.name }}</option>{% endfor %}
         </select>
-        <button type="submit" class="bg-secondary hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition">Filter</button>
+        <button type="submit" class="bg-secondary hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition">Filter</button>
     </form>
 
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
@@ -31,7 +31,7 @@
                     {% for item in at_risk %}
                     <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
                         <td class="px-4 py-3">
-                            <a href="{% url 'reports:student_history' item.student.pk %}" class="text-blue-600 hover:underline">{{ item.student.full_name }}</a>
+                            <a href="{% url 'reports:student_history' item.student.pk %}" class="text-primary-600 hover:underline">{{ item.student.full_name }}</a>
                         </td>
                         <td class="px-4 py-3">{{ item.student.lrn }}</td>
                         <td class="px-4 py-3">{{ item.student.grade_level }}</td>

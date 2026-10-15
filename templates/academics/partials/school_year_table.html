@@ -12,7 +12,7 @@
             <td class="px-4 py-3">{{ sy.name }}</td>
             <td class="px-4 py-3">{% if sy.is_current %}<span class="text-green-600">Yes</span>{% else %}No{% endif %}</td>
             <td class="px-4 py-3 text-right">
-                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:school_year_edit' sy.pk %}' } }))" class="text-blue-600 hover:underline mr-2">Edit</button>
+                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:school_year_edit' sy.pk %}' } }))" class="text-primary-600 hover:underline mr-2">Edit</button>
                 <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:school_year_delete' sy.pk %}' } }))" class="text-red-600 hover:underline">Delete</button>
             </td>
         </tr>

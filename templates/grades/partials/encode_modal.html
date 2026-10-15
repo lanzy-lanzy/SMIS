@@ -12,7 +12,7 @@
 
     {% if not grading_period %}
     <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-sm text-yellow-800 dark:text-yellow-300">
-        No grading period is selected. Please select a quarter first.
+        No grading period is selected. Please select a term first.
     </div>
     {% elif not grading_period.is_submissions_open %}
     <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-sm text-yellow-800 dark:text-yellow-300">
@@ -24,7 +24,7 @@
         {% for assignment in assignments %}
         {% with sub_status=submission_status_by_pk|getitem:assignment.pk %}
         <a href="{% url 'grades:grade_encode' assignment.pk %}?period={{ grading_period.pk }}" 
-           class="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-slate-600 hover:border-primary dark:hover:border-primary hover:bg-blue-50 dark:hover:bg-slate-700/50 transition group {% if not grading_period.is_submissions_open %}opacity-60 pointer-events-none{% endif %}">
+           class="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-slate-600 hover:border-primary dark:hover:border-primary hover:bg-primary-50 dark:hover:bg-slate-700/50 transition group {% if not grading_period.is_submissions_open %}opacity-60 pointer-events-none{% endif %}">
             <div class="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                 {{ assignment.subject.code|truncatechars:3 }}
             </div>

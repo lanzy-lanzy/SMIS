@@ -17,7 +17,7 @@
                     {% if u.role == 'admin' %}
                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-red-700 dark:bg-red-950/60 dark:text-red-300">
                     {% elif u.role == 'registrar' %}
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700 dark:bg-primary-950/60 dark:text-primary-300">
                     {% elif u.role == 'teacher' %}
                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-100 text-xs font-bold text-green-700 dark:bg-green-950/60 dark:text-green-300">
                     {% else %}
@@ -39,7 +39,7 @@
                 {% if u.role == 'admin' %}
                 <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-950/60 dark:text-red-300">{{ u.get_role_display }}</span>
                 {% elif u.role == 'registrar' %}
-                <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">{{ u.get_role_display }}</span>
+                <span class="inline-flex items-center rounded-full bg-primary-100 px-2.5 py-1 text-xs font-semibold text-primary-700 dark:bg-primary-950/60 dark:text-primary-300">{{ u.get_role_display }}</span>
                 {% elif u.role == 'teacher' %}
                 <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700 dark:bg-green-950/60 dark:text-green-300">{{ u.get_role_display }}</span>
                 {% else %}
@@ -62,7 +62,7 @@
             </td>
             <td class="px-4 py-3">
                 <div class="flex justify-end gap-1.5">
-                    <button type="button" title="Edit user" aria-label="Edit {{ u.username }}" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'accounts:user_edit' u.pk %}' } }))" class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/40">
+                    <button type="button" title="Edit user" aria-label="Edit {{ u.username }}" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'accounts:user_edit' u.pk %}' } }))" class="rounded-lg p-2 text-primary-600 transition hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-950/40">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 20h4L19.5 8.5a2.1 2.1 0 00-3-3L5 17v3zm2-2v-1.5L16.5 6l1.5 1.5L7.5 18H6z"/></svg>
                     </button>
                     <button type="button" title="Delete user" aria-label="Delete {{ u.username }}" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'accounts:user_delete' u.pk %}' } }))" class="rounded-lg p-2 text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40">

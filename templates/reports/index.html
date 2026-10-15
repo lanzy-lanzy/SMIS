@@ -3,6 +3,10 @@
 {% block page_title %}Reports & Analytics{% endblock %}
 {% block content %}
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <a href="{% url 'reports:report_card_select' %}" class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 hover:shadow-md transition">
+        <h3 class="font-semibold">Report Cards</h3>
+        <p class="text-sm text-gray-500">Generate &amp; export a learner's performance report (PDF) per completed term</p>
+    </a>
     <a href="{% url 'reports:grade_trends' %}" class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 hover:shadow-md transition">
         <h3 class="font-semibold">Grade Trend Analysis</h3>
         <p class="text-sm text-gray-500">View grade trends by subject and period</p>

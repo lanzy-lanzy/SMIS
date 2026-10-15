@@ -139,7 +139,7 @@ def _parse_weights(post_data, prefix=''):
 
     Returns ``(weights, error)``. Missing inputs fall back to the defaults
     (WW 20 / PT 50 / QA 30). Weights must be non-negative and total 100 so the
-    weighted scores aggregate into a proper 0-100 quarter grade.
+    weighted scores aggregate into a proper 0-100 term grade.
     """
     try:
         ww = float(post_data.get(f'{prefix}written_weight', '') or WW_WEIGHT)
@@ -276,8 +276,8 @@ def _locked_period_pks(assignment):
 
     A period counts as locked only when it has at least one grade AND *every*
     grade for that (subject, section, school_year, period) is in an immutable
-    state ('validated'/'locked'). Partially-validated quarters are NOT treated as
-    finalized, so the Q1 -> Q2 -> ... sequence advances correctly and a quarter is
+    state ('validated'/'locked'). Partially-validated terms are NOT treated as
+    finalized, so the T1 -> T2 -> T3 sequence advances correctly and a term is
     only read-only history once the Registrar has validated it end to end.
     """
     rows = (
@@ -300,14 +300,14 @@ def _locked_period_pks(assignment):
 
 
 def _period_access(assignment, all_periods):
-    """Strict Q1 -> Q2 -> Q3 -> Q4 sequential gate for a single assignment.
+    """Strict T1 -> T2 -> T3 sequential gate for a single assignment.
 
     Returns ``(access, locked_pks)`` where ``access`` maps every grading period
     pk to one of:
       * ``'locked'``  – contains finalized (validated/locked) grades -> read-only history
-      * ``'current'`` – the active quarter the teacher may enter (all prior
-        quarters finalized, this one not yet finalized)
-      * ``'blocked'`` – a later quarter whose prior quarters are not finalized yet
+      * ``'current'`` – the active term the teacher may enter (all prior
+        terms finalized, this one not yet finalized)
+      * ``'blocked'`` – a later term whose prior terms are not finalized yet
     """
     locked = _locked_period_pks(assignment)
     access = {}
@@ -356,11 +356,11 @@ def _sequence_context(assignment, all_periods, current_period):
 
 def _sequential_save_block(assignment, grading_period):
     """Return a user-facing error string when `grading_period` may not be edited
-    for this assignment under the strict Q1 -> Q2 -> Q3 -> Q4 sequence, else None.
+    for this assignment under the strict T1 -> T2 -> T3 sequence, else None.
 
     Uses ``_locked_period_pks`` (via ``_period_access``) to detect finalized
-    quarters and enforce that a quarter is only editable once every prior
-    quarter has been validated by the Registrar.
+    terms and enforce that a term is only editable once every prior
+    term has been validated by the Registrar.
     """
     all_periods = list(GradingPeriod.objects.filter(
         school_year=assignment.school_year
@@ -378,12 +378,12 @@ def _sequential_save_block(assignment, grading_period):
         if actionable:
             return (
                 f'You cannot edit {grading_period.name} yet. Complete and submit '
-                f'{actionable.name} for validation first — quarters follow the '
-                'Q1 → Q2 → Q3 → Q4 sequence.'
+                f'{actionable.name} for validation first — terms follow the '
+                'T1 → T2 → T3 sequence.'
             )
         return (
-            f'{grading_period.name} is not the active quarter. Quarters must be '
-            'completed in order (Q1 → Q2 → Q3 → Q4).'
+            f'{grading_period.name} is not the active term. Terms must be '
+            'completed in order (T1 → T2 → T3).'
         )
     return None
 
@@ -477,8 +477,8 @@ def grade_save(request, assignment_pk):
         messages.error(request, 'Grade submissions are not open for this grading period.')
         return redirect('grades:grade_list')
 
-    # Backend enforcement of the strict Q1 -> Q2 -> Q3 -> Q4 sequence: reject edits
-    # to finalized quarters or to quarters whose prior quarters are not yet validated,
+    # Backend enforcement of the strict T1 -> T2 -> T3 sequence: reject edits
+    # to finalized terms or to terms whose prior terms are not yet validated,
     # even when the current period's submissions are open.
     block_msg = _sequential_save_block(assignment, grading_period)
     if block_msg:
@@ -1476,7 +1476,7 @@ def grade_save_all(request):
         messages.warning(
             request,
             f'{blocked_assignments} class(es) were skipped for {grading_period.name}: finalized or '
-            'not yet reachable in the Q1 → Q2 → Q3 → Q4 sequence.'
+            'not yet reachable in the T1 → T2 → T3 sequence.'
         )
     
     if action == 'submit':

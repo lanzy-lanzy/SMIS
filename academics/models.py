@@ -76,10 +76,9 @@ class TeacherAssignment(models.Model):
 
 class GradingPeriod(models.Model):
     PERIOD_CHOICES = (
-        (1, 'First Quarter'),
-        (2, 'Second Quarter'),
-        (3, 'Third Quarter'),
-        (4, 'Fourth Quarter'),
+        (1, 'First Term'),
+        (2, 'Second Term'),
+        (3, 'Third Term'),
     )
 
     MONTH_CHOICES = (
@@ -92,11 +91,11 @@ class GradingPeriod(models.Model):
     order = models.IntegerField(choices=PERIOD_CHOICES)
     start_month = models.IntegerField(
         choices=MONTH_CHOICES, null=True, blank=True, verbose_name="Start Month",
-        help_text="First calendar month this quarter covers (e.g. June).",
+        help_text="First calendar month this term covers (e.g. June).",
     )
     end_month = models.IntegerField(
         choices=MONTH_CHOICES, null=True, blank=True, verbose_name="End Month",
-        help_text="Last calendar month this quarter covers (e.g. August).",
+        help_text="Last calendar month this term covers (e.g. August).",
     )
     school_year = models.ForeignKey(SchoolYear, on_delete=models.CASCADE, related_name='grading_periods')
     is_current = models.BooleanField(default=False)

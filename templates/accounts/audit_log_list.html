@@ -13,7 +13,7 @@
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
         <form class="flex flex-wrap gap-3">
             <input type="text" name="q" value="{{ query }}" placeholder="Search user, model, or description..."
-                   class="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                   class="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
             <select name="action" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm">
                 <option value="">All Actions</option>
                 {% for val, label in actions %}
@@ -22,7 +22,7 @@
             </select>
             <input type="text" name="model" value="{{ model_filter }}" placeholder="Model name..."
                    class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm">
-            <button type="submit" class="bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition text-sm">Filter</button>
+            <button type="submit" class="bg-primary hover:bg-primary-800 text-white px-4 py-2 rounded-lg transition text-sm">Filter</button>
             <a href="{% url 'accounts:audit_log_list' %}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition text-sm">Reset</a>
         </form>
     </div>
@@ -47,7 +47,7 @@
                         <td class="px-4 py-3">
                             <span class="px-2 py-1 text-xs rounded-full 
                                 {% if log.action == 'create' %}bg-green-100 text-green-800
-                                {% elif log.action == 'update' %}bg-blue-100 text-blue-800
+                                {% elif log.action == 'update' %}bg-primary-100 text-primary-800
                                 {% elif log.action == 'delete' %}bg-red-100 text-red-800
                                 {% elif log.action == 'login' or log.action == 'logout' %}bg-gray-100 text-gray-800
                                 {% else %}bg-yellow-100 text-yellow-800{% endif %}">

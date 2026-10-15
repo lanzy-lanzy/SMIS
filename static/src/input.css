@@ -4,11 +4,11 @@
 @layer base {
     :root {
         color-scheme: light;
-        --smis-navy: #0b1f33;
-        --smis-navy-soft: #12304d;
-        --smis-blue: #1d4ed8;
+        --smis-navy: #2e0b18;
+        --smis-navy-soft: #4c1226;
+        --smis-blue: #7b1e3b;
         --smis-gold: #c68a1b;
-        --smis-border: #dfe5ec;
+        --smis-border: #e7dde0;
         --smis-muted: #64748b;
     }
 
@@ -38,7 +38,7 @@
     }
 
     :where(a, button, input, select, textarea):focus-visible {
-        outline: 3px solid rgba(59, 130, 246, 0.32);
+        outline: 3px solid rgba(178, 58, 84, 0.32);
         outline-offset: 2px;
     }
 
@@ -61,8 +61,8 @@
     input:not([type="checkbox"]):not([type="radio"]):focus,
     select:focus,
     textarea:focus {
-        border-color: #2563eb;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.13);
+        border-color: #7b1e3b;
+        box-shadow: 0 0 0 3px rgba(123, 30, 59, 0.13);
         outline: none;
     }
 
@@ -97,8 +97,8 @@
     }
 
     ::selection {
-        background: #bfdbfe;
-        color: #0b1f33;
+        background: #f0bec9;
+        color: #2e0b18;
     }
 }
 
@@ -106,21 +106,21 @@
     .app-shell {
         min-height: 100%;
         background:
-            radial-gradient(circle at 100% 0%, rgba(29, 78, 216, 0.05), transparent 28rem),
-            #f4f6f9;
+            radial-gradient(circle at 100% 0%, rgba(123, 30, 59, 0.05), transparent 28rem),
+            #f6f3f4;
     }
 
     .dark .app-shell {
         background:
-            radial-gradient(circle at 100% 0%, rgba(59, 130, 246, 0.08), transparent 28rem),
+            radial-gradient(circle at 100% 0%, rgba(208, 92, 119, 0.10), transparent 28rem),
             #0f172a;
     }
 
     .app-sidebar {
         background:
             linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 35%),
-            #0b1f33;
-        box-shadow: 12px 0 32px rgba(2, 12, 27, 0.13);
+            #2e0b18;
+        box-shadow: 12px 0 32px rgba(46, 11, 24, 0.18);
     }
 
     .app-nav-link {
@@ -144,7 +144,7 @@
 
     .app-nav-link.is-active {
         background: #fff;
-        color: #0b1f33;
+        color: #4c1226;
         box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
     }
 
@@ -256,15 +256,15 @@
     }
 
     .formal-button-primary {
-        border: 1px solid #1d4ed8;
-        background: #1d4ed8;
+        border: 1px solid #7b1e3b;
+        background: #7b1e3b;
         color: #fff;
-        box-shadow: 0 6px 16px rgba(29, 78, 216, 0.2);
+        box-shadow: 0 6px 16px rgba(123, 30, 59, 0.2);
     }
 
     .formal-button-primary:hover {
-        border-color: #1e40af;
-        background: #1e40af;
+        border-color: #6a1a33;
+        background: #6a1a33;
     }
 
     .formal-button-secondary {

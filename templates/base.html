@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0b1f33">
+    <meta name="theme-color" content="#2e0b18">
     <title>{% block title %}SMIS{% endblock %} | Paquito S. Yu Memorial NHS</title>
     <script>
         (function () {
@@ -165,7 +165,7 @@
                     </div>
                     <a href="{% url 'academics:grading_period_list' %}" class="app-nav-link {% if request.resolver_match.url_name == 'grading_period_list' or request.resolver_match.url_name == 'grading_period_create' %}is-active{% endif %}" @click="if (window.innerWidth < 1024) sidebarOpen = false">
                         <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 5h12v15H6V5zm3-2v4m6-4v4M6 10h12M9 14h2m2 0h2M9 17h2"/></svg>
-                        <span>Quarters</span>
+                        <span>Terms</span>
                     </a>
                     <a href="{% url 'academics:school_year_list' %}" class="app-nav-link {% if request.resolver_match.url_name == 'school_year_list' or request.resolver_match.url_name == 'school_year_create' or request.resolver_match.url_name == 'school_year_edit' %}is-active{% endif %}" @click="if (window.innerWidth < 1024) sidebarOpen = false">
                         <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 14l9-5-9-5-9 5 9 5zm0 0v6m-5-3l5 3 5-3M5 9v5"/></svg>
