@@ -6,7 +6,7 @@ class StudentForm(forms.ModelForm):
     class Meta:
         model = Student
         fields = ('lrn', 'first_name', 'middle_name', 'last_name', 'suffix', 'sex', 
-                  'birthdate', 'birthplace', 'address', 'phone', 'email',
+                  'birthdate', 'birthplace', 'address', 'phone',
                   'parent_name', 'parent_phone', 'parent_address',
                   'grade_level', 'section', 'school_year', 'status')
         widgets = {

@@ -18,7 +18,7 @@ class LoginForm(AuthenticationForm):
 class UserCreationFormAdmin(UserCreationForm):
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name', 'email', 'role', 'phone', 'address')
+        fields = ('username', 'first_name', 'last_name', 'role', 'phone', 'address')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -49,7 +49,7 @@ class UserEditForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name', 'email', 'role', 'phone', 'address', 'is_active')
+        fields = ('username', 'first_name', 'last_name', 'role', 'phone', 'address', 'is_active')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -85,7 +85,7 @@ class UserEditForm(forms.ModelForm):
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', 'email', 'phone', 'address', 'profile_picture')
+        fields = ('first_name', 'last_name', 'phone', 'address', 'profile_picture')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
