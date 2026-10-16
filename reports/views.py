@@ -1,9 +1,12 @@
 from decimal import Decimal, ROUND_HALF_UP
+from io import BytesIO
 
+from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Count, Q
+from django.utils.text import slugify
 from students.models import Student
 from grades.models import Grade, GradeSubmission
 from academics.models import SchoolYear, GradeLevel, Section, Subject, GradingPeriod
@@ -36,6 +39,105 @@ def _compute_age(birthdate, reference=None):
     if (reference.month, reference.day) < (birthdate.month, birthdate.day):
         years -= 1
     return years
+
+
+SCHOOL_HEAD_NAME = 'EUGENE A. BATILONG'
+
+# Canonical Learner's Performance Report rows (in print order) mapped to the
+# subject names used in this system. MAPEH components render as italic sub-rows
+# under a MAPEH parent row, mirroring the DepEd card layout.
+CANONICAL_SUBJECT_ROWS = [
+    ('Filipino', {'filipino'}),
+    ('English', {'english'}),
+    ('Mathematics', {'mathematics', 'math'}),
+    ('Science', {'science'}),
+    ('Araling Panlipunan (AP)', {'araling panlipunan', 'araling panlipunan (ap)', 'ap'}),
+    ('GMRC / Values Education', {'edukasyon sa pagpapakatao', 'gmrc', 'gmrc / values education', 'values education', 'esp'}),
+    ('EPP/TLE', {'technology and livelihood education', 'epp/tle', 'epp / tle', 'epp', 'tle'}),
+    ('MAPEH', {'mapeh'}),
+]
+MAPEH_COMPONENT_ROWS = [
+    ('Music and Arts', {'music and arts', 'music', 'arts'}),
+    ('Physical Education and Health', {'physical education and health', 'pe and health', 'peah'}),
+]
+
+# Static Grading Scale / Descriptors / Remarks legend printed on the form.
+PERFORMANCE_DESCRIPTORS = [
+    ('90-100', 'Advancing', 'Passed'),
+    ('80-89', 'Benchmarking', 'Passed'),
+    ('75-79', 'Connecting', 'Passed'),
+    ('65-74', 'Developing', 'Failed'),
+    ('0-64', 'Emerging', 'Failed'),
+]
+
+# The form always shows three term columns; extra periods are ignored.
+REPORT_TERM_COUNT = 3
+
+
+def _subject_key(name):
+    return ' '.join((name or '').lower().split())
+
+
+def _subject_alias_map():
+    aliases = {}
+    for label, names in CANONICAL_SUBJECT_ROWS + MAPEH_COMPONENT_ROWS:
+        for name in names:
+            aliases[name] = label
+    return aliases
+
+
+def _build_grade_rows(subjects_map, terms, completed):
+    """Build the report-card grade rows in canonical DepEd order.
+
+    subjects_map: {subject name: {period order: Grade}}. Returns a list of row
+    dicts: name, style ('normal' | 'parent' | 'sub'), term_cells (values or
+    None aligned to terms), final, remarks. All eight canonical rows are always
+    emitted (blank when ungraded, like the fixed printed form); subjects that
+    match no canonical row keep their own name and are appended in sorted
+    order so no graded subject is ever dropped from the card.
+    """
+    aliases = _subject_alias_map()
+    by_label = {}
+    leftovers = {}
+    for subject_name, period_map in subjects_map.items():
+        label = aliases.get(_subject_key(subject_name))
+        if label:
+            by_label.setdefault(label, {}).update(period_map)
+        else:
+            leftovers[subject_name] = period_map
+
+    def make_row(name, period_map, style='normal'):
+        term_cells = []
+        included = []
+        for period in terms[:REPORT_TERM_COUNT]:
+            grade = period_map.get(period.order)
+            value = None
+            if grade is not None and period.order in completed:
+                value = grade.quarter_grade
+                included.append(value)
+            term_cells.append(value)
+        term_cells += [None] * (REPORT_TERM_COUNT - len(term_cells))
+        final = None
+        if included:
+            final = int((sum(included) / len(included)).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+        remarks = ''
+        if final is not None:
+            remarks = 'Passed' if final >= 75 else 'Failed'
+        return {'name': name, 'style': style, 'term_cells': term_cells, 'final': final, 'remarks': remarks}
+
+    rows = []
+    for label, _ in CANONICAL_SUBJECT_ROWS:
+        if label == 'MAPEH':
+            components = [(name, by_label.get(name)) for name, _ in MAPEH_COMPONENT_ROWS]
+            components = [(name, pm) for name, pm in components if pm]
+            rows.append(make_row('MAPEH', by_label.get('MAPEH') or {}, 'parent' if components else 'normal'))
+            for name, pm in components:
+                rows.append(make_row(name, pm, 'sub'))
+            continue
+        rows.append(make_row(label, by_label.get(label) or {}))
+    for name in sorted(leftovers):
+        rows.append(make_row(name, leftovers[name]))
+    return rows
 
 
 @registrar_or_admin_required
@@ -212,16 +314,14 @@ def report_card_select(request):
     })
 
 
-@registrar_or_admin_required
-def report_card(request, student_pk):
-    """Per-learner Learner's Performance Report (report card) for print/PDF.
+def _report_card_context(request, student):
+    """Assemble everything the Learner's Performance Report needs.
 
+    Shared by the HTML view and the PDF download so both render identical data.
     Term columns are populated only for terms whose submissions are all
     approved (finished); incomplete terms render blank so a partially done
     year can still be printed, and export is gated on term completion.
     """
-    student = get_object_or_404(Student, pk=student_pk)
-
     school_years = SchoolYear.objects.all()
     sy_id = request.GET.get('sy', '')
     if sy_id:
@@ -244,35 +344,7 @@ def report_card(request, student_pk):
     for grade in grades:
         subjects_map.setdefault(grade.subject.name, {})[grade.grading_period.order] = grade
 
-    rows = []
-    for name in sorted(subjects_map):
-        period_map = subjects_map[name]
-        term_cells = []
-        included = []
-        for period in terms:
-            grade = period_map.get(period.order)
-            value = None
-            if grade is not None and period.order in completed:
-                value = grade.quarter_grade
-                included.append(value)
-            term_cells.append(value)
-        final = None
-        if included:
-            final = int((sum(included) / len(included)).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
-        remarks = ''
-        if final is not None:
-            if final >= 75:
-                remarks = 'Passed'
-            elif final >= 60:
-                remarks = 'Incomplete'
-            else:
-                remarks = 'Failed'
-        rows.append({
-            'name': name,
-            'term_cells': term_cells,
-            'final': final,
-            'remarks': remarks,
-        })
+    rows = _build_grade_rows(subjects_map, terms, completed)
 
     finals = [r['final'] for r in rows if r['final'] is not None]
     general_average = None
@@ -280,19 +352,65 @@ def report_card(request, student_pk):
         general_average = int((Decimal(sum(finals)) / Decimal(len(finals))).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
 
     section = student.section
-    adviser_name = section.adviser.get_full_name() if section and section.adviser else ''
+    adviser_name = section.adviser.get_full_name().upper() if section and section.adviser else ''
 
-    return render(request, 'reports/report_card.html', {
+    middle = f" {student.middle_name.upper()}" if student.middle_name else ''
+    suffix = f" {student.suffix.upper()}" if student.suffix else ''
+
+    shown_terms = terms[:REPORT_TERM_COUNT]
+    term_labels = [f"T{p.order}" for p in shown_terms]
+    term_full_labels = [f"Term {p.order}" for p in shown_terms]
+    for i in range(len(shown_terms), REPORT_TERM_COUNT):
+        term_labels.append(f"T{i + 1}")
+        term_full_labels.append(f"Term {i + 1}")
+
+    return {
         'student': student,
         'school_year': school_year,
         'school_years': school_years,
-        'terms': terms,
+        'terms': shown_terms,
         'completed_orders': completed,
         'rows': rows,
         'general_average': general_average,
-        'section_name': section.name if section else '',
+        'general_average_remarks': ('Passed' if general_average >= 75 else 'Failed') if general_average is not None else '',
+        'learner_name': f"{student.last_name.upper()}, {student.first_name.upper()}{middle}{suffix}",
+        'lrn': student.lrn,
+        'sex': student.get_sex_display() or '',
+        'section_name': section.name.upper() if section else '',
         'grade_level': student.grade_level.level if student.grade_level else '',
         'adviser_name': adviser_name,
+        'school_head_name': SCHOOL_HEAD_NAME,
         'age': _compute_age(student.birthdate),
+        'term_labels': term_labels,
+        'term_full_labels': term_full_labels,
+        'parent_sig_rows': [
+            {'label': label, 'top': 257.0 + i * 14.3}
+            for i, label in enumerate(term_full_labels)
+        ],
+        'descriptor_rows': PERFORMANCE_DESCRIPTORS,
         'has_exportable_term': bool(completed),
-    })
+    }
+
+
+@registrar_or_admin_required
+def report_card(request, student_pk):
+    """Per-learner Learner's Performance Report (report card) for HTML print."""
+    student = get_object_or_404(Student, pk=student_pk)
+    return render(request, 'reports/report_card.html', _report_card_context(request, student))
+
+
+@registrar_or_admin_required
+def report_card_pdf(request, student_pk):
+    """Server-generated PDF of the same report card (mirrors the HTML layout)."""
+    from .report_card_pdf import build_report_card_pdf
+
+    student = get_object_or_404(Student, pk=student_pk)
+    context = _report_card_context(request, student)
+
+    buffer = BytesIO()
+    build_report_card_pdf(buffer, context)
+
+    filename = slugify(f"report-card-{student.last_name}-{student.first_name}") or 'report-card'
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
+    return response

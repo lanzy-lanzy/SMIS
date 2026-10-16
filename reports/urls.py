@@ -12,4 +12,5 @@ urlpatterns = [
     path('student-history/<int:student_pk>/', views.student_history, name='student_history'),
     path('report-cards/', views.report_card_select, name='report_card_select'),
     path('report-card/<int:student_pk>/', views.report_card, name='report_card'),
+    path('report-card/<int:student_pk>/pdf/', views.report_card_pdf, name='report_card_pdf'),
 ]

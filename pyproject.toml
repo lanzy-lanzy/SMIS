@@ -7,14 +7,12 @@ dependencies = [
     "Django>=5.1,<5.2",
     "python-decouple>=3.8",
     "Pillow>=10.0",
+    "reportlab>=4.0",
     "whitenoise>=6.0",
     "dj-database-url>=2.0",
     "psycopg2-binary>=2.9",
     "django-shortcuts>=1.6",
 ]
-
-[project.optional-dependencies]
-pdf = ["weasyprint>=60.0"]
 
 [build-system]
 requires = ["hatchling"]

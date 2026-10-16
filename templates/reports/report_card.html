@@ -1,24 +1,24 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Learner's Performance Report - {{ student.last_name|upper }}, {{ student.first_name|upper }}</title>
+    <title>Learner's Performance Report - {{ learner_name }}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
             --maroon: #7b1e3b;
-            --maroon-dark: #2e0b18;
-            --maroon-soft: #fcf2f4;
+            --ink: #000;
         }
 
         body {
             background: #e5e7eb;
-            color: #000;
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 9pt;
-            line-height: 1.2;
+            color: var(--ink);
+            font-family: 'Bookman Old Style', 'Book Antiqua', Palatino, 'Times New Roman', serif;
+            font-size: 7.1pt;
+            line-height: 1;
             padding: 18px;
         }
 
@@ -62,117 +62,99 @@
             background: #fef9c3;
             border: 1px solid #facc15;
             color: #854d0e;
-            font-size: 8.5pt;
+            font: 500 12px Arial, Helvetica, sans-serif;
             margin: 0 auto 10px;
-            max-width: 8.5in;
+            max-width: 1122px;
             padding: 8px 12px;
             border-radius: 6px;
         }
 
-        .page {
+        /* The sheet is the printed page: A4 landscape, 841.8 x 595.2 pt. */
+        .sheet {
             background: #fff;
             box-shadow: 0 4px 22px rgba(0, 0, 0, 0.22);
+            height: 595.2pt;
             margin: 0 auto;
-            min-height: 13in;
-            padding: 0.42in 0.52in 0.5in;
-            width: 8.5in;
+            position: relative;
+            width: 841.8pt;
         }
 
-        .org {
+        .panel {
+            border: 1.2pt solid var(--ink);
+            position: absolute;
+            top: 26.7pt;
+            height: 506.5pt;
+        }
+        .panel-left { left: 33.9pt; width: 352.3pt; }
+        .panel-right { left: 422.5pt; width: 351.0pt; }
+
+        .ln { position: absolute; white-space: nowrap; }
+        .b { font-weight: 700; }
+        .i { font-style: italic; }
+        .sm { font-size: 6.5pt; }
+        .ctr-l { left: 35.1pt; width: 349.9pt; text-align: center; }
+        .ctr-r { left: 423.8pt; width: 348.5pt; text-align: center; }
+
+        .u {
+            border-bottom: .6pt solid var(--ink);
+            display: inline-block;
+            line-height: 8.6pt;
+            position: absolute;
             text-align: center;
-            font-size: 8.4pt;
-            line-height: 1.25;
-            margin-bottom: 4px;
-        }
-        .org .rep { font-weight: 700; letter-spacing: 0.3px; }
-        .org .dept { font-weight: 700; }
-        .org .school { font-size: 12pt; font-weight: 800; letter-spacing: 0.5px; margin-top: 2px; }
-        .org .meta { font-size: 8pt; }
-
-        .title-bar {
-            background: var(--maroon);
-            color: #fff;
-            text-align: center;
-            font-weight: 800;
-            font-size: 11pt;
-            letter-spacing: 0.6px;
-            padding: 6px 4px;
-            margin: 8px 0 8px;
-            border-radius: 2px;
         }
 
-        table { border-collapse: collapse; table-layout: fixed; width: 100%; }
-        th, td { border: 1px solid #000; padding: 2px 4px; vertical-align: middle; }
+        table { border-collapse: collapse; table-layout: fixed; }
+        th, td { border: .6pt solid var(--ink); font-weight: 400; padding: 0; vertical-align: middle; }
 
-        /* Learner info */
-        .info-table td { font-size: 8.4pt; height: 20px; }
-        .info-table .lbl {
-            background: var(--maroon-soft);
-            font-weight: 700;
-            width: 16%;
-            white-space: nowrap;
+        .grades {
+            height: 187.6pt;
+            left: 47.0pt;
+            position: absolute;
+            top: 265.8pt;
+            width: 326.1pt;
         }
-        .info-table .val { font-weight: 600; }
+        .grades th { font-weight: 700; text-align: center; }
+        .grades td { text-align: center; }
+        .grades td.subj { text-align: left; padding-left: 1.6pt; }
+        .grades td.sub { font-style: italic; font-size: 6.5pt; padding-left: 1.6pt; text-align: left; }
+        .grades .hdr-term { height: 14.1pt; }
+        .grades .hdr-labels { height: 14.3pt; }
+        .grades .avg td { height: 17.2pt; font-weight: 700; }
+        .grades .avg .lbl { font: 700 8.3pt 'Bookman Old Style', 'Book Antiqua', Palatino, serif; font-style: italic; text-align: center; }
+        .final-col { font-weight: 700; }
 
-        /* Grades */
-        .grades { margin-top: 8px; }
-        .grades th { background: var(--maroon); color: #fff; font-size: 8.2pt; font-weight: 800; text-align: center; }
-        .grades td { font-size: 8pt; font-weight: 700; text-align: center; height: 15px; }
-        .grades td.learning-area { text-align: left; font-weight: 600; }
-        .col-learning { width: 40%; }
-        .col-term { width: 9%; }
-        .col-final { width: 14%; }
-        .col-remarks { width: 18%; }
-
-        .pending { color: #b91c1c; font-size: 6.4pt; font-weight: 700; display: block; }
-
-        tr.general-average td { background: var(--maroon-soft); font-style: italic; font-weight: 800; }
-        tr.general-average td.lead { text-align: right; font-style: italic; }
-
-        .section-title {
-            background: var(--maroon-dark);
-            color: #fff;
-            font-weight: 800;
-            font-size: 8.4pt;
-            letter-spacing: 0.4px;
-            padding: 3px 6px;
-            margin: 12px 0 0;
+        .attend {
+            height: 61.6pt;
+            left: 435.7pt;
+            position: absolute;
+            top: 44.9pt;
+            width: 324.7pt;
         }
+        .attend th, .attend td { font-size: 7.1pt; text-align: center; }
+        .attend th { font-weight: 700; }
+        .attend tr.hdr { height: 8.8pt; }
 
-        /* Attendance */
-        .attend th { font-size: 7.4pt; background: #f7f3e8; }
-        .attend td { height: 22px; text-align: center; font-size: 8pt; }
-        .attend .lbl { width: 26%; text-align: left; font-weight: 700; background: #fafafa; }
+        .comments {
+            height: 105.6pt;
+            left: 435.7pt;
+            position: absolute;
+            top: 128.3pt;
+            width: 324.7pt;
+        }
+        .comments td { font-weight: 700; padding: 1.5pt 1.7pt; text-align: left; vertical-align: top; }
 
-        /* Descriptor */
-        .descriptor td { font-size: 8pt; text-align: center; }
-        .descriptor .rng { font-weight: 800; width: 20%; }
-        .descriptor .txt { text-align: left; font-weight: 600; }
+        .dscale, .ddesc, .drem { position: absolute; text-align: center; }
+        .dscale { left: 80pt; width: 92pt; }
+        .ddesc { left: 153.5pt; width: 90pt; }
+        .drem { left: 246pt; width: 90pt; }
+        .dcol div { height: 8.8pt; line-height: 8.8pt; }
 
-        /* Comments */
-        .comments td { height: 34px; }
-        .comments .clbl { width: 22%; background: var(--maroon-soft); font-weight: 700; text-align: left; }
-        .comments .csign { width: 34%; text-align: center; vertical-align: bottom; font-size: 7.6pt; }
-        .signline { border-bottom: 1px solid #000; min-height: 14px; margin: 0 6px; }
-
-        /* Certification */
-        .certification { border: 2px solid #000; padding: 6px 8px; margin-top: 12px; }
-        .cert-title { font-size: 9.6pt; font-weight: 800; margin-bottom: 8px; text-align: center; letter-spacing: 0.4px; }
-        .cert-statement { font-size: 8.1pt; line-height: 1.35; margin-bottom: 12px; }
-        .cert-row { align-items: flex-end; display: grid; gap: 14px; grid-template-columns: 1fr 1.9fr 1.7fr; }
-        .signature-field { text-align: center; }
-        .signature-line { border-bottom: 1px solid #000; font-size: 8pt; font-weight: 800; min-height: 14px; padding-bottom: 1px; }
-        .signature-label { font-size: 7.4pt; }
-        .seal-field { align-self: end; font-size: 8pt; padding-bottom: 3px; text-align: center; }
-
-        strong { font-weight: 800; }
-
-        @page { size: 8.5in 13in; margin: 0.35in 0.45in; }
+        @page { size: 841.8pt 595.2pt; margin: 0; }
 
         @media print {
             body { background: #fff; padding: 0; }
             .actions, .banner { display: none; }
-            .page { box-shadow: none; margin: 0; min-height: auto; padding: 0; width: auto; }
+            .sheet { box-shadow: none; margin: 0; }
         }
     </style>
 </head>
@@ -190,9 +172,13 @@
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             Learners
         </a>
+        <a href="{% url 'reports:report_card_pdf' student.pk %}{% if school_year %}?sy={{ school_year.pk }}{% endif %}" class="btn">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Download PDF
+        </a>
         <button class="btn" onclick="window.print()">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-            Print / Export PDF
+            Print
         </button>
     </div>
 
@@ -202,170 +188,172 @@
     </div>
     {% endif %}
 
-    <main class="page">
-        <div class="org">
-            <div class="rep">Republic of the Philippines</div>
-            <div class="dept">Department of Education</div>
-            <div class="meta">Region IX &middot; Division of Zamboanga del Sur &middot; District of Dumingag-1</div>
-            <div class="school">PAQUITO S. YU MEMORIAL NATIONAL HIGH SCHOOL</div>
-            <div class="meta">School ID: 314235</div>
-        </div>
+    <main class="sheet">
+        <!-- ================= LEFT PANEL ================= -->
+        <div class="panel panel-left"></div>
 
-        <div class="title-bar">LEARNER'S PERFORMANCE REPORT</div>
+        <img src="{% static 'images/deped-logo.png' %}" class="ln" alt="" style="left:45.9pt;top:44.4pt;width:61.1pt;height:61.1pt;">
+        <img src="{% static 'images/psyu-logo.png' %}" class="ln" alt="" style="left:307.5pt;top:41.1pt;width:67.2pt;height:63.0pt;">
 
-        <table class="info-table">
-            <tr>
-                <td class="lbl">Learner's Name</td>
-                <td class="val" colspan="3">{{ student.last_name|upper }}, {{ student.first_name|upper }}{% if student.middle_name %} {{ student.middle_name|upper }}{% endif %}{% if student.suffix %} {{ student.suffix|upper }}{% endif %}</td>
-                <td class="lbl">LRN</td>
-                <td class="val" colspan="2">{{ student.lrn }}</td>
-            </tr>
-            <tr>
-                <td class="lbl">Sex</td>
-                <td class="val">{{ student.get_sex_display }}</td>
-                <td class="lbl">Age</td>
-                <td class="val">{{ age }}</td>
-                <td class="lbl">Grade Level</td>
-                <td class="val" colspan="2">{{ grade_level }}</td>
-            </tr>
-            <tr>
-                <td class="lbl">Section</td>
-                <td class="val" colspan="3">{{ section_name|default:"-" }}</td>
-                <td class="lbl">School Year</td>
-                <td class="val" colspan="2">{{ school_year.name|default:"-" }}</td>
-            </tr>
-            <tr>
-                <td class="lbl">Class Adviser</td>
-                <td class="val" colspan="6">{{ adviser_name|default:"_______________________" }}</td>
-            </tr>
-        </table>
+        <div class="ln ctr-l" style="top:45.0pt;">Republic of the Philippines</div>
+        <div class="ln ctr-l" style="top:53.8pt;">Department of Education</div>
+        <div class="ln ctr-l" style="top:71.4pt;">REGION IX, ZAMBOANGA PENINSULA</div>
+        <div class="ln ctr-l b" style="top:80.2pt;">SCHOOLS DIVISION OF ZAMBOANGA DEL SUR</div>
+        <div class="ln ctr-l" style="top:89.0pt;">DUMINGA I DISTRICT</div>
+        <div class="ln ctr-l" style="top:97.8pt;">Dumingag, Zamboanga del Sur</div>
+        <div class="ln ctr-l b sm" style="top:108.6pt;">PAQUITO S. YU MEMORIAL NATIONAL HIGH SCHOOL</div>
+        <div class="ln ctr-l b" style="top:119.6pt;">LEARNER'S PERFORMANCE REPORT</div>
+        <div class="ln ctr-l" style="top:128.4pt;">School Year {{ school_year.name|default:"__________" }}</div>
 
-        <div class="section-title">LEARNING PROGRESS AND ACHIEVEMENT</div>
+        <div class="ln" style="left:48.6pt;top:146.0pt;">Name:</div>
+        <div class="u" style="left:82.6pt;top:146.0pt;width:146.5pt;">{{ learner_name }}</div>
+        <div class="ln" style="left:230.6pt;top:146.0pt;">Age:</div>
+        <div class="u" style="left:259.4pt;top:146.0pt;width:30.5pt;">{{ age }}</div>
+        <div class="ln" style="left:291.4pt;top:146.0pt;">Sex:</div>
+        <div class="u" style="left:322.8pt;top:146.0pt;width:50.4pt;">{{ sex }}</div>
+
+        <div class="ln" style="left:48.6pt;top:154.8pt;">LRN:</div>
+        <div class="u" style="left:82.6pt;top:154.8pt;width:88.2pt;">{{ lrn }}</div>
+        <div class="ln" style="left:230.6pt;top:154.8pt;">Grade:</div>
+        <div class="u" style="left:259.4pt;top:154.8pt;width:30.5pt;">{{ grade_level }}</div>
+        <div class="ln" style="left:291.4pt;top:154.8pt;">Section:</div>
+        <div class="u" style="left:322.8pt;top:154.8pt;width:50.4pt;">{{ section_name }}</div>
+
+        <div class="ln" style="left:48.6pt;top:163.6pt;">Track (SHS only):</div>
+        <div class="u" style="left:109.8pt;top:163.6pt;width:91.4pt;">&nbsp;</div>
+
+        <div class="ln" style="left:48.6pt;top:181.2pt;">Dear Parents,</div>
+        <div class="ln" style="left:84.2pt;top:190.0pt;">This Performance Report presents your child's progress and achievement</div>
+        <div class="ln" style="left:48.6pt;top:198.8pt;">in the different learning areas.</div>
+        <div class="ln" style="left:84.2pt;top:207.6pt;">The school welcomes you to reach out should you wish to know more about your</div>
+        <div class="ln" style="left:48.6pt;top:216.4pt;">child's learning and performance.</div>
+
+        <div class="u b" style="left:47.0pt;top:234.0pt;width:154.2pt;">{{ school_head_name }}</div>
+        <div class="u b" style="left:229.0pt;top:234.0pt;width:144.2pt;">{{ adviser_name|default:"&nbsp;" }}</div>
+        <div class="ln ctr-l" style="top:242.8pt;left:47.0pt;width:154.2pt;">School Head</div>
+        <div class="ln" style="left:229.0pt;top:242.8pt;width:144.2pt;text-align:center;">Adviser</div>
+
+        <div class="ln ctr-l b" style="top:257.0pt;">LEARNING PROGRESS AND ACHIEVEMENT</div>
+
         <table class="grades">
+            <colgroup>
+                <col style="width:123.7pt;">
+                <col style="width:30.4pt;">
+                <col style="width:27.9pt;">
+                <col style="width:30.4pt;">
+                <col style="width:30.4pt;">
+                <col style="width:83.3pt;">
+            </colgroup>
             <thead>
-                <tr>
-                    <th rowspan="2" class="col-learning">LEARNING AREAS</th>
-                    <th colspan="{{ terms|length|default:1 }}">TERM</th>
-                    <th rowspan="2" class="col-final">FINAL<br>GRADE</th>
-                    <th rowspan="2" class="col-remarks">REMARKS</th>
+                <tr class="hdr-term">
+                    <th rowspan="2">Learning Areas</th>
+                    <th colspan="3">TERM</th>
+                    <th rowspan="2">Final<br>Grade</th>
+                    <th rowspan="2">Remarks</th>
                 </tr>
-                <tr>
-                    {% for period in terms %}
-                    <th class="col-term">{{ period.name }}{% if period.order not in completed_orders %}<span class="pending">PENDING</span>{% endif %}</th>
-                    {% empty %}
-                    <th class="col-term">T1</th><th class="col-term">T2</th><th class="col-term">T3</th>
-                    {% endfor %}
+                <tr class="hdr-labels">
+                    {% for label in term_labels %}<th>{{ label }}</th>{% endfor %}
                 </tr>
             </thead>
             <tbody>
                 {% for row in rows %}
                 <tr>
-                    <td class="learning-area">{{ row.name }}</td>
-                    {% for val in row.term_cells %}
-                    <td>{% if val is not None %}{{ val|floatformat:0 }}{% endif %}</td>
-                    {% endfor %}
-                    <td>{% if row.final is not None %}{{ row.final }}{% endif %}</td>
+                    <td class="{% if row.style == 'sub' %}sub{% else %}subj{% endif %}">{{ row.name }}</td>
+                    {% for val in row.term_cells %}<td>{{ val|floatformat:0 }}</td>{% endfor %}
+                    <td class="final-col">{{ row.final|default_if_none:"" }}</td>
                     <td>{{ row.remarks }}</td>
                 </tr>
-                {% empty %}
-                <tr>
-                    <td class="learning-area" colspan="{{ terms|length|add:3 }}">No completed term records available for this learner.</td>
-                </tr>
                 {% endfor %}
-                <tr class="general-average">
-                    <td class="lead" colspan="{{ terms|length|add:1 }}">General Average</td>
-                    <td>{% if general_average is not None %}{{ general_average }}{% endif %}</td>
-                    <td>{% if general_average is not None %}{% if general_average >= 75 %}PROMOTED{% else %}RETAINED{% endif %}{% endif %}</td>
+                <tr class="avg">
+                    <td class="lbl" colspan="4">General Average</td>
+                    <td>{{ general_average|default_if_none:"" }}</td>
+                    <td>{{ general_average_remarks }}</td>
                 </tr>
             </tbody>
         </table>
 
-        <div class="section-title">ATTENDANCE DURING THE SCHOOL YEAR</div>
+        <div class="ln b" style="left:48.7pt;top:462.3pt;">PERFORMANCE DESCRIPTORS</div>
+        <div class="dscale b" style="top:471.1pt;">
+            <div>Grading Scale</div>
+            {% for scale, descriptor, remarks in descriptor_rows %}<div>{{ scale }}</div>{% endfor %}
+        </div>
+        <div class="ddesc b" style="top:471.1pt;">
+            <div>Descriptors</div>
+            {% for scale, descriptor, remarks in descriptor_rows %}<div>{{ descriptor }}</div>{% endfor %}
+        </div>
+        <div class="drem b" style="top:471.1pt;">
+            <div>Remarks</div>
+            {% for scale, descriptor, remarks in descriptor_rows %}<div>{{ remarks }}</div>{% endfor %}
+        </div>
+
+        <!-- ================= RIGHT PANEL ================= -->
+        <div class="panel panel-right"></div>
+
         <table class="attend">
-            <tr>
-                <td class="lbl">Number of Days of School</td>
-                <td colspan="20" style="text-align:left;padding-left:8px;">&nbsp;</td>
-            </tr>
-            <tr>
-                <th class="lbl">Month</th>
+            <colgroup>
+                <col style="width:48.85pt;">
+                <col style="width:21.25pt;"><col style="width:21.25pt;"><col style="width:21.25pt;"><col style="width:21.25pt;">
+                <col style="width:21.25pt;"><col style="width:21.25pt;"><col style="width:21.25pt;"><col style="width:21.25pt;">
+                <col style="width:21.25pt;"><col style="width:21.25pt;"><col style="width:21.25pt;">
+                <col style="width:41.6pt;">
+            </colgroup>
+            <tr class="hdr">
+                <th>Month</th>
                 <th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th>
-                <th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th>
+                <th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>Total</th>
             </tr>
-            <tr>
-                <td class="lbl">Days Present</td>
-                <td></td><td></td><td></td><td></td><td></td><td></td>
-                <td></td><td></td><td></td><td></td><td></td><td></td>
-            </tr>
-            <tr>
-                <td class="lbl">Days Absent</td>
-                <td></td><td></td><td></td><td></td><td></td><td></td>
-                <td></td><td></td><td></td><td></td><td></td><td></td>
-            </tr>
+            <tr><th>No. of Class<br>Days</th><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><th>No. of Days<br>Present</th><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><th>No. of Days<br>Absent</th><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
         </table>
 
-        <div class="section-title">PERFORMANCE DESCRIPTOR</div>
-        <table class="descriptor">
-            <tr>
-                <td class="rng">90 - 100</td><td class="txt">Outstanding</td>
-                <td class="rng">85 - 89</td><td class="txt">Very Satisfactory</td>
-                <td class="rng">80 - 84</td><td class="txt">Satisfactory</td>
-            </tr>
-            <tr>
-                <td class="rng">75 - 79</td><td class="txt">Fairly Satisfactory</td>
-                <td class="rng">Below 75</td><td class="txt">Did Not Meet the Expectations</td>
-                <td class="rng">&nbsp;</td><td class="txt">&nbsp;</td>
-            </tr>
-        </table>
-
-        <div class="section-title">TEACHER'S REMARKS / COMMENTS &amp; PARENT'S / GUARDIAN'S SIGNATURE</div>
+        <div class="ln ctr-r b" style="top:119.6pt;">TEACHER'S COMMENTS / REMARKS</div>
         <table class="comments">
-            <tr>
-                <th style="width:22%;background:var(--maroon-soft);color:#000;">TERM</th>
-                <th style="background:var(--maroon-soft);color:#000;text-align:left;">TEACHER'S REMARKS / COMMENTS</th>
-                <th style="width:34%;background:var(--maroon-soft);color:#000;">PARENT'S / GUARDIAN'S SIGNATURE</th>
-            </tr>
-            {% for period in terms %}
-            <tr>
-                <td class="clbl">{{ period.name }}</td>
-                <td></td>
-                <td class="csign"><div class="signline">&nbsp;</div>Date: ____________</td>
-            </tr>
-            {% empty %}
-            <tr><td class="clbl">Term 1</td><td></td><td class="csign"><div class="signline">&nbsp;</div>Date: ____________</td></tr>
-            <tr><td class="clbl">Term 2</td><td></td><td class="csign"><div class="signline">&nbsp;</div>Date: ____________</td></tr>
-            <tr><td class="clbl">Term 3</td><td></td><td class="csign"><div class="signline">&nbsp;</div>Date: ____________</td></tr>
+            {% for label in term_full_labels %}
+            <tr><td style="height:35.2pt;">{{ label }}</td></tr>
             {% endfor %}
         </table>
 
-        <section class="certification">
-            <div class="cert-title">CERTIFICATE OF TRANSFER / COMPLETION</div>
-            <p class="cert-statement">
-                This is to certify that the academic records of
-                <strong>{{ student.last_name|upper }}, {{ student.first_name|upper }}{% if student.middle_name %} {{ student.middle_name|upper }}{% endif %}</strong>
-                with LRN <strong>{{ student.lrn }}</strong> are a true record from
-                <strong>PAQUITO S. YU MEMORIAL NATIONAL HIGH SCHOOL</strong>
-                for the School Year <strong>{{ school_year.name|default:"____________" }}</strong>.
-                The learner is {% if general_average is not None %}{% if general_average >= 75 %}<strong>PROMOTED</strong>{% else %}<strong>RETAINED</strong>{% endif %}{% else %}____________________{% endif %}
-                and eligible for admission to the next higher grade level.
-            </p>
-            <div class="cert-row">
-                <div class="signature-field">
-                    <div class="signature-line">&nbsp;</div>
-                    <div class="signature-label">Date</div>
-                </div>
-                <div class="signature-field">
-                    <div class="signature-line">{{ adviser_name|default:"&nbsp;" }}</div>
-                    <div class="signature-label">Class Adviser over Printed Name / Signature</div>
-                </div>
-                <div class="signature-field">
-                    <div class="signature-line">&nbsp;</div>
-                    <div class="signature-label">Principal / School Head</div>
-                </div>
-            </div>
-            <div class="cert-row" style="margin-top:14px;">
-                <div class="seal-field" style="grid-column:3;">(Affix School Seal here)</div>
-            </div>
-        </section>
+        <div class="ln ctr-r b" style="top:242.3pt;">PARENT/S GUARDIAN'S SIGNATURE</div>
+        {% for row in parent_sig_rows %}
+        <div class="ln b" style="left:498.9pt;top:{{ row.top }}pt;">{{ row.label }}</div>
+        <div class="u" style="left:527.2pt;top:{{ row.top }}pt;width:191.8pt;">&nbsp;</div>
+        {% endfor %}
+
+        <div class="ln ctr-r b" style="top:310.7pt;">CERTIFICATE OF TRANSFER</div>
+        <div class="ln" style="left:437.2pt;top:328.1pt;">This is to certify that the above-named learner has satisfactorily completed the requirements</div>
+        <div class="ln" style="left:437.2pt;top:342.3pt;">for the grade level indicated.</div>
+        <div class="ln" style="left:437.2pt;top:370.7pt;">Admitted to Grade:</div>
+        <div class="u" style="left:505.9pt;top:370.7pt;width:42.6pt;">&nbsp;</div>
+        <div class="ln" style="left:437.2pt;top:384.9pt;">Eligible for Admission to Grade:</div>
+        <div class="u" style="left:548.5pt;top:384.9pt;width:85.3pt;">&nbsp;</div>
+        <div class="ln" style="left:437.2pt;top:413.3pt;">Approved:</div>
+        <div class="u b" style="left:612.4pt;top:413.3pt;width:148.1pt;">{{ adviser_name|default:"&nbsp;" }}</div>
+        <div class="ln" style="left:612.4pt;top:422.7pt;width:148.1pt;text-align:center;">Adviser</div>
+        <div class="u b" style="left:435.6pt;top:435.9pt;width:155.6pt;">{{ school_head_name }}</div>
+        <div class="ln" style="left:435.6pt;top:444.7pt;width:155.6pt;text-align:center;">School&nbsp;&nbsp;Head</div>
+
+        <div class="ln ctr-r b" style="top:461.8pt;">CANCELLATION OF ELIGIBILITY TO TRANSFER</div>
+        <div class="ln" style="left:437.2pt;top:471.1pt;">Admitted in:</div>
+        <div class="u" style="left:484.5pt;top:471.1pt;width:128.0pt;">&nbsp;</div>
+        <div class="ln" style="left:614.0pt;top:471.1pt;">Date:</div>
+        <div class="u" style="left:633.7pt;top:471.1pt;width:85.3pt;">&nbsp;</div>
+        <div class="u b" style="left:435.6pt;top:497.5pt;width:155.6pt;">{{ school_head_name }}</div>
+        <div class="ln" style="left:435.6pt;top:506.3pt;width:155.6pt;text-align:center;">School Head</div>
     </main>
+
+    <script>
+        // The sheet is a fixed A4-landscape print page; scale it down on narrow
+        // screens only (print keeps the 1:1 size).
+        const sheet = document.querySelector('.sheet');
+        const fitSheet = () => {
+            const scale = Math.min(1, (window.innerWidth - 36) / 1122.4);
+            sheet.style.zoom = scale < 1 ? scale : '';
+        };
+        fitSheet();
+        window.addEventListener('resize', fitSheet);
+        window.addEventListener('beforeprint', () => { sheet.style.zoom = ''; });
+        window.addEventListener('afterprint', fitSheet);
+    </script>
 </body>
 </html>
