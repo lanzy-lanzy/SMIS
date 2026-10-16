@@ -16,7 +16,9 @@
             <div class="landing-grid pointer-events-none absolute inset-0 opacity-20"></div>
             <div class="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-primary/30 blur-3xl"></div>
             <a href="{% url 'dashboard:landing' %}" class="relative flex items-center gap-3">
-                <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-xs font-black tracking-tight text-primary-dark">SY</span>
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white shadow-sm">
+                    <img src="{% static 'images/psyu-logo.png' %}" alt="Paquito S. Yu Memorial NHS logo" class="h-full w-full object-cover">
+                </span>
                 <span>
                     <span class="block text-lg font-black tracking-[0.14em]">SMIS</span>
                     <span class="block text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-300">Paquito S. Yu Memorial NHS</span>
@@ -46,7 +48,7 @@
         <section class="relative flex items-center justify-center px-5 py-10 sm:px-8 lg:px-12">
             <div class="absolute inset-x-0 top-0 flex h-20 items-center justify-between px-5 sm:px-8 lg:hidden">
                 <a href="{% url 'dashboard:landing' %}" class="flex items-center gap-2.5">
-                    <span class="flex h-9 w-9 items-center justify-center rounded-md bg-primary-dark text-[10px] font-black text-white">SY</span>
+                    <img src="{% static 'images/psyu-logo.png' %}" alt="Paquito S. Yu Memorial NHS logo" class="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-slate-200">
                     <span class="text-sm font-black tracking-[0.12em] text-primary-dark">SMIS</span>
                 </a>
                 <a href="{% url 'dashboard:landing' %}" class="text-sm font-semibold text-slate-500 hover:text-primary">Back to home</a>

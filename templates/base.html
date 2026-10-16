@@ -108,7 +108,9 @@
         >
             <div class="flex h-[4.75rem] shrink-0 items-center gap-3 border-b border-white/10 px-4">
                 <a href="{% url 'dashboard:index' %}" class="flex min-w-0 items-center gap-3" aria-label="SMIS dashboard">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white text-sm font-black tracking-tight text-primary-dark shadow-lg">SY</span>
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/15 bg-white shadow-lg">
+                        <img src="{% static 'images/psyu-logo.png' %}" alt="Paquito S. Yu Memorial NHS logo" class="h-full w-full object-cover">
+                    </span>
                     <span class="min-w-0">
                         <span class="block text-base font-bold tracking-[0.14em]">SMIS</span>
                         <span class="block truncate text-[10px] font-medium uppercase tracking-[0.08em] text-slate-300">School Information System</span>
