@@ -1,0 +1,197 @@
+{% comment %}
+Hero scene for the public landing page.
+
+The scene is split into four SVG layers so the landing script can move each
+layer at its own speed (scroll parallax + a subtle pointer offset). Every layer
+shares the same viewBox and `preserveAspectRatio="xMidYMax slice"`, so they stay
+aligned at any viewport size. `data-speed` values are read by static/js/landing.js
+(1 = moves with the page, < 1 = distant, > 1 = foreground).
+
+Daylight palette: it is a school, so the scene stays bright and welcoming.
+{% endcomment %}
+<div class="pointer-events-none absolute inset-0" aria-hidden="true">
+    <div class="landing-sky absolute inset-0"></div>
+
+    {# Speed: distant sky detail - sun, soft clouds, birds. #}
+    <svg class="landing-layer" data-parallax data-speed="0.7" viewBox="0 0 1440 900"
+         preserveAspectRatio="xMidYMax slice" focusable="false">
+        <defs>
+            <radialGradient id="scene-sun-glow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#ffe9b0" stop-opacity="0.85"/>
+                <stop offset="100%" stop-color="#ffe9b0" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="scene-soft" x="-60%" y="-200%" width="220%" height="500%">
+                <feGaussianBlur stdDeviation="12"/>
+            </filter>
+        </defs>
+
+        <circle cx="1180" cy="150" r="185" fill="url(#scene-sun-glow)"/>
+        <circle cx="1180" cy="150" r="46" fill="#f9d67e"/>
+        <circle cx="1180" cy="150" r="46" fill="none" stroke="#f0c15c" stroke-opacity="0.6" stroke-width="2"/>
+
+        <g fill="#ffffff" opacity="0.8" filter="url(#scene-soft)">
+            <ellipse cx="270" cy="238" rx="150" ry="26"/>
+            <ellipse cx="470" cy="198" rx="110" ry="20"/>
+            <ellipse cx="214" cy="206" rx="80" ry="16"/>
+            <ellipse cx="1130" cy="272" rx="170" ry="28"/>
+            <ellipse cx="1330" cy="226" rx="110" ry="18"/>
+            <ellipse cx="960" cy="188" rx="90" ry="15"/>
+        </g>
+
+        <g fill="none" stroke="#64798c" stroke-opacity="0.45" stroke-width="2" stroke-linecap="round">
+            <path d="M948 316 q9 -8 18 0 q9 -8 18 0"/>
+            <path d="M1006 296 q7 -6 14 0 q7 -6 14 0"/>
+            <path d="M1052 322 q6 -5 12 0 q6 -5 12 0"/>
+        </g>
+    </svg>
+
+    {# Speed: hazy green ridges on the horizon. #}
+    <svg class="landing-layer" data-parallax data-speed="0.78" viewBox="0 0 1440 900"
+         preserveAspectRatio="xMidYMax slice" focusable="false">
+        <g transform="translate(720 936) scale(0.8) translate(-720 -900)">
+            <path d="M-80 596 C 140 556 260 566 390 548 C 520 530 620 560 760 552
+                     C 900 544 1010 566 1140 546 C 1260 528 1360 552 1520 540 L1520 900 L-80 900 Z"
+                  fill="#cfe3d7" opacity="0.75"/>
+            <path d="M-80 652 C 170 614 300 630 450 614 C 610 597 700 626 860 616
+                     C 1010 606 1120 628 1260 610 C 1350 598 1410 610 1520 604 L1520 900 L-80 900 Z"
+                  fill="#bcd9c6" opacity="0.85"/>
+        </g>
+    </svg>
+
+    {# Speed: the campus itself - hill crest, main building, wings, flag. #}
+    <svg class="landing-layer landing-layer-mid" data-parallax data-speed="0.88" viewBox="0 0 1440 900"
+         preserveAspectRatio="xMidYMax slice" focusable="false">
+        <g transform="translate(720 936) scale(0.8) translate(-720 -900)">
+            <path d="M-80 708 C 200 672 380 692 540 682 C 700 672 800 694 960 682
+                     C 1120 670 1280 688 1520 672 L1520 900 L-80 900 Z"
+                  fill="#c9e6c0"/>
+
+            {# Plinth #}
+            <rect x="424" y="746" width="592" height="10" fill="#e3d7c6"/>
+            <rect x="448" y="756" width="544" height="8" fill="#dccfbc"/>
+
+            {# Wings #}
+            <rect x="384" y="508" width="140" height="240" fill="#fbf5ec"/>
+            <rect x="916" y="508" width="140" height="240" fill="#fbf5ec"/>
+            <rect x="374" y="494" width="160" height="14" fill="#f2e7d8"/>
+            <rect x="906" y="494" width="160" height="14" fill="#f2e7d8"/>
+            <rect x="374" y="491" width="160" height="3" fill="#1b2a5b" opacity="0.5"/>
+            <rect x="906" y="491" width="160" height="3" fill="#1b2a5b" opacity="0.5"/>
+
+            {# Main block #}
+            <rect x="540" y="424" width="360" height="324" fill="#fdf8f1"/>
+            <rect x="524" y="410" width="392" height="14" fill="#f2e7d8"/>
+            <rect x="524" y="407" width="392" height="3" fill="#1b2a5b" opacity="0.5"/>
+
+            {# Maroon pediment, gold inset line and clock #}
+            <polygon points="506,410 720,314 934,410" fill="#1b2a5b"/>
+            <polygon points="548,402 720,332 892,402" fill="none"
+                     stroke="#f7c93e" stroke-opacity="0.8" stroke-width="1.6"/>
+            <circle cx="720" cy="372" r="15" fill="#fffaf2"
+                    stroke="#1b2a5b" stroke-opacity="0.85" stroke-width="1.6"/>
+            <path d="M720 372 V363 M720 372 L728 375" fill="none"
+                  stroke="#1b2a5b" stroke-width="1.8" stroke-linecap="round"/>
+
+            {# Entrance #}
+            <path d="M692 746 V686 Q720 654 748 686 V746 Z" fill="#1b2a5b"
+                  stroke="#e9b723" stroke-opacity="0.75" stroke-width="1.6"/>
+            <path d="M720 700 V746" stroke="#e9b723" stroke-opacity="0.45" stroke-width="1.4"/>
+
+            {# Main windows (3 x 3) - two with a warm interior #}
+            <g fill="#d7e9f5" stroke="#1b2a5b" stroke-opacity="0.35" stroke-width="1.6">
+                <rect x="573" y="452" width="30" height="42" rx="2"/>
+                <rect x="705" y="452" width="30" height="42" rx="2"/>
+                <rect x="837" y="452" width="30" height="42" rx="2"/>
+                <rect x="573" y="516" width="30" height="42" rx="2"/>
+                <rect x="705" y="516" width="30" height="42" rx="2"/>
+                <rect x="837" y="516" width="30" height="42" rx="2"/>
+                <rect x="573" y="580" width="30" height="42" rx="2"/>
+                <rect x="705" y="580" width="30" height="42" rx="2"/>
+                <rect x="837" y="580" width="30" height="42" rx="2"/>
+            </g>
+            <g fill="#f7e3b6" stroke="#1b2a5b" stroke-opacity="0.35" stroke-width="1.6">
+                <rect x="573" y="452" width="30" height="42" rx="2"/>
+                <rect x="837" y="516" width="30" height="42" rx="2"/>
+            </g>
+
+            {# Wing windows (3 x 3 each), one warm on each side #}
+            <g fill="#d7e9f5" stroke="#1b2a5b" stroke-opacity="0.32" stroke-width="1.5">
+                <rect x="403" y="528" width="26" height="34" rx="2"/>
+                <rect x="442" y="528" width="26" height="34" rx="2"/>
+                <rect x="481" y="528" width="26" height="34" rx="2"/>
+                <rect x="403" y="596" width="26" height="34" rx="2"/>
+                <rect x="442" y="596" width="26" height="34" rx="2"/>
+                <rect x="481" y="596" width="26" height="34" rx="2"/>
+                <rect x="403" y="664" width="26" height="34" rx="2"/>
+                <rect x="442" y="664" width="26" height="34" rx="2"/>
+                <rect x="481" y="664" width="26" height="34" rx="2"/>
+                <rect x="933" y="528" width="26" height="34" rx="2"/>
+                <rect x="972" y="528" width="26" height="34" rx="2"/>
+                <rect x="1011" y="528" width="26" height="34" rx="2"/>
+                <rect x="933" y="596" width="26" height="34" rx="2"/>
+                <rect x="972" y="596" width="26" height="34" rx="2"/>
+                <rect x="1011" y="596" width="26" height="34" rx="2"/>
+                <rect x="933" y="664" width="26" height="34" rx="2"/>
+                <rect x="972" y="664" width="26" height="34" rx="2"/>
+                <rect x="1011" y="664" width="26" height="34" rx="2"/>
+            </g>
+            <g fill="#f7e3b6" stroke="#1b2a5b" stroke-opacity="0.32" stroke-width="1.5">
+                <rect x="481" y="528" width="26" height="34" rx="2"/>
+                <rect x="933" y="596" width="26" height="34" rx="2"/>
+            </g>
+        </g>
+    </svg>
+
+    {# Speed: nearest ground - sunlit lawn, walkway, trees and hedges. #}
+    <svg class="landing-layer landing-layer-mid" data-parallax data-speed="1.2" viewBox="0 0 1440 900"
+         preserveAspectRatio="xMidYMax slice" focusable="false">
+        <g transform="translate(720 936) scale(0.8) translate(-720 -900)">
+            {# Building shadow on the lawn #}
+            <ellipse cx="720" cy="782" rx="310" ry="18" fill="#a6cd9c" opacity="0.5"/>
+
+            <path d="M-80 796 C 220 766 420 780 640 774 C 860 768 1060 752 1250 766
+                     C 1330 772 1390 780 1520 776 L1520 900 L-80 900 Z"
+                  fill="#c3e2b8"/>
+            <path d="M-80 796 C 220 766 420 780 640 774 C 860 768 1060 752 1250 766
+                     C 1330 772 1390 780 1520 776"
+                  fill="none" stroke="#9fcb95" stroke-opacity="0.6" stroke-width="1.5"/>
+            <path d="M706 900 L734 900 L728 758 L712 758 Z" fill="#ece2d2"
+                  stroke="#d9ccb8" stroke-width="1.2"/>
+
+            <g>
+                <rect x="196" y="688" width="10" height="104" fill="#9b6a49"/>
+                <circle cx="201" cy="672" r="44" fill="#7cb96f"/>
+                <circle cx="160" cy="700" r="32" fill="#7cb96f"/>
+                <circle cx="242" cy="702" r="32" fill="#7cb96f"/>
+                <circle cx="201" cy="626" r="30" fill="#8fc983"/>
+                <circle cx="185" cy="660" r="20" fill="#8fc983"/>
+
+                <rect x="286" y="732" width="8" height="68" fill="#9b6a49"/>
+                <circle cx="290" cy="724" r="30" fill="#7cb96f"/>
+                <circle cx="262" cy="740" r="21" fill="#7cb96f"/>
+                <circle cx="318" cy="740" r="21" fill="#7cb96f"/>
+                <circle cx="290" cy="692" r="22" fill="#8fc983"/>
+
+                <rect x="1234" y="688" width="10" height="104" fill="#9b6a49"/>
+                <circle cx="1239" cy="672" r="44" fill="#7cb96f"/>
+                <circle cx="1198" cy="700" r="32" fill="#7cb96f"/>
+                <circle cx="1280" cy="702" r="32" fill="#7cb96f"/>
+                <circle cx="1239" cy="626" r="30" fill="#8fc983"/>
+                <circle cx="1255" cy="660" r="20" fill="#8fc983"/>
+
+                <rect x="1146" y="732" width="8" height="68" fill="#9b6a49"/>
+                <circle cx="1150" cy="724" r="30" fill="#7cb96f"/>
+                <circle cx="1122" cy="740" r="21" fill="#7cb96f"/>
+                <circle cx="1178" cy="740" r="21" fill="#7cb96f"/>
+                <circle cx="1150" cy="692" r="22" fill="#8fc983"/>
+
+                <ellipse cx="600" cy="782" rx="44" ry="15" fill="#8cc681"/>
+                <ellipse cx="852" cy="784" rx="52" ry="17" fill="#8cc681"/>
+                <ellipse cx="372" cy="790" rx="58" ry="18" fill="#8cc681"/>
+                <ellipse cx="1092" cy="788" rx="62" ry="19" fill="#8cc681"/>
+            </g>
+        </g>
+    </svg>
+
+    <div class="landing-scrim absolute inset-0"></div>
+</div>

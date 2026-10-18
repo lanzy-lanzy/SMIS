@@ -174,7 +174,7 @@
                             <th class="pb-2 font-medium">Student</th>
                             <th class="pb-2 font-medium">Grade & Section</th>
                             <th class="pb-2 font-medium text-right">Average</th>
-                            <th class="pb-2 font-medium">Reason</th>
+                            <th class="pb-2 font-medium pl-3">Reason</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
@@ -192,12 +192,12 @@
                                 </div>
                             </td>
                             <td class="py-3 text-gray-600 dark:text-gray-300">
-                                Grade {{ item.student.grade_level }} - {{ item.student.section }}
+                                {% if item.student.section %}{{ item.student.section.name }}{% elif item.student.grade_level %}{{ item.student.grade_level }}{% else %}&mdash;{% endif %}
                             </td>
                             <td class="py-3 text-right">
                                 <span class="inline-block px-2 py-0.5 rounded-md bg-danger-50 dark:bg-danger-900/30 text-danger font-semibold">{{ item.average }}</span>
                             </td>
-                            <td class="py-3 text-gray-600 dark:text-gray-300">{{ item.reason }}</td>
+                            <td class="py-3 pl-3 text-gray-600 dark:text-gray-300">{{ item.reason }}</td>
                         </tr>
                         {% empty %}
                         <tr>
@@ -357,7 +357,7 @@
             datasets: [{
                 label: 'Students',
                 data: [{% for item in students_by_level %}{{ item.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
-                backgroundColor: '#4CAF50',
+                backgroundColor: '#F7C93E',
                 borderRadius: 4,
                 barThickness: 28,
             }]
@@ -400,7 +400,7 @@
                     {{ grade_validation_counts.returned }},
                     {{ grade_validation_counts.validated }}
                 ],
-                backgroundColor: ['#F59E0B', '#1976D2', '#EF4444', '#4CAF50'],
+                backgroundColor: ['#F7C93E', '#2F6FE0', '#22C55E', '#EF4444'],
                 borderWidth: 0,
                 hoverOffset: 4
             }]

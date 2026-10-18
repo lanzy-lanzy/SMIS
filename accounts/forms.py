@@ -6,12 +6,16 @@ from .models import User
 
 class LoginForm(AuthenticationForm):
     username = forms.CharField(widget=forms.TextInput(attrs={
-        'class': 'w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white',
-        'placeholder': 'Username'
+        'class': 'w-full rounded-lg border px-4',
+        'placeholder': 'Enter your username',
+        'autocomplete': 'username',
+        'autocapitalize': 'none',
+        'spellcheck': 'false',
     }))
     password = forms.CharField(widget=forms.PasswordInput(attrs={
-        'class': 'w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white',
-        'placeholder': 'Password'
+        'class': 'w-full rounded-lg border px-4 pr-12',
+        'placeholder': 'Enter your password',
+        'autocomplete': 'current-password',
     }))
 
 
