@@ -33,9 +33,29 @@
                 <span class="px-2.5 py-1 text-xs rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium">{{ student.section }}</span>
             </td>
             <td class="px-4 py-3">
-                {% if student.status == 'active' %}
+                {% if not student.status %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                    &mdash;
+                </span>
+                {% elif student.status == 'transferred_in' %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-300 font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+                    {{ student.get_status_display }}
+                </span>
+                {% elif student.status == 'transferred_out' %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                    {{ student.get_status_display }}
+                </span>
+                {% elif student.status == 'balik_aral' or student.status == 'active' %}
                 <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 font-medium">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    {{ student.get_status_display }}
+                </span>
+                {% elif student.status == 'repeater' %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span>
                     {{ student.get_status_display }}
                 </span>
                 {% elif student.status == 'inactive' %}

@@ -10,7 +10,7 @@ from .models import (
     WW_WEIGHT, PT_WEIGHT, AS_WEIGHT,
 )
 from academics.models import TeacherAssignment, GradingPeriod, SchoolYear, Section, Subject
-from students.models import Student
+from students.models import Student, ENROLLED_STATUSES
 from accounts.models import AuditLog
 from accounts.decorators import (
     role_required,
@@ -410,7 +410,7 @@ def grade_encode(request, assignment_pk):
     students = Student.objects.filter(
         grade_level=assignment.section.grade_level,
         section=assignment.section,
-        status='active'
+        status__in=ENROLLED_STATUSES
     )
     
     existing_grades = {}
@@ -530,7 +530,7 @@ def grade_save(request, assignment_pk):
     students = Student.objects.filter(
         grade_level=assignment.section.grade_level,
         section=assignment.section,
-        status='active'
+        status__in=ENROLLED_STATUSES
     )
 
     student_ids_with_data = []
@@ -1068,7 +1068,7 @@ def grade_encode_select(request):
         students = Student.objects.filter(
             grade_level=selected_assignment.section.grade_level,
             section=selected_assignment.section,
-            status='active'
+            status__in=ENROLLED_STATUSES
         ).order_by('last_name', 'first_name')
         
         existing_grades = {
@@ -1166,7 +1166,7 @@ def grade_encode_all(request):
         students = Student.objects.filter(
             grade_level=assignment.section.grade_level,
             section=assignment.section,
-            status='active'
+            status__in=ENROLLED_STATUSES
         ).order_by('last_name', 'first_name')
         
         existing_grades = {
@@ -1300,7 +1300,7 @@ def grade_save_all(request):
         students = Student.objects.filter(
             grade_level=assignment.section.grade_level,
             section=assignment.section,
-            status='active'
+            status__in=ENROLLED_STATUSES
         )
         
         # Per-class weight config (each assignment's table posts its own weights).

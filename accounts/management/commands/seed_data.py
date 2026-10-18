@@ -7,7 +7,7 @@ from django.db import transaction
 
 from accounts.models import User, AuditLog
 from academics.models import SchoolYear, GradeLevel, Section, Subject, TeacherAssignment, GradingPeriod
-from students.models import Student
+from students.models import Student, ENROLLED_STATUSES
 from grades.models import Grade, GradeSubmission, GradeValidation
 from form137.models import Form137Record
 
@@ -298,7 +298,7 @@ class Command(BaseCommand):
         last_names = ['Castillo', 'Gonzales', 'Mendoza', 'Santos', 'Ramos', 'Reyes', 'Cruz', 'Garcia', 'Torres', 'Rivera',
                       'Flores', 'Dela Cruz', 'Bautista', 'Domingo', 'Villanueva', 'Santiago', 'Aquino', 'Navarro', 'Salazar', 'Lim']
 
-        statuses = ['active'] * 8 + ['inactive'] + ['transferred'] + ['dropped']
+        statuses = ['transferred_in'] * 8 + ['balik_aral'] + ['repeater'] + ['transferred_out']
         sexes = ['M', 'F']
 
         students = []
@@ -366,7 +366,7 @@ class Command(BaseCommand):
 
         # For current school year, create grades for all terms
         for student in students:
-            if student.status != 'active':
+            if student.status not in ENROLLED_STATUSES:
                 continue
 
             level = student.grade_level.level
@@ -451,7 +451,7 @@ class Command(BaseCommand):
         # grades so that multi-year Form 137 records are realistic.
         prev_sections = sections['2024-2025']
         for student in students:
-            if student.status != 'active':
+            if student.status not in ENROLLED_STATUSES:
                 continue
             level = student.grade_level.level
             if level == 7:
@@ -494,7 +494,7 @@ class Command(BaseCommand):
         current_sy = school_years['2025-2026']
 
         for student in students:
-            if student.status != 'active':
+            if student.status not in ENROLLED_STATUSES:
                 continue
 
             validated_grades = Grade.objects.filter(

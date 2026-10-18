@@ -24,3 +24,14 @@ class StudentForm(forms.ModelForm):
                 field.widget.attrs.update({
                     'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white'
                 })
+
+        # Status describes the pupil's enrolment (Transferred In / Out,
+        # Balik-Aral, Repeater), so it is chosen explicitly. A record saved
+        # under the old status set keeps its value when edited.
+        status_field = self.fields['status']
+        status_field.required = True
+        options = [('', 'Select status')] + list(Student.STATUS_CHOICES)
+        current = self.instance.status
+        if self.instance.pk and current and current not in dict(Student.STATUS_CHOICES):
+            options.append((current, self.instance.get_status_display()))
+        status_field.choices = options

@@ -83,6 +83,7 @@
                 <div>
                     <label class="block text-sm font-medium mb-1">Status</label>
                     {{ form.status }}
+                    {% if form.status.errors %}<p class="text-red-500 text-xs mt-1">{{ form.status.errors.0 }}</p>{% endif %}
                 </div>
             </div>
 

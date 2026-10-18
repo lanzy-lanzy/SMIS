@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Count, Q
 from django.utils.text import slugify
-from students.models import Student
+from students.models import Student, ENROLLED_STATUSES
 from grades.models import Grade, GradeSubmission
 from academics.models import SchoolYear, GradeLevel, Section, Subject, GradingPeriod
 from accounts.models import User
@@ -192,7 +192,7 @@ def section_performance(request):
             section=section, status__in=['validated', 'locked']
         ).aggregate(avg=Avg('quarter_grade'))['avg'] or 0
         
-        student_count = Student.objects.filter(section=section, status='active').count()
+        student_count = Student.objects.filter(section=section, status__in=ENROLLED_STATUSES).count()
         
         section_data.append({
             'section': section,

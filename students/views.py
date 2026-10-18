@@ -73,9 +73,10 @@ def student_list(request):
     all_students = _filter_students_by_role(Student.objects.all(), request.user)
     
     total_students = all_students.count()
-    active_students = all_students.filter(status='active').count()
-    inactive_students = all_students.filter(status='inactive').count()
-    transferred_students = all_students.filter(status='transferred').count()
+    transferred_in_students = all_students.filter(status='transferred_in').count()
+    transferred_out_students = all_students.filter(status='transferred_out').count()
+    balik_aral_students = all_students.filter(status='balik_aral').count()
+    repeater_students = all_students.filter(status='repeater').count()
     
     # Students by grade level
     students_by_grade = all_students.values('grade_level__name', 'grade_level__id').annotate(count=Count('id')).order_by('grade_level__level')
@@ -115,9 +116,10 @@ def student_list(request):
             "sections": sections,
             "status_choices": Student.STATUS_CHOICES,
             "total_students": total_students,
-            "active_students": active_students,
-            "inactive_students": inactive_students,
-            "transferred_students": transferred_students,
+            "transferred_in_students": transferred_in_students,
+            "transferred_out_students": transferred_out_students,
+            "balik_aral_students": balik_aral_students,
+            "repeater_students": repeater_students,
             "students_by_grade": students_by_grade,
         },
     )

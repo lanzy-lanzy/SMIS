@@ -1,6 +1,11 @@
 from django.db import models
 from accounts.models import User
 
+# Statuses that count as currently enrolled in this school. The legacy
+# "active" value is included so records saved before the status set changed
+# still count as enrolled.
+ENROLLED_STATUSES = ('active', 'transferred_in', 'balik_aral', 'repeater')
+
 
 class Student(models.Model):
     SEX_CHOICES = (
@@ -9,6 +14,16 @@ class Student(models.Model):
     )
     
     STATUS_CHOICES = (
+        ('transferred_in', 'Transferred In'),
+        ('transferred_out', 'Transferred Out'),
+        ('balik_aral', 'Balik-Aral'),
+        ('repeater', 'Repeater'),
+    )
+
+    # Values from the previous status set. Kept in the field choices so older
+    # records still display and validate; they are no longer offered when
+    # adding or editing a student.
+    LEGACY_STATUS_CHOICES = (
         ('active', 'Active'),
         ('inactive', 'Inactive'),
         ('transferred', 'Transferred'),
@@ -34,7 +49,7 @@ class Student(models.Model):
     grade_level = models.ForeignKey('academics.GradeLevel', on_delete=models.SET_NULL, null=True)
     section = models.ForeignKey('academics.Section', on_delete=models.SET_NULL, null=True, blank=True)
     school_year = models.ForeignKey('academics.SchoolYear', on_delete=models.SET_NULL, null=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES + LEGACY_STATUS_CHOICES, blank=True, default='')
     
     user_account = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='student_profile')
     

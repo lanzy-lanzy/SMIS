@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, Avg
 from django.utils import timezone
 from datetime import datetime
-from students.models import Student
+from students.models import Student, ENROLLED_STATUSES
 from grades.models import Grade, GradeSubmission
 from academics.models import SchoolYear, GradeLevel, Section, TeacherAssignment
 from accounts.models import User, AuditLog
@@ -24,7 +24,7 @@ def index(request):
 
     current_sy = SchoolYear.objects.filter(is_current=True).first()
 
-    total_students = Student.objects.filter(status='active').count()
+    total_students = Student.objects.filter(status__in=ENROLLED_STATUSES).count()
     total_teachers = User.objects.filter(role='teacher', is_active=True).count()
 
     pending_submissions = GradeSubmission.objects.filter(status='pending').count()
@@ -55,7 +55,7 @@ def index(request):
     ).order_by('-updated_at')[:10]
 
     # Students by grade level for bar chart
-    students_by_level = Student.objects.filter(status='active').values(
+    students_by_level = Student.objects.filter(status__in=ENROLLED_STATUSES).values(
         'grade_level__name'
     ).annotate(count=Count('id')).order_by('grade_level__level')
 
