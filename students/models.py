@@ -18,6 +18,7 @@ class Student(models.Model):
         ('transferred_out', 'Transferred Out'),
         ('balik_aral', 'Balik-Aral'),
         ('repeater', 'Repeater'),
+        ('dropped', 'Dropped'),
     )
 
     # Values from the previous status set. Kept in the field choices so older
@@ -27,7 +28,6 @@ class Student(models.Model):
         ('active', 'Active'),
         ('inactive', 'Inactive'),
         ('transferred', 'Transferred'),
-        ('dropped', 'Dropped'),
     )
 
     lrn = models.CharField(max_length=20, unique=True, verbose_name='Learner Reference Number')

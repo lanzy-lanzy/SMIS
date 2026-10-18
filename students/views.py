@@ -77,6 +77,7 @@ def student_list(request):
     transferred_out_students = all_students.filter(status='transferred_out').count()
     balik_aral_students = all_students.filter(status='balik_aral').count()
     repeater_students = all_students.filter(status='repeater').count()
+    dropped_students = all_students.filter(status='dropped').count()
     
     # Students by grade level
     students_by_grade = all_students.values('grade_level__name', 'grade_level__id').annotate(count=Count('id')).order_by('grade_level__level')
@@ -120,6 +121,7 @@ def student_list(request):
             "transferred_out_students": transferred_out_students,
             "balik_aral_students": balik_aral_students,
             "repeater_students": repeater_students,
+            "dropped_students": dropped_students,
             "students_by_grade": students_by_grade,
         },
     )

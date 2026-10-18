@@ -298,7 +298,7 @@ class Command(BaseCommand):
         last_names = ['Castillo', 'Gonzales', 'Mendoza', 'Santos', 'Ramos', 'Reyes', 'Cruz', 'Garcia', 'Torres', 'Rivera',
                       'Flores', 'Dela Cruz', 'Bautista', 'Domingo', 'Villanueva', 'Santiago', 'Aquino', 'Navarro', 'Salazar', 'Lim']
 
-        statuses = ['transferred_in'] * 8 + ['balik_aral'] + ['repeater'] + ['transferred_out']
+        statuses = ['transferred_in'] * 8 + ['balik_aral', 'repeater', 'transferred_out', 'dropped']
         sexes = ['M', 'F']
 
         students = []

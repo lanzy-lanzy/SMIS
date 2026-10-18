@@ -42,6 +42,11 @@
                 <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
                 {{ student.get_status_display }}
             </span>
+            {% elif student.status == 'dropped' %}
+            <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 font-medium">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                {{ student.get_status_display }}
+            </span>
             {% else %}
             <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 font-medium">
                 <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
