@@ -4,7 +4,12 @@
   "description": "SMIS - School Management Information System",
   "scripts": {
     "tailwind:watch": "npx @tailwindcss/cli -i static/src/input.css -o static/css/output.css --watch",
-    "tailwind:build": "npx @tailwindcss/cli -i static/src/input.css -o static/css/output.css --minify"
+    "tailwind:build": "npx @tailwindcss/cli -i static/src/input.css -o static/css/output.css --minify",
+    "shots": "node tools/shoot.js",
+    "shots:landing": "node tools/shoot-landing.js",
+    "shots:modal": "node tools/shoot-modal.js",
+    "shots:student": "node tools/shoot-student.js",
+    "smoke": "node tools/interact-test.js"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.0.0",

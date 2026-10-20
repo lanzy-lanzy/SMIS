@@ -1,5 +1,5 @@
-<table id="assignment-table" class="w-full text-sm" hx-get="{% url 'academics:assignment_list' %}?view=teacher" hx-trigger="refresh" hx-target="this" hx-swap="outerHTML">
-    <thead class="bg-gray-50 dark:bg-slate-700">
+<table id="assignment-table" class="data-table" hx-get="{% url 'academics:assignment_list' %}?view=teacher" hx-trigger="refresh" hx-target="this" hx-swap="outerHTML">
+    <thead class="data-table-head">
         <tr>
             <th class="px-4 py-3 text-left font-medium">Teacher</th>
             <th class="px-4 py-3 text-left font-medium">Subject</th>
@@ -9,9 +9,9 @@
             <th class="px-4 py-3 text-right font-medium">Actions</th>
         </tr>
     </thead>
-    <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+    <tbody class="divide-y divide-slate-500/15">
         {% for a in assignments %}
-        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+        <tr class="hover:bg-white/40 dark:hover:bg-white/5">
             <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">
@@ -64,13 +64,13 @@
     <p class="text-sm text-gray-500">Showing {{ assignments.start_index }}-{{ assignments.end_index }} of {{ assignments.paginator.count }}</p>
     <div class="flex gap-1">
         {% if assignments.has_previous %}
-        <a href="?page={{ assignments.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+        <a href="?page={{ assignments.previous_page_number }}" class="page-link">&laquo;</a>
         {% endif %}
         {% for num in assignments.paginator.page_range %}
-        <a href="?page={{ num }}" class="px-3 py-1 border rounded {% if assignments.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+        <a href="?page={{ num }}" class="page-link {% if assignments.number == num %}is-active{% endif %}">{{ num }}</a>
         {% endfor %}
         {% if assignments.has_next %}
-        <a href="?page={{ assignments.next_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+        <a href="?page={{ assignments.next_page_number }}" class="page-link">&raquo;</a>
         {% endif %}
     </div>
 </div>

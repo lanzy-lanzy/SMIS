@@ -1,5 +1,5 @@
-<table id="grading-period-table" class="w-full text-sm" hx-get="{% url 'academics:grading_period_list' %}" hx-trigger="refresh" hx-target="this" hx-swap="outerHTML">
-    <thead class="bg-gray-50 dark:bg-slate-700">
+<table id="grading-period-table" class="data-table" hx-get="{% url 'academics:grading_period_list' %}" hx-trigger="refresh" hx-target="this" hx-swap="outerHTML">
+    <thead class="data-table-head">
         <tr>
             <th class="px-4 py-3 text-left font-medium">Name</th>
             <th class="px-4 py-3 text-left font-medium">School Year</th>
@@ -9,9 +9,9 @@
             <th class="px-4 py-3 text-left font-medium">Actions</th>
         </tr>
     </thead>
-    <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+    <tbody class="divide-y divide-slate-500/15">
         {% for gp in periods %}
-        <tr id="gp-row-{{ gp.pk }}" class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+        <tr id="gp-row-{{ gp.pk }}" class="hover:bg-white/40 dark:hover:bg-white/5">
             <td class="px-4 py-3">{{ gp.name }}</td>
             <td class="px-4 py-3">{{ gp.school_year }}</td>
             <td class="px-4 py-3">
@@ -58,13 +58,13 @@
     <p class="text-sm text-gray-500">Showing {{ periods.start_index }}-{{ periods.end_index }} of {{ periods.paginator.count }}</p>
     <div class="flex gap-1">
         {% if periods.has_previous %}
-        <a href="?page={{ periods.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+        <a href="?page={{ periods.previous_page_number }}" class="page-link">&laquo;</a>
         {% endif %}
         {% for num in periods.paginator.page_range %}
-        <a href="?page={{ num }}" class="px-3 py-1 border rounded {% if periods.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+        <a href="?page={{ num }}" class="page-link {% if periods.number == num %}is-active{% endif %}">{{ num }}</a>
         {% endfor %}
         {% if periods.has_next %}
-        <a href="?page={{ periods.next_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+        <a href="?page={{ periods.next_page_number }}" class="page-link">&raquo;</a>
         {% endif %}
     </div>
 </div>

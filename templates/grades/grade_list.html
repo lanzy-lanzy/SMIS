@@ -13,17 +13,17 @@
         </div>
         <div class="flex gap-2">
             {% if user.is_teacher %}
-            <a href="{% url 'grades:grade_encode_select' %}{% if current_period %}?period={{ current_period.pk }}{% endif %}" class="inline-flex items-center gap-2 bg-primary hover:bg-primary-800 text-white px-4 py-2 rounded-lg transition shadow-sm">
+            <a href="{% url 'grades:grade_encode_select' %}{% if current_period %}?period={{ current_period.pk }}{% endif %}" class="inline-flex items-center gap-2 btn btn-primary shadow-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                 Encode Grades
             </a>
             {% endif %}
-            <a href="{% url 'grades:submission_list' %}" class="inline-flex items-center gap-2 border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition text-sm">
+            <a href="{% url 'grades:submission_list' %}" class="inline-flex items-center gap-2 btn btn-secondary">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                 Submissions
             </a>
             {% if user.is_admin or user.is_registrar %}
-            <a href="{% url 'grades:grade_export' %}" class="inline-flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition text-sm">
+            <a href="{% url 'grades:grade_export' %}" class="inline-flex items-center gap-2 btn btn-secondary text-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 Export
             </a>
@@ -33,26 +33,26 @@
 
     <!-- Current Period Info -->
     {% if current_sy %}
-    <div class="flex items-center justify-between bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl px-4 py-3 text-sm">
+    <div class="info-banner flex-wrap items-center justify-between">
         <div class="flex items-center gap-2">
             <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
             <span><strong>Current School Year:</strong> {{ current_sy.name }}</span>
         </div>
         {% if user.is_admin %}
-        <a href="{% url 'academics:grading_period_list' %}" class="text-primary-600 hover:underline font-medium">Manage Periods</a>
+        <a href="{% url 'academics:grading_period_list' %}" class="link-action font-medium">Manage Periods</a>
         {% endif %}
     </div>
     {% endif %}
 
     <!-- Grading Period Selector -->
     {% if all_periods %}
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
+    <div class="glass-card p-4">
         <div class="flex flex-col sm:flex-row sm:items-center gap-3">
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Grading Period:</span>
             <div class="flex flex-wrap gap-2">
                 {% for period in all_periods %}
                 <a href="?period={{ period.pk }}"
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition {% if current_period.pk == period.pk %}bg-primary text-white shadow-sm{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}">
+                   class="tab-btn {% if current_period.pk == period.pk %}is-active{% endif %}">
                     {{ period.name }}
                     {% if period.is_submissions_open %}
                         <span class="ml-1 w-2 h-2 inline-block rounded-full bg-green-400"></span>
@@ -79,28 +79,28 @@
 
     <!-- Stats Cards -->
     <div x-show="showStats" x-transition class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700 shadow-sm">
+        <div class="glass-card p-4">
             <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                 Total Classes
             </div>
             <div class="text-2xl font-bold text-primary">{{ total_assignments }}</div>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700 shadow-sm">
+        <div class="glass-card p-4">
             <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Pending Submissions
             </div>
             <div class="text-2xl font-bold text-orange-500">{{ pending_submissions }}</div>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700 shadow-sm">
+        <div class="glass-card p-4">
             <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Validated Grades
             </div>
             <div class="text-2xl font-bold text-emerald-600">{{ validated_grades }}</div>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700 shadow-sm">
+        <div class="glass-card p-4">
             <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                 At Risk Students
@@ -110,17 +110,17 @@
     </div>
 
     <!-- View Toggle & Filters -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
+    <div class="glass-card p-4">
         <div class="flex flex-col lg:flex-row lg:items-center gap-4">
             <!-- View Toggle -->
-            <div class="flex items-center gap-2 bg-gray-100 dark:bg-slate-700 rounded-lg p-1">
-                <button type="button" @click="view = 'grid'" :class="view === 'grid' ? 'bg-white dark:bg-slate-600 shadow' : ''"
-                        class="px-4 py-2 rounded-md text-sm font-medium transition flex items-center gap-2">
+            <div class="flex items-center gap-2 segmented">
+                <button type="button" @click="view = 'grid'" :class="view === 'grid' ? 'is-active' : ''"
+                        class="segmented-btn">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
                     Grid
                 </button>
-                <button type="button" @click="view = 'table'" :class="view === 'table' ? 'bg-white dark:bg-slate-600 shadow' : ''"
-                        class="px-4 py-2 rounded-md text-sm font-medium transition flex items-center gap-2">
+                <button type="button" @click="view = 'table'" :class="view === 'table' ? 'is-active' : ''"
+                        class="segmented-btn">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
                     Table
                 </button>
@@ -150,7 +150,7 @@
             </form>
 
             <!-- Toggle Stats -->
-            <button type="button" @click="showStats = !showStats" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition" title="Toggle Stats">
+            <button type="button" @click="showStats = !showStats" class="app-icon-button" title="Toggle Stats">
                 <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
             </button>
         </div>
@@ -165,7 +165,7 @@
 
     <!-- Table View -->
     <div x-show="view === 'table'" x-transition>
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
+        <div class="glass-card overflow-hidden">
             <div class="overflow-x-auto" id="assignment-table">
                 {% include 'grades/partials/assignment_table.html' %}
             </div>

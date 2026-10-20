@@ -10,183 +10,166 @@
 {% block content %}
 <div class="space-y-6">
     <!-- Welcome Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Welcome back, {{ user.first_name|default:"Admin" }}!</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Here's what's happening in your school today.</p>
-        </div>
-        <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-            <span>Today is {{ today|date:"F j, Y" }} ({{ today|date:"l" }})</span>
+    <div class="glass relative overflow-hidden rounded-glass px-5 py-5 sm:px-6 sm:py-6">
+        <div class="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-primary-200/40 blur-3xl dark:bg-primary-500/20"></div>
+        <div class="pointer-events-none absolute -bottom-24 right-1/3 h-48 w-48 rounded-full bg-accent-300/40 blur-3xl dark:bg-accent-500/15"></div>
+        <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-primary-600 dark:text-primary-300">Dashboard</p>
+                <h1 class="mt-1 text-2xl font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-3xl">
+                    Welcome back, {{ user.first_name|default:"Admin" }}!
+                </h1>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Here's what's happening in your school today.</p>
+            </div>
+            <div class="flex w-fit items-center gap-2 rounded-xl border border-white/60 bg-white/55 px-3.5 py-2 text-sm text-gray-600 shadow-[0_6px_16px_-10px_rgba(15,23,42,0.45)] backdrop-blur-md dark:border-white/10 dark:bg-white/10 dark:text-gray-200">
+                <svg class="h-4 w-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span>Today is {{ today|date:"F j, Y" }} ({{ today|date:"l" }})</span>
+            </div>
         </div>
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <!-- Total Students -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-card border border-gray-100 dark:border-slate-700 hover:shadow-card-hover transition">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center shrink-0">
-                    <svg class="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ total_students }}</p>
-                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total Students</p>
-                    <p class="text-[10px] text-primary dark:text-primary-400 mt-0.5">Active enrolled learners</p>
-                </div>
+        <div class="stat-card group">
+            <div class="icon-tile mb-3.5">
+                <svg class="h-6 w-6 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
             </div>
+            <p class="text-3xl font-bold tracking-[-0.03em] text-gray-900 dark:text-white">{{ total_students }}</p>
+            <p class="mt-1 text-xs font-semibold text-gray-600 dark:text-gray-300">Total Students</p>
+            <p class="mt-0.5 text-[10px] font-medium text-primary-600 dark:text-primary-300">Active enrolled learners</p>
         </div>
 
         <!-- Total Teachers -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-card border border-gray-100 dark:border-slate-700 hover:shadow-card-hover transition">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-secondary-50 dark:bg-secondary-900/30 flex items-center justify-center shrink-0">
-                    <svg class="w-6 h-6 text-secondary-700" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ total_teachers }}</p>
-                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total Teachers</p>
-                    <p class="text-[10px] text-secondary-700 dark:text-secondary-400 mt-0.5">Active teaching staff</p>
-                </div>
+        <div class="stat-card group">
+            <div class="icon-tile mb-3.5">
+                <svg class="h-6 w-6 text-secondary-700 dark:text-secondary-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
             </div>
+            <p class="text-3xl font-bold tracking-[-0.03em] text-gray-900 dark:text-white">{{ total_teachers }}</p>
+            <p class="mt-1 text-xs font-semibold text-gray-600 dark:text-gray-300">Total Teachers</p>
+            <p class="mt-0.5 text-[10px] font-medium text-secondary-700 dark:text-secondary-300">Active teaching staff</p>
         </div>
 
         <!-- Pending Grades -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-card border border-gray-100 dark:border-slate-700 hover:shadow-card-hover transition">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-accent-50 dark:bg-accent-900/30 flex items-center justify-center shrink-0">
-                    <svg class="w-6 h-6 text-accent-600" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19a2 2 0 002 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ pending_submissions }}</p>
-                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Under Review</p>
-                    <p class="text-[10px] text-accent-600 dark:text-accent-400 mt-0.5">Grades for validation</p>
-                </div>
+        <div class="stat-card group">
+            <div class="icon-tile mb-3.5">
+                <svg class="h-6 w-6 text-accent-600 dark:text-accent-400" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19a2 2 0 002 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg>
             </div>
+            <p class="text-3xl font-bold tracking-[-0.03em] text-gray-900 dark:text-white">{{ pending_submissions }}</p>
+            <p class="mt-1 text-xs font-semibold text-gray-600 dark:text-gray-300">Under Review</p>
+            <p class="mt-0.5 text-[10px] font-medium text-accent-600 dark:text-accent-400">Grades for validation</p>
         </div>
 
         <!-- Returned Grades -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-card border border-gray-100 dark:border-slate-700 hover:shadow-card-hover transition">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-danger-50 dark:bg-danger-900/30 flex items-center justify-center shrink-0">
-                    <svg class="w-6 h-6 text-danger" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm2 0h-2v-2h2v2zm0-4h-2V8h2v4z"/></svg>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ returned_submissions }}</p>
-                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Returned Grades</p>
-                    <p class="text-[10px] text-danger dark:text-danger-400 mt-0.5">For correction</p>
-                </div>
+        <div class="stat-card group">
+            <div class="icon-tile mb-3.5">
+                <svg class="h-6 w-6 text-danger" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm2 0h-2v-2h2v2zm0-4h-2V8h2v4z"/></svg>
             </div>
+            <p class="text-3xl font-bold tracking-[-0.03em] text-gray-900 dark:text-white">{{ returned_submissions }}</p>
+            <p class="mt-1 text-xs font-semibold text-gray-600 dark:text-gray-300">Returned Grades</p>
+            <p class="mt-0.5 text-[10px] font-medium text-danger dark:text-danger-400">For correction</p>
         </div>
 
         <!-- Validated Grades -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-card border border-gray-100 dark:border-slate-700 hover:shadow-card-hover transition">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center shrink-0">
-                    <svg class="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ validated_grades }}</p>
-                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Validated Grades</p>
-                    <p class="text-[10px] text-primary dark:text-primary-400 mt-0.5">Locked and approved</p>
-                </div>
+        <div class="stat-card group">
+            <div class="icon-tile mb-3.5">
+                <svg class="h-6 w-6 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
             </div>
+            <p class="text-3xl font-bold tracking-[-0.03em] text-gray-900 dark:text-white">{{ validated_grades }}</p>
+            <p class="mt-1 text-xs font-semibold text-gray-600 dark:text-gray-300">Validated Grades</p>
+            <p class="mt-0.5 text-[10px] font-medium text-primary-600 dark:text-primary-300">Locked and approved</p>
         </div>
 
         <!-- Form 137 Generated -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-card border border-gray-100 dark:border-slate-700 hover:shadow-card-hover transition">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                    <svg class="w-6 h-6 text-purple-700" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ form137_generated }}</p>
-                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Form 137 Generated</p>
-                    <p class="text-[10px] text-purple-700 dark:text-purple-400 mt-0.5">This school year</p>
-                </div>
+        <div class="stat-card group">
+            <div class="icon-tile mb-3.5">
+                <svg class="h-6 w-6 text-purple-700 dark:text-purple-300" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
             </div>
+            <p class="text-3xl font-bold tracking-[-0.03em] text-gray-900 dark:text-white">{{ form137_generated }}</p>
+            <p class="mt-1 text-xs font-semibold text-gray-600 dark:text-gray-300">Form 137 Generated</p>
+            <p class="mt-0.5 text-[10px] font-medium text-purple-700 dark:text-purple-300">This school year</p>
         </div>
     </div>
 
     <!-- Charts & At-Risk Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <!-- Enrollment Bar Chart -->
-        <div class="lg:col-span-4 bg-white dark:bg-slate-800 rounded-xl shadow-card border border-gray-100 dark:border-slate-700 p-5">
-            <div class="flex items-center gap-2 mb-4">
-                <div class="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center">
-                    <svg class="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        <div class="surface-card p-5 lg:col-span-4">
+            <div class="mb-4 flex items-center gap-2.5">
+                <div class="icon-tile !h-8 !w-8 !rounded-lg">
+                    <svg class="h-4 w-4 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                 </div>
                 <h3 class="font-bold text-gray-900 dark:text-white">Enrollment by Grade Level</h3>
             </div>
             <div class="h-56">
                 <canvas id="enrollmentChart"></canvas>
             </div>
-            <div class="mt-4 flex items-center justify-between pt-4 border-t border-gray-100 dark:border-slate-700">
+            <div class="mt-4 flex items-center justify-between border-t border-gray-200/60 pt-4 dark:border-white/10">
                 <div>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Total Enrolled Students</p>
-                    <p class="text-xl font-bold text-primary dark:text-primary-400">{{ total_students }}</p>
+                    <p class="text-xl font-bold text-primary dark:text-primary-300">{{ total_students }}</p>
                 </div>
-                <a href="{% url 'students:student_list' %}" class="text-xs font-medium text-primary hover:text-primary-700 flex items-center gap-1">
+                <a href="{% url 'students:student_list' %}" class="flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-700 dark:text-primary-300">
                     View full report
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                 </a>
             </div>
         </div>
 
         <!-- Grade Validation Donut Chart -->
-        <div class="lg:col-span-4 bg-white dark:bg-slate-800 rounded-xl shadow-card border border-gray-100 dark:border-slate-700 p-5">
-            <div class="flex items-center gap-2 mb-4">
-                <div class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
-                    <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        <div class="surface-card p-5 lg:col-span-4">
+            <div class="mb-4 flex items-center gap-2.5">
+                <div class="icon-tile !h-8 !w-8 !rounded-lg">
+                    <svg class="h-4 w-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
                 </div>
                 <h3 class="font-bold text-gray-900 dark:text-white">Grade Validation Workflow</h3>
             </div>
-            <div class="h-56 relative">
+            <div class="relative h-56">
                 <canvas id="validationChart"></canvas>
-                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ grade_validation_total }}</p>
-                    <p class="text-[10px] text-gray-500 dark:text-gray-400">Total Records</p>
+                <div class="pointer-events-none absolute inset-x-0 top-[4.25rem] flex flex-col items-center">
+                    <p class="text-2xl font-bold leading-none text-gray-900 dark:text-white">{{ grade_validation_total }}</p>
+                    <p class="mt-1 text-[10px] font-medium text-gray-500 dark:text-gray-400">Total Records</p>
                 </div>
             </div>
             <div class="mt-4 text-center">
-                <a href="{% url 'grades:grade_list' %}" class="text-xs font-medium text-primary hover:text-primary-700 inline-flex items-center gap-1">
+                <a href="{% url 'grades:grade_list' %}" class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-700 dark:text-primary-300">
                     Go to Grade Management
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                 </a>
             </div>
         </div>
 
         <!-- At-Risk Students -->
-        <div class="lg:col-span-4 bg-white dark:bg-slate-800 rounded-xl shadow-card border border-gray-100 dark:border-slate-700 p-5">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-lg bg-danger-50 dark:bg-danger-900/30 flex items-center justify-center">
-                        <svg class="w-4 h-4 text-danger" fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+        <div class="surface-card p-5 lg:col-span-4">
+            <div class="mb-4 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="icon-tile !h-8 !w-8 !rounded-lg">
+                        <svg class="h-4 w-4 text-danger" fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
                     </div>
                     <h3 class="font-bold text-gray-900 dark:text-white">At-Risk Students</h3>
                 </div>
-                <a href="{% url 'reports:at_risk_students' %}" class="text-xs font-medium text-primary hover:text-primary-700">View all</a>
+                <a href="{% url 'reports:at_risk_students' %}" class="text-xs font-semibold text-primary hover:text-primary-700 dark:text-primary-300">View all</a>
             </div>
-            <div class="overflow-x-auto">
+            <div class="max-h-[19rem] overflow-y-auto">
                 <table class="w-full text-xs">
                     <thead>
-                        <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-slate-700">
-                            <th class="pb-2 font-medium">Student</th>
-                            <th class="pb-2 font-medium">Grade & Section</th>
-                            <th class="pb-2 font-medium text-right">Average</th>
-                            <th class="pb-2 font-medium pl-3">Reason</th>
+                        <tr class="text-left text-gray-500 dark:text-gray-400">
+                            <th class="pb-2 font-semibold">Student</th>
+                            <th class="pb-2 font-semibold">Grade &amp; Section</th>
+                            <th class="pb-2 text-right font-semibold">Average</th>
+                            <th class="pb-2 pl-3 font-semibold">Reason</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+                    <tbody class="divide-y divide-gray-200/60 dark:divide-white/10">
                         {% for item in at_risk_students %}
                         <tr>
                             <td class="py-3">
                                 <div class="flex items-center gap-2">
-                                    <div class="w-7 h-7 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300">
+                                    <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/70 text-xs font-bold text-gray-600 shadow-[0_3px_8px_-4px_rgba(15,23,42,0.5)] dark:bg-white/10 dark:text-gray-300">
                                         {{ item.student.first_name|first }}{{ item.student.last_name|first }}
                                     </div>
-                                    <div>
-                                        <p class="font-medium text-gray-900 dark:text-white">{{ item.student.full_name }}</p>
+                                    <div class="min-w-0">
+                                        <p class="truncate font-semibold text-gray-900 dark:text-white">{{ item.student.full_name }}</p>
                                         <p class="text-[10px] text-gray-500">LRN: {{ item.student.lrn }}</p>
                                     </div>
                                 </div>
@@ -195,13 +178,13 @@
                                 {% if item.student.section %}{{ item.student.section.name }}{% elif item.student.grade_level %}{{ item.student.grade_level }}{% else %}&mdash;{% endif %}
                             </td>
                             <td class="py-3 text-right">
-                                <span class="inline-block px-2 py-0.5 rounded-md bg-danger-50 dark:bg-danger-900/30 text-danger font-semibold">{{ item.average }}</span>
+                                <span class="inline-block rounded-md bg-danger-50 px-2 py-0.5 font-semibold text-danger dark:bg-danger-500/15 dark:text-danger-300">{{ item.average }}</span>
                             </td>
                             <td class="py-3 pl-3 text-gray-600 dark:text-gray-300">{{ item.reason }}</td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4" class="py-6 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="4" class="py-8 text-center text-gray-500 dark:text-gray-400">
                                 No at-risk students found.
                             </td>
                         </tr>
@@ -213,41 +196,41 @@
     </div>
 
     <!-- Bottom Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <!-- Recent Activities -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-gray-100 dark:border-slate-700 p-5">
-            <div class="flex items-center gap-2 mb-4">
-                <div class="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center">
-                    <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <div class="surface-card p-5">
+            <div class="mb-4 flex items-center gap-2.5">
+                <div class="icon-tile !h-8 !w-8 !rounded-lg">
+                    <svg class="h-4 w-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
                 <h3 class="font-bold text-gray-900 dark:text-white">Recent Activities</h3>
             </div>
             <div class="space-y-4">
                 {% for activity in recent_activities %}
                 <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0
-                        {% if activity.color == 'primary' %}bg-primary-50 text-primary dark:bg-primary-900/30 dark:text-primary-400
-                        {% elif activity.color == 'secondary' %}bg-secondary-50 text-secondary-700 dark:bg-secondary-900/30 dark:text-secondary-400
-                        {% elif activity.color == 'danger' %}bg-danger-50 text-danger dark:bg-danger-900/30 dark:text-danger-400
-                        {% elif activity.color == 'purple' %}bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400
-                        {% else %}bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-300{% endif %}">
+                    <div class="icon-tile !h-8 !w-8 !rounded-lg
+                        {% if activity.color == 'primary' %}!text-primary
+                        {% elif activity.color == 'secondary' %}!text-secondary-700 dark:!text-secondary-300
+                        {% elif activity.color == 'danger' %}!text-danger
+                        {% elif activity.color == 'purple' %}!text-purple-700 dark:!text-purple-300
+                        {% else %}!text-gray-600 dark:!text-gray-300{% endif %}">
                         {% if activity.icon == 'clipboard' %}
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                         {% elif activity.icon == 'check' %}
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                         {% elif activity.icon == 'refresh' %}
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                         {% elif activity.icon == 'file' %}
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         {% elif activity.icon == 'login' %}
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
                         {% elif activity.icon == 'logout' %}
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                         {% else %}
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-1.066-2.573c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-.426-1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-1.066 2.573c-1.543-.94-3.31.826-2.37 2.37a1.724 1.724 0 001.066 2.573c-1.756.426-1.756 2.924 0 3.35a1.724 1.724 0 00.017 2.573c1.543.94 3.31-.826 2.37-2.37a1.724 1.724 0 001.066-2.573z"></path></svg>
                         {% endif %}
                     </div>
-                    <div class="flex-1 min-w-0">
+                    <div class="min-w-0 flex-1">
                         <p class="text-sm text-gray-800 dark:text-gray-200">
                             <span class="font-semibold">{{ activity.actor }}</span> {{ activity.action }}
                         </p>
@@ -255,92 +238,92 @@
                     </div>
                 </div>
                 {% empty %}
-                <p class="text-sm text-gray-500 text-center py-4">No recent activities</p>
+                <p class="py-4 text-center text-sm text-gray-500">No recent activities</p>
                 {% endfor %}
             </div>
         </div>
 
         <!-- Quick Actions -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-gray-100 dark:border-slate-700 p-5">
-            <div class="flex items-center gap-2 mb-4">
-                <div class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
-                    <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        <div class="surface-card p-5">
+            <div class="mb-4 flex items-center gap-2.5">
+                <div class="icon-tile !h-8 !w-8 !rounded-lg">
+                    <svg class="h-4 w-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 </div>
                 <h3 class="font-bold text-gray-900 dark:text-white">Quick Actions</h3>
             </div>
             <div class="grid grid-cols-3 gap-3">
-                <a href="{% url 'students:student_list' %}" class="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition group">
-                    <div class="w-10 h-10 rounded-full bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition">
-                        <svg class="w-5 h-5 text-primary group-hover:text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                <a href="{% url 'students:student_list' %}" class="group flex flex-col items-center justify-center gap-2 rounded-xl p-3 transition hover:-translate-y-0.5">
+                    <div class="icon-tile !h-10 !w-10 !rounded-xl transition group-hover:scale-105">
+                        <svg class="h-5 w-5 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                     </div>
-                    <span class="text-[10px] font-medium text-gray-700 dark:text-gray-300 text-center">Add Student</span>
+                    <span class="text-center text-[10px] font-semibold text-gray-700 dark:text-gray-300">Add Student</span>
                 </a>
-                <a href="{% url 'grades:grade_encode_select' %}" class="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-secondary-200 dark:hover:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-900/20 transition group">
-                    <div class="w-10 h-10 rounded-full bg-secondary-50 dark:bg-secondary-900/30 flex items-center justify-center group-hover:bg-secondary-700 group-hover:text-white transition">
-                        <svg class="w-5 h-5 text-secondary-700 group-hover:text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                <a href="{% url 'grades:grade_encode_select' %}" class="group flex flex-col items-center justify-center gap-2 rounded-xl p-3 transition hover:-translate-y-0.5">
+                    <div class="icon-tile !h-10 !w-10 !rounded-xl transition group-hover:scale-105">
+                        <svg class="h-5 w-5 text-secondary-700 dark:text-secondary-300" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                     </div>
-                    <span class="text-[10px] font-medium text-gray-700 dark:text-gray-300 text-center">Encode Grades</span>
+                    <span class="text-center text-[10px] font-semibold text-gray-700 dark:text-gray-300">Encode Grades</span>
                 </a>
-                <a href="{% url 'grades:submission_list' %}" class="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition group">
-                    <div class="w-10 h-10 rounded-full bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition">
-                        <svg class="w-5 h-5 text-primary group-hover:text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                <a href="{% url 'grades:submission_list' %}" class="group flex flex-col items-center justify-center gap-2 rounded-xl p-3 transition hover:-translate-y-0.5">
+                    <div class="icon-tile !h-10 !w-10 !rounded-xl transition group-hover:scale-105">
+                        <svg class="h-5 w-5 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
                     </div>
-                    <span class="text-[10px] font-medium text-gray-700 dark:text-gray-300 text-center">Validate Grades</span>
+                    <span class="text-center text-[10px] font-semibold text-gray-700 dark:text-gray-300">Validate Grades</span>
                 </a>
-                <a href="{% url 'form137:form137_list' %}" class="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-purple-200 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition group">
-                    <div class="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center group-hover:bg-purple-700 group-hover:text-white transition">
-                        <svg class="w-5 h-5 text-purple-700 group-hover:text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                <a href="{% url 'form137:form137_list' %}" class="group flex flex-col items-center justify-center gap-2 rounded-xl p-3 transition hover:-translate-y-0.5">
+                    <div class="icon-tile !h-10 !w-10 !rounded-xl transition group-hover:scale-105">
+                        <svg class="h-5 w-5 text-purple-700 dark:text-purple-300" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
                     </div>
-                    <span class="text-[10px] font-medium text-gray-700 dark:text-gray-300 text-center">Generate Form 137</span>
+                    <span class="text-center text-[10px] font-semibold text-gray-700 dark:text-gray-300">Generate Form 137</span>
                 </a>
-                <a href="{% url 'reports:index' %}" class="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-accent-200 dark:hover:border-accent-700 hover:bg-accent-50 dark:hover:bg-accent-900/20 transition group">
-                    <div class="w-10 h-10 rounded-full bg-accent-50 dark:bg-accent-900/30 flex items-center justify-center group-hover:bg-accent-600 group-hover:text-white transition">
-                        <svg class="w-5 h-5 text-accent-600 group-hover:text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+                <a href="{% url 'reports:index' %}" class="group flex flex-col items-center justify-center gap-2 rounded-xl p-3 transition hover:-translate-y-0.5">
+                    <div class="icon-tile !h-10 !w-10 !rounded-xl transition group-hover:scale-105">
+                        <svg class="h-5 w-5 text-accent-600 dark:text-accent-400" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
                     </div>
-                    <span class="text-[10px] font-medium text-gray-700 dark:text-gray-300 text-center">View Reports</span>
+                    <span class="text-center text-[10px] font-semibold text-gray-700 dark:text-gray-300">View Reports</span>
                 </a>
-                <a href="{% url 'reports:at_risk_students' %}" class="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-danger-200 dark:hover:border-danger-700 hover:bg-danger-50 dark:hover:bg-danger-900/20 transition group">
-                    <div class="w-10 h-10 rounded-full bg-danger-50 dark:bg-danger-900/30 flex items-center justify-center group-hover:bg-danger group-hover:text-white transition">
-                        <svg class="w-5 h-5 text-danger group-hover:text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                <a href="{% url 'reports:at_risk_students' %}" class="group flex flex-col items-center justify-center gap-2 rounded-xl p-3 transition hover:-translate-y-0.5">
+                    <div class="icon-tile !h-10 !w-10 !rounded-xl transition group-hover:scale-105">
+                        <svg class="h-5 w-5 text-danger" fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
                     </div>
-                    <span class="text-[10px] font-medium text-gray-700 dark:text-gray-300 text-center">At-Risk Monitoring</span>
+                    <span class="text-center text-[10px] font-semibold text-gray-700 dark:text-gray-300">At-Risk Monitoring</span>
                 </a>
             </div>
         </div>
 
         <!-- Announcements -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-gray-100 dark:border-slate-700 p-5">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center">
-                        <svg class="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M18 11c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2v-5zm-6 11c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zM12 2c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2z"/></svg>
+        <div class="surface-card p-5">
+            <div class="mb-4 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="icon-tile !h-8 !w-8 !rounded-lg">
+                        <svg class="h-4 w-4 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M18 11c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2v-5zm-6 11c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zM12 2c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2z"/></svg>
                     </div>
                     <h3 class="font-bold text-gray-900 dark:text-white">Announcements</h3>
                 </div>
-                <a href="#" class="text-xs font-medium text-primary hover:text-primary-700">View all</a>
+                <a href="#" class="text-xs font-semibold text-primary hover:text-primary-700 dark:text-primary-300">View all</a>
             </div>
             <div class="space-y-4">
                 {% for ann in announcements %}
-                <div class="flex items-start gap-3 pb-4 {% if not forloop.last %}border-b border-gray-100 dark:border-slate-700{% endif %}">
-                    <div class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
+                <div class="flex items-start gap-3 {% if not forloop.last %}border-b border-gray-200/60 pb-4 dark:border-white/10{% endif %}">
+                    <div class="icon-tile !h-8 !w-8 !rounded-lg shrink-0">
                         {% if ann.icon == 'bullhorn' %}
-                        <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                        <svg class="h-4 w-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
                         {% elif ann.icon == 'file' %}
-                        <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                        <svg class="h-4 w-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
                         {% else %}
-                        <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
+                        <svg class="h-4 w-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
                         {% endif %}
                     </div>
-                    <div class="flex-1">
+                    <div class="min-w-0 flex-1">
                         <div class="flex items-center justify-between gap-2">
-                            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ ann.title }}</p>
-                            <span class="text-[10px] text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ ann.date }}</span>
+                            <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ ann.title }}</p>
+                            <span class="whitespace-nowrap text-[10px] text-gray-500 dark:text-gray-400">{{ ann.date }}</span>
                         </div>
-                        <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5">{{ ann.content }}</p>
+                        <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-300">{{ ann.content }}</p>
                     </div>
                 </div>
                 {% empty %}
-                <p class="text-sm text-gray-500 text-center py-4">No announcements</p>
+                <p class="py-4 text-center text-sm text-gray-500">No announcements</p>
                 {% endfor %}
             </div>
         </div>
@@ -350,6 +333,9 @@
 <script>
     // Enrollment Bar Chart
     const enrollmentCtx = document.getElementById('enrollmentChart').getContext('2d');
+    const enrollmentFill = enrollmentCtx.createLinearGradient(0, 0, 0, 240);
+    enrollmentFill.addColorStop(0, 'rgba(247, 201, 62, 0.95)');
+    enrollmentFill.addColorStop(1, 'rgba(233, 183, 35, 0.35)');
     new Chart(enrollmentCtx, {
         type: 'bar',
         data: {
@@ -357,9 +343,9 @@
             datasets: [{
                 label: 'Students',
                 data: [{% for item in students_by_level %}{{ item.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
-                backgroundColor: '#F7C93E',
-                borderRadius: 4,
-                barThickness: 28,
+                backgroundColor: enrollmentFill,
+                borderRadius: 8,
+                barThickness: 26,
             }]
         },
         options: {
@@ -368,15 +354,17 @@
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: '#1f2937',
+                    backgroundColor: 'rgba(15, 23, 42, 0.92)',
                     padding: 10,
-                    cornerRadius: 8,
+                    cornerRadius: 10,
+                    titleFont: { size: 11 },
+                    bodyFont: { size: 11 },
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    grid: { color: 'rgba(148, 163, 184, 0.18)' },
                     ticks: { font: { size: 10 } }
                 },
                 x: {
@@ -401,8 +389,9 @@
                     {{ grade_validation_counts.validated }}
                 ],
                 backgroundColor: ['#F7C93E', '#2F6FE0', '#22C55E', '#EF4444'],
-                borderWidth: 0,
-                hoverOffset: 4
+                borderColor: 'rgba(255, 255, 255, 0.55)',
+                borderWidth: 2,
+                hoverOffset: 6
             }]
         },
         options: {
@@ -411,10 +400,10 @@
             cutout: '70%',
             plugins: {
                 legend: {
-                    position: 'right',
+                    position: 'bottom',
                     labels: {
-                        boxWidth: 10,
-                        padding: 10,
+                        boxWidth: 8,
+                        padding: 12,
                         font: { size: 10 },
                         usePointStyle: true,
                     }

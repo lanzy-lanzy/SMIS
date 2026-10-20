@@ -1,6 +1,6 @@
 {% load form137_filters %}
-<table class="w-full text-sm">
-    <thead class="bg-gray-50 dark:bg-slate-700">
+<table class="data-table">
+    <thead class="data-table-head">
         <tr>
             <th class="px-4 py-3 text-left font-medium">Subject</th>
             <th class="px-4 py-3 text-left font-medium">Section</th>
@@ -11,9 +11,9 @@
             <th class="px-4 py-3 text-right font-medium">Actions</th>
         </tr>
     </thead>
-    <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+    <tbody class="divide-y divide-slate-500/15">
         {% for assignment in assignments %}
-        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 group">
+        <tr class="hover:bg-white/40 dark:hover:bg-white/5 group">
             <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
                     <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
@@ -71,7 +71,7 @@
             <td class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-2">
                     {% if user.is_teacher or user.is_admin %}
-                    <a href="{% url 'grades:grade_encode' assignment.pk %}?period={{ current_period.pk }}" class="inline-flex items-center gap-1 bg-primary hover:bg-primary-800 text-white px-3 py-1.5 rounded-lg transition text-xs font-medium">
+                    <a href="{% url 'grades:grade_encode' assignment.pk %}?period={{ current_period.pk }}" class="inline-flex items-center gap-1 btn btn-primary btn-sm">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                         Encode
                     </a>
@@ -100,13 +100,13 @@
     <p class="text-sm text-gray-500">Showing {{ assignments.start_index }}-{{ assignments.end_index }} of {{ assignments.paginator.count }}</p>
     <div class="flex gap-1">
         {% if assignments.has_previous %}
-        <a href="?page={{ assignments.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+        <a href="?page={{ assignments.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="page-link">&laquo;</a>
         {% endif %}
         {% for num in assignments.paginator.page_range %}
-        <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="px-3 py-1 border rounded {% if assignments.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+        <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="page-link {% if assignments.number == num %}is-active{% endif %}">{{ num }}</a>
         {% endfor %}
         {% if assignments.has_next %}
-        <a href="?page={{ assignments.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+        <a href="?page={{ assignments.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="page-link">&raquo;</a>
         {% endif %}
     </div>
 </div>

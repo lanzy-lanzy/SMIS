@@ -1,19 +1,19 @@
-<table id="school-year-table" class="w-full text-sm" hx-get="{% url 'academics:school_year_list' %}" hx-trigger="refresh" hx-target="this" hx-swap="outerHTML">
-    <thead class="bg-gray-50 dark:bg-slate-700">
+<table id="school-year-table" class="data-table" hx-get="{% url 'academics:school_year_list' %}" hx-trigger="refresh" hx-target="this" hx-swap="outerHTML">
+    <thead class="data-table-head">
         <tr>
             <th class="px-4 py-3 text-left font-medium">Name</th>
             <th class="px-4 py-3 text-left font-medium">Current</th>
             <th class="px-4 py-3 text-right font-medium">Actions</th>
         </tr>
     </thead>
-    <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+    <tbody class="divide-y divide-slate-500/15">
         {% for sy in school_years %}
-        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+        <tr class="hover:bg-white/40 dark:hover:bg-white/5">
             <td class="px-4 py-3">{{ sy.name }}</td>
             <td class="px-4 py-3">{% if sy.is_current %}<span class="text-green-600">Yes</span>{% else %}No{% endif %}</td>
             <td class="px-4 py-3 text-right">
-                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:school_year_edit' sy.pk %}' } }))" class="text-primary-600 hover:underline mr-2">Edit</button>
-                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:school_year_delete' sy.pk %}' } }))" class="text-red-600 hover:underline">Delete</button>
+                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:school_year_edit' sy.pk %}' } }))" class="link-action mr-2">Edit</button>
+                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:school_year_delete' sy.pk %}' } }))" class="link-action link-action-danger">Delete</button>
             </td>
         </tr>
         {% empty %}
@@ -26,13 +26,13 @@
     <p class="text-sm text-gray-500">Showing {{ school_years.start_index }}-{{ school_years.end_index }} of {{ school_years.paginator.count }}</p>
     <div class="flex gap-1">
         {% if school_years.has_previous %}
-        <a href="?page={{ school_years.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+        <a href="?page={{ school_years.previous_page_number }}" class="page-link">&laquo;</a>
         {% endif %}
         {% for num in school_years.paginator.page_range %}
-        <a href="?page={{ num }}" class="px-3 py-1 border rounded {% if school_years.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+        <a href="?page={{ num }}" class="page-link {% if school_years.number == num %}is-active{% endif %}">{{ num }}</a>
         {% endfor %}
         {% if school_years.has_next %}
-        <a href="?page={{ school_years.next_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+        <a href="?page={{ school_years.next_page_number }}" class="page-link">&raquo;</a>
         {% endif %}
     </div>
 </div>

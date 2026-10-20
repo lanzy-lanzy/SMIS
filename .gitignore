@@ -15,5 +15,8 @@ staticfiles/
 dist/
 build/
 
+# Visual verification artefacts
+/tmp/shots/
+
 # Hypothesis property-test cache
 .hypothesis/

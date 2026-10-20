@@ -4,8 +4,8 @@
 {% block content %}
 <div class="space-y-6">
     <!-- Profile Card -->
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
-        <div class="bg-gradient-to-r from-primary to-primary-600 h-24"></div>
+    <div class="glass-card overflow-hidden">
+        <div class="profile-banner"></div>
         <div class="px-6 pb-6">
             <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 -mt-12">
                 <div class="flex items-end gap-4">
@@ -21,16 +21,16 @@
                 </div>
                 <div class="flex gap-2">
                     {% if user.is_admin or user.is_registrar %}
-                    <a href="{% url 'form137:form137_generate' student.pk student.school_year_id %}" target="_blank" class="inline-flex items-center gap-2 bg-primary hover:bg-primary-800 text-white px-4 py-2 rounded-lg transition text-sm shadow-sm">
+                    <a href="{% url 'form137:form137_generate' student.pk student.school_year_id %}" target="_blank" class="inline-flex items-center gap-2 btn btn-primary text-sm shadow-sm">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         Form 137
                     </a>
-                    <a href="{% url 'students:student_edit' student.pk %}" class="inline-flex items-center gap-2 bg-secondary hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition text-sm">
+                    <a href="{% url 'students:student_edit' student.pk %}" class="inline-flex items-center gap-2 btn btn-primary text-sm">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                         Edit
                     </a>
                     {% endif %}
-                    <a href="{% url 'students:student_list' %}" class="inline-flex items-center gap-2 border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition text-sm">
+                    <a href="{% url 'students:student_list' %}" class="inline-flex items-center gap-2 btn btn-secondary">
                         Back
                     </a>
                 </div>
@@ -96,7 +96,7 @@
     </div>
 
     <!-- Academic Records -->
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
+    <div class="glass-card overflow-hidden">
         <div class="p-5 border-b border-gray-100 dark:border-slate-700 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
@@ -114,7 +114,7 @@
                     <option value="{{ q_id }}" {% if quarter_filter == q_id|stringformat:"s" %}selected{% endif %}>{{ q_name }} ({{ sy_name }})</option>
                     {% endfor %}
                 </select>
-                <button type="submit" class="px-4 py-2 text-sm bg-primary hover:bg-primary-800 text-white rounded-lg transition">Filter</button>
+                <button type="submit" class="px-4 py-2 text-sm btn btn-primary">Filter</button>
                 {% if query or quarter_filter %}
                 <a href="{{ request.path }}" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 text-center">Clear</a>
                 {% endif %}
@@ -131,8 +131,8 @@
                     <span class="text-sm text-gray-500 dark:text-gray-400">{{ quarter.school_year.name }}</span>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead class="bg-gray-50 dark:bg-slate-700">
+                    <table class="data-table">
+                        <thead class="data-table-head">
                             <tr>
                                 <th class="px-4 py-3 text-left font-medium">Subject</th>
                                 <th class="px-4 py-3 text-left font-medium">Grade</th>
@@ -140,9 +140,9 @@
                                 <th class="px-4 py-3 text-left font-medium">Remarks</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+                        <tbody class="divide-y divide-slate-500/15">
                             {% for grade in quarter.grades %}
-                            <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                            <tr class="hover:bg-white/40 dark:hover:bg-white/5 transition-colors">
                                 <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ grade.subject }}</td>
                                 <td class="px-4 py-3 font-bold text-primary">{{ grade.quarter_grade }}</td>
                                 <td class="px-4 py-3">
@@ -182,13 +182,13 @@
                 </p>
                 <div class="flex gap-1">
                     {% if quarter_page.has_previous %}
-                    <a href="?page={{ quarter_page.previous_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if quarter_filter %}&quarter={{ quarter_filter|urlencode }}{% endif %}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200">&laquo;</a>
+                    <a href="?page={{ quarter_page.previous_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if quarter_filter %}&quarter={{ quarter_filter|urlencode }}{% endif %}" class="btn btn-secondary btn-sm">&laquo;</a>
                     {% endif %}
                     {% for num in quarter_page.paginator.page_range %}
-                    <a href="?page={{ num }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if quarter_filter %}&quarter={{ quarter_filter|urlencode }}{% endif %}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded {% if quarter_page.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200{% endif %}">{{ num }}</a>
+                    <a href="?page={{ num }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if quarter_filter %}&quarter={{ quarter_filter|urlencode }}{% endif %}" class="page-link {% if quarter_page.number == num %}is-active{% endif %}">{{ num }}</a>
                     {% endfor %}
                     {% if quarter_page.has_next %}
-                    <a href="?page={{ quarter_page.next_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if quarter_filter %}&quarter={{ quarter_filter|urlencode }}{% endif %}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200">&raquo;</a>
+                    <a href="?page={{ quarter_page.next_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if quarter_filter %}&quarter={{ quarter_filter|urlencode }}{% endif %}" class="btn btn-secondary btn-sm">&raquo;</a>
                     {% endif %}
                 </div>
             </div>

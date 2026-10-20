@@ -1,7 +1,7 @@
 {% load form137_filters %}
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     {% for student in students %}
-    <div class="group bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-5 hover:shadow-lg hover:border-primary/20 dark:hover:border-primary/30 transition-all duration-200">
+    <div class="group glass-card p-5 transition-all duration-200">
         <div class="flex items-start justify-between mb-4">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center text-white font-bold shadow-sm">
@@ -102,13 +102,13 @@
     <p class="text-sm text-gray-500">Showing {{ students.start_index }}-{{ students.end_index }} of {{ students.paginator.count }}</p>
     <div class="flex gap-1">
         {% if students.has_previous %}
-        <a href="?page={{ students.previous_page_number }}&q={{ query }}&grade={{ grade_filter }}&section={{ section_filter }}&status={{ status_filter }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+        <a href="?page={{ students.previous_page_number }}&q={{ query }}&grade={{ grade_filter }}&section={{ section_filter }}&status={{ status_filter }}" class="page-link">&laquo;</a>
         {% endif %}
         {% for num in students.paginator.page_range %}
-        <a href="?page={{ num }}&q={{ query }}&grade={{ grade_filter }}&section={{ section_filter }}&status={{ status_filter }}" class="px-3 py-1 border rounded {% if students.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+        <a href="?page={{ num }}&q={{ query }}&grade={{ grade_filter }}&section={{ section_filter }}&status={{ status_filter }}" class="page-link {% if students.number == num %}is-active{% endif %}">{{ num }}</a>
         {% endfor %}
         {% if students.has_next %}
-        <a href="?page={{ students.next_page_number }}&q={{ query }}&grade={{ grade_filter }}&section={{ section_filter }}&status={{ status_filter }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+        <a href="?page={{ students.next_page_number }}&q={{ query }}&grade={{ grade_filter }}&section={{ section_filter }}&status={{ status_filter }}" class="page-link">&raquo;</a>
         {% endif %}
     </div>
 </div>

@@ -2,10 +2,10 @@
 {% block title %}Section Performance{% endblock %}
 {% block page_title %}Section Performance{% endblock %}
 {% block content %}
-<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+<div class="glass-card">
     <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead class="bg-gray-50 dark:bg-slate-700">
+        <table class="data-table">
+            <thead class="data-table-head">
                 <tr>
                     <th class="px-4 py-3 text-left font-medium">Section</th>
                     <th class="px-4 py-3 text-left font-medium">Grade Level</th>
@@ -14,9 +14,9 @@
                     <th class="px-4 py-3 text-left font-medium">Average</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+            <tbody class="divide-y divide-slate-500/15">
                 {% for item in section_data %}
-                <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                <tr class="hover:bg-white/40 dark:hover:bg-white/5">
                     <td class="px-4 py-3">{{ item.section.name }}</td>
                     <td class="px-4 py-3">{{ item.section.grade_level }}</td>
                     <td class="px-4 py-3">{{ item.section.school_year }}</td>

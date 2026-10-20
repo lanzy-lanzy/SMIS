@@ -12,11 +12,11 @@
             <option value="">All Grade Levels</option>
             {% for gl in grade_levels %}<option value="{{ gl.id }}" {% if gl_filter == gl.id|stringformat:"d" %}selected{% endif %}>{{ gl.name }}</option>{% endfor %}
         </select>
-        <button type="submit" class="bg-secondary hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition">Filter</button>
+        <button type="submit" class="btn btn-primary">Filter</button>
     </form>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5">
+        <div class="glass-card p-5">
             <h3 class="font-semibold mb-4">Average Grades by Subject</h3>
             {% for item in subject_averages %}
             <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700 last:border-0">
@@ -33,7 +33,7 @@
             {% endfor %}
         </div>
 
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5">
+        <div class="glass-card p-5">
             <h3 class="font-semibold mb-4">Average Grades by Period</h3>
             {% for item in period_averages %}
             <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700 last:border-0">

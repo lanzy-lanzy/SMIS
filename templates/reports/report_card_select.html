@@ -2,7 +2,7 @@
 {% block title %}Report Cards{% endblock %}
 {% block page_title %}Learner's Performance Report{% endblock %}
 {% block content %}
-<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
+<div class="glass-card overflow-hidden">
     <div class="p-5 border-b border-gray-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
             <h3 class="font-semibold text-gray-900 dark:text-white">Select a Learner</h3>
@@ -13,13 +13,13 @@
                 <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 <input type="text" name="q" value="{{ query }}" placeholder="Name or LRN..." class="pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary w-full sm:w-64">
             </div>
-            <button type="submit" class="px-4 py-2 text-sm bg-primary hover:bg-primary-800 text-white rounded-lg transition">Search</button>
+            <button type="submit" class="px-4 py-2 text-sm btn btn-primary">Search</button>
         </form>
     </div>
 
     <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead class="bg-gray-50 dark:bg-slate-700">
+        <table class="data-table">
+            <thead class="data-table-head">
                 <tr>
                     <th class="px-4 py-3 text-left font-medium">Learner</th>
                     <th class="px-4 py-3 text-left font-medium">LRN</th>
@@ -28,15 +28,15 @@
                     <th class="px-4 py-3 text-right font-medium">Report Card</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+            <tbody class="divide-y divide-slate-500/15">
                 {% for student in students_list %}
-                <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                <tr class="hover:bg-white/40 dark:hover:bg-white/5 transition-colors">
                     <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ student.last_name }}, {{ student.first_name }}{% if student.middle_name %} {{ student.middle_name|first }}.{% endif %}</td>
                     <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ student.lrn }}</td>
                     <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ student.grade_level.level|default:"-" }}{% if student.section %} - {{ student.section.name }}{% endif %}</td>
                     <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ student.school_year.name|default:"-" }}</td>
                     <td class="px-4 py-3 text-right whitespace-nowrap">
-                        <a href="{% url 'reports:report_card' student.pk %}" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-primary hover:bg-primary-800 text-white rounded-lg transition" title="View / print">
+                        <a href="{% url 'reports:report_card' student.pk %}" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium btn btn-primary" title="View / print">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                             View
                         </a>

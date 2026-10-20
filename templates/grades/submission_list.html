@@ -14,7 +14,7 @@
             {% endif %}
         </div>
         {% if user.is_teacher %}
-        <a href="{% url 'grades:grade_encode_select' %}{% if selected_period %}?period={{ selected_period.pk }}{% endif %}" class="inline-flex items-center gap-2 bg-primary hover:bg-primary-800 text-white px-5 py-2.5 rounded-lg transition font-medium shadow-sm">
+        <a href="{% url 'grades:grade_encode_select' %}{% if selected_period %}?period={{ selected_period.pk }}{% endif %}" class="inline-flex items-center gap-2 btn btn-primary shadow-sm">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
             Encode Grades
         </a>
@@ -33,20 +33,20 @@
                 <p class="text-sm text-primary-700 dark:text-primary-300 mt-1">This page shows grades you have already submitted. Here's how to submit grades for a term:</p>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
                     <div class="bg-white/70 dark:bg-slate-800/70 rounded-lg p-3 text-sm">
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-bold mr-2">1</span>
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full page-link is-active text-xs font-bold mr-2">1</span>
                         Click <strong>Start Encoding</strong>
                     </div>
                     <div class="bg-white/70 dark:bg-slate-800/70 rounded-lg p-3 text-sm">
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-bold mr-2">2</span>
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full page-link is-active text-xs font-bold mr-2">2</span>
                         Enter grades for <strong>All Subjects</strong>
                     </div>
                     <div class="bg-white/70 dark:bg-slate-800/70 rounded-lg p-3 text-sm">
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-bold mr-2">3</span>
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full page-link is-active text-xs font-bold mr-2">3</span>
                         Click <strong>Submit All for Validation</strong>
                     </div>
                 </div>
             </div>
-            <a href="{% url 'grades:grade_encode_select' %}{% if selected_period %}?period={{ selected_period.pk }}{% endif %}" class="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-800 text-white px-6 py-3 rounded-lg transition font-medium shadow-sm whitespace-nowrap">
+            <a href="{% url 'grades:grade_encode_select' %}{% if selected_period %}?period={{ selected_period.pk }}{% endif %}" class="inline-flex items-center justify-center gap-2 btn btn-primary whitespace-nowrap">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                 Start Encoding
             </a>
@@ -82,7 +82,7 @@
 
     <!-- Term fully approved → advance calendar prompt (Registrar/Admin) -->
     {% if period_completion %}
-    <div class="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-5">
+    <div class="info-banner is-success p-5">
         <div class="flex flex-col sm:flex-row sm:items-center gap-4">
             <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50">
                 <svg class="h-6 w-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -103,7 +103,7 @@
                 <form method="post" action="{% url 'academics:grading_period_open_next' period_completion.period.pk %}" class="shrink-0">
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{% url 'grades:submission_list' %}?period={{ period_completion.next_period.pk }}">
-                    <button type="submit" class="inline-flex items-center gap-2 bg-primary hover:bg-primary-800 text-white px-5 py-2.5 rounded-lg transition font-medium shadow-sm whitespace-nowrap">
+                    <button type="submit" class="inline-flex items-center gap-2 btn btn-primary shadow-sm whitespace-nowrap">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5-5 5M6 7l5 5-5 5"></path></svg>
                         Close {{ period_completion.period.name }} &amp; Open {{ period_completion.next_period.name }}
                     </button>
@@ -114,15 +114,15 @@
     </div>
     {% endif %}
 
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+    <div class="glass-card">
         <div class="p-4 border-b border-gray-100 dark:border-slate-700 flex flex-col lg:flex-row lg:items-center gap-3">
             <!-- Period Filter (preserves status + search) -->
             {% if all_periods %}
             <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-sm text-gray-500">Term:</span>
-                <a href="?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if query %}q={{ query|urlencode }}{% endif %}" class="px-3 py-1.5 text-xs rounded-lg font-medium transition {% if not selected_period %}bg-primary text-white{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}">All</a>
+                <a href="?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if query %}q={{ query|urlencode }}{% endif %}" class="tab-btn !px-3 !py-1.5 !text-xs {% if not selected_period %}is-active{% endif %}">All</a>
                 {% for period in all_periods %}
-                <a href="?period={{ period.pk }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if query %}&q={{ query|urlencode }}{% endif %}" class="px-3 py-1.5 text-xs rounded-lg font-medium transition {% if selected_period.pk == period.pk %}bg-primary text-white{% else %}bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600{% endif %}">
+                <a href="?period={{ period.pk }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if query %}&q={{ query|urlencode }}{% endif %}" class="tab-btn !px-3 !py-1.5 !text-xs {% if selected_period.pk == period.pk %}is-active{% endif %}">
                     {{ period.name }}
                 </a>
                 {% endfor %}

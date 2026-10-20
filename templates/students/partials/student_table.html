@@ -1,5 +1,5 @@
-<table class="w-full text-sm">
-    <thead class="bg-gray-50 dark:bg-slate-700">
+<table class="data-table">
+    <thead class="data-table-head">
         <tr>
             <th class="px-4 py-3 text-left font-medium">Student</th>
             <th class="px-4 py-3 text-left font-medium">Sex</th>
@@ -11,9 +11,9 @@
             {% endif %}
         </tr>
     </thead>
-    <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+    <tbody class="divide-y divide-slate-500/15">
         {% for student in students %}
-        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 group transition-colors">
+        <tr class="hover:bg-white/40 dark:hover:bg-white/5 group transition-colors">
             <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
@@ -113,13 +113,13 @@
     <p class="text-sm text-gray-500">Showing {{ students.start_index }}-{{ students.end_index }} of {{ students.paginator.count }}</p>
     <div class="flex gap-1">
         {% if students.has_previous %}
-        <a href="?page={{ students.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+        <a href="?page={{ students.previous_page_number }}" class="page-link">&laquo;</a>
         {% endif %}
         {% for num in students.paginator.page_range %}
-        <a href="?page={{ num }}" class="px-3 py-1 border rounded {% if students.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+        <a href="?page={{ num }}" class="page-link {% if students.number == num %}is-active{% endif %}">{{ num }}</a>
         {% endfor %}
         {% if students.has_next %}
-        <a href="?page={{ students.next_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+        <a href="?page={{ students.next_page_number }}" class="page-link">&raquo;</a>
         {% endif %}
     </div>
 </div>

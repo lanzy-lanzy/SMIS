@@ -23,15 +23,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('toast-container');
         if (!container) return;
         
-        const toast = document.createElement('div');
-        const colors = {
-            success: 'bg-green-500',
-            error: 'bg-red-500',
-            warning: 'bg-yellow-500',
-            info: 'bg-blue-500'
+        const accents = {
+            success: 'toast-success',
+            error: 'toast-error',
+            warning: 'toast-warning',
+            info: 'toast-info'
         };
-        toast.className = `${colors[type] || colors.info} text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full opacity-0`;
-        toast.innerHTML = `<div class="flex items-center gap-2"><span>${message}</span></div>`;
+        const icons = {
+            success: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+            error: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>',
+            warning: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>',
+            info: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'
+        };
+        const accent = accents[type] || accents.info;
+
+        const toast = document.createElement('div');
+        toast.className = 'toast ' + accent + ' translate-x-full opacity-0';
+        toast.innerHTML = '<svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">' + (icons[type] || icons.info) + '</svg><span>' + message + '</span>';
         container.appendChild(toast);
         
         requestAnimationFrame(() => {
@@ -181,3 +189,69 @@ function gradeRow(init) {
 function closeModal() {
     window.dispatchEvent(new CustomEvent('close-modal'));
 }
+
+// ---------------------------------------------------------------------------
+// Liquid glass sheen
+// ---------------------------------------------------------------------------
+// Glass surfaces carry a specular highlight. Tracking the pointer and feeding
+// its position into the --mx / --my custom properties makes the highlight
+// travel across the surface the way light behaves on real glass, which is
+// what sells the material over a flat translucent panel.
+//
+// The pointer position is coalesced into a single animation frame so a fast
+// mouse cannot flood the style engine, and the highlight is reset to its
+// resting position when the pointer leaves the surface.
+(function () {
+    'use strict';
+
+    var SHEEN_TARGETS = [
+        '.glass', '.glass-panel', '.surface-card', '.stat-card',
+        '.modal-card', '.toast', '.icon-tile',
+        '.btn-secondary', '.formal-button-secondary'
+    ].join(', ');
+
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    var frame = null;
+    var pending = null;
+    var active = null;
+
+    function reset(el) {
+        if (!el) return;
+        el.style.setProperty('--mx', '50%');
+        el.style.setProperty('--my', '0%');
+    }
+
+    function paint() {
+        frame = null;
+        if (!pending) return;
+        var el = pending.el;
+        var rect = el.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        var x = ((pending.x - rect.left) / rect.width) * 100;
+        var y = ((pending.y - rect.top) / rect.height) * 100;
+        el.style.setProperty('--mx', x.toFixed(2) + '%');
+        el.style.setProperty('--my', y.toFixed(2) + '%');
+    }
+
+    document.addEventListener('pointermove', function (e) {
+        if (reduced.matches) return;
+        var target = e.target;
+        if (!target || typeof target.closest !== 'function') return;
+
+        var el = target.closest(SHEEN_TARGETS);
+        if (el !== active) {
+            reset(active);
+            active = el;
+        }
+        if (!el) return;
+
+        pending = { el: el, x: e.clientX, y: e.clientY };
+        if (frame === null) frame = requestAnimationFrame(paint);
+    }, { passive: true });
+
+    // Leaving the window should not strand a highlight mid-surface.
+    window.addEventListener('pointerleave', function () {
+        reset(active);
+        active = null;
+    });
+})();

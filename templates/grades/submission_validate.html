@@ -3,18 +3,18 @@
 {% block page_title %}Validate Grades{% endblock %}
 {% block content %}
 <div class="space-y-6">
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5">
+    <div class="glass-card p-5">
         <div class="flex items-center justify-between mb-4">
             <div>
                 <h3 class="font-semibold">{{ submission.subject }} - {{ submission.section }}</h3>
                 <p class="text-sm text-gray-500">Submitted by {{ submission.teacher.get_full_name }} | {{ submission.grading_period }}</p>
             </div>
-            <a href="{% url 'grades:submission_list' %}" class="border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition text-sm">Back</a>
+            <a href="{% url 'grades:submission_list' %}" class="btn btn-secondary">Back</a>
         </div>
         
         <div class="overflow-x-auto mb-6">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50 dark:bg-slate-700">
+            <table class="data-table">
+                <thead class="data-table-head">
                     <tr>
                         <th class="px-4 py-3 text-left font-medium">Student</th>
                         <th class="px-4 py-3 text-left font-medium">Written <span class="text-xs font-normal text-gray-400">({{ grades.0.written_work_weight|floatformat:"g" }}%)</span></th>
@@ -24,7 +24,7 @@
                         <th class="px-4 py-3 text-left font-medium">Remarks</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+                <tbody class="divide-y divide-slate-500/15">
                     {% for grade in grades %}
                     <tr>
                         <td class="px-4 py-3">{{ grade.student.full_name }}</td>
@@ -50,8 +50,8 @@
                 <textarea name="remarks" rows="3" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white" placeholder="Add any remarks..."></textarea>
             </div>
             <div class="flex gap-3">
-                <button type="submit" name="action" value="validate" class="bg-accent hover:bg-green-600 text-white px-6 py-2 rounded-lg transition font-semibold">Validate & Approve</button>
-                <button type="submit" name="action" value="return" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition">Return for Correction</button>
+                <button type="submit" name="action" value="validate" class="btn btn-accent">Validate & Approve</button>
+                <button type="submit" name="action" value="return" class="btn btn-danger">Return for Correction</button>
             </div>
         </form>
     </div>

@@ -10,7 +10,7 @@
         </div>
     </div>
 
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
+    <div class="glass-card p-4">
         <form class="flex flex-wrap gap-3">
             <input type="text" name="q" value="{{ query }}" placeholder="Search user, model, or description..."
                    class="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
@@ -22,15 +22,15 @@
             </select>
             <input type="text" name="model" value="{{ model_filter }}" placeholder="Model name..."
                    class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm">
-            <button type="submit" class="bg-primary hover:bg-primary-800 text-white px-4 py-2 rounded-lg transition text-sm">Filter</button>
-            <a href="{% url 'accounts:audit_log_list' %}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition text-sm">Reset</a>
+            <button type="submit" class="btn btn-primary text-sm">Filter</button>
+            <a href="{% url 'accounts:audit_log_list' %}" class="btn btn-secondary text-sm">Reset</a>
         </form>
     </div>
 
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+    <div class="glass-card">
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50 dark:bg-slate-700">
+            <table class="data-table">
+                <thead class="data-table-head">
                     <tr>
                         <th class="px-4 py-3 text-left font-medium">Timestamp</th>
                         <th class="px-4 py-3 text-left font-medium">User</th>
@@ -39,9 +39,9 @@
                         <th class="px-4 py-3 text-left font-medium">Description</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+                <tbody class="divide-y divide-slate-500/15">
                     {% for log in logs %}
-                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                    <tr class="hover:bg-white/40 dark:hover:bg-white/5">
                         <td class="px-4 py-3 text-gray-500">{{ log.timestamp|date:"M d, Y H:i" }}</td>
                         <td class="px-4 py-3 text-gray-500">{% if log.user %}{{ log.user.get_full_name|default:log.user.username }}{% else %}System{% endif %}</td>
                         <td class="px-4 py-3">
@@ -70,13 +70,13 @@
             <p class="text-sm text-gray-500">Showing {{ logs.start_index }}-{{ logs.end_index }} of {{ logs.paginator.count }}</p>
             <div class="flex gap-1">
                 {% if logs.has_previous %}
-                <a href="?page={{ logs.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+                <a href="?page={{ logs.previous_page_number }}" class="page-link">&laquo;</a>
                 {% endif %}
                 {% for num in logs.paginator.page_range %}
-                <a href="?page={{ num }}" class="px-3 py-1 border rounded {% if logs.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+                <a href="?page={{ num }}" class="page-link {% if logs.number == num %}is-active{% endif %}">{{ num }}</a>
                 {% endfor %}
                 {% if logs.has_next %}
-                <a href="?page={{ logs.next_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+                <a href="?page={{ logs.next_page_number }}" class="page-link">&raquo;</a>
                 {% endif %}
             </div>
         </div>

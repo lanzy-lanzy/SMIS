@@ -11,8 +11,17 @@
     <link rel="stylesheet" href="{% versioned_static 'css/output.css' %}">
     <script defer src="{% versioned_static 'js/login.js' %}"></script>
 </head>
-<body class="min-h-full bg-surface text-slate-800 antialiased">
-    <main class="grid min-h-screen lg:grid-cols-2">
+<body class="min-h-full antialiased">
+    <main class="relative grid min-h-screen lg:grid-cols-2">
+        <!-- Aurora canvas -->
+        <div class="pointer-events-none fixed inset-0 -z-10" aria-hidden="true"
+             style="background:
+                radial-gradient(42rem 30rem at 6% -6%, rgba(47,111,224,0.30), transparent 62%),
+                radial-gradient(34rem 26rem at 98% 2%, rgba(247,201,62,0.34), transparent 60%),
+                radial-gradient(46rem 34rem at 78% 98%, rgba(27,42,91,0.20), transparent 64%),
+                radial-gradient(30rem 24rem at 16% 92%, rgba(56,189,248,0.24), transparent 62%),
+                linear-gradient(160deg, #eef2f9 0%, #e6ecf6 50%, #eef1f8 100%);"></div>
+
         <!-- Brand panel -->
         <section class="relative hidden overflow-hidden bg-primary-dark px-10 py-12 text-white lg:flex lg:flex-col">
             <div class="landing-grid pointer-events-none absolute inset-0 opacity-15"></div>
@@ -20,7 +29,7 @@
             <div class="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-accent/10 blur-3xl"></div>
 
             <a href="{% url 'dashboard:landing' %}" class="relative flex items-center gap-3">
-                <span class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/25 bg-white/10 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.8)] backdrop-blur-md">
                     <img src="{% static 'images/psyu-logo.png' %}" alt="Paquito S. Yu Memorial NHS logo" class="h-full w-full object-cover">
                 </span>
                 <span>
@@ -35,16 +44,16 @@
                 <p class="mt-6 max-w-lg text-base leading-7 text-slate-300">Sign in to manage student information, academic workflows, grade validation, official records, and reporting according to your assigned role.</p>
 
                 <div class="mt-10 grid gap-3 sm:grid-cols-2">
-                    <div class="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                    <div class="rounded-2xl border border-white/10 bg-white/[0.06] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.10)] backdrop-blur-md">
                         <p class="flex items-center gap-2 text-sm font-bold">
-                            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent"></span>
+                            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent shadow-[0_0_10px_rgba(247,201,62,0.9)]"></span>
                             Role-based workspace
                         </p>
                         <p class="mt-1.5 text-xs leading-5 text-slate-400">Access is aligned with school responsibilities.</p>
                     </div>
-                    <div class="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                    <div class="rounded-2xl border border-white/10 bg-white/[0.06] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.10)] backdrop-blur-md">
                         <p class="flex items-center gap-2 text-sm font-bold">
-                            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent"></span>
+                            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent shadow-[0_0_10px_rgba(247,201,62,0.9)]"></span>
                             Traceable activity
                         </p>
                         <p class="mt-1.5 text-xs leading-5 text-slate-400">Important record actions remain accountable.</p>
@@ -65,51 +74,54 @@
             </div>
 
             <div class="w-full max-w-[26rem]">
-                <div class="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_28px_60px_-32px_rgba(18,29,63,0.28)] sm:p-8">
-                    <div class="flex flex-col items-center text-center">
-                        <span class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
+                <div class="glass relative rounded-3xl p-6 sm:p-8">
+                    <div class="pointer-events-none absolute -right-16 -top-20 h-52 w-52 rounded-full bg-primary-200/40 blur-3xl"></div>
+                    <div class="pointer-events-none absolute -bottom-24 -left-16 h-52 w-52 rounded-full bg-accent-300/40 blur-3xl"></div>
+
+                    <div class="relative flex flex-col items-center text-center">
+                        <span class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/70 bg-white/70 shadow-neu-sm backdrop-blur-md">
                             <img src="{% static 'images/psyu-logo.png' %}" alt="Paquito S. Yu Memorial NHS logo" class="h-full w-full object-cover">
                         </span>
-                        <p class="mt-4 text-base font-black tracking-[0.18em] text-primary-dark">SMIS</p>
+                        <p class="mt-4 text-base font-black tracking-[0.18em] text-primary-dark dark:text-white">SMIS</p>
                         <span class="mt-2 block h-0.5 w-8 rounded-full bg-accent"></span>
                         <p class="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Paquito S. Yu Memorial National High School</p>
                     </div>
 
-                    <div class="mt-6 border-t border-slate-100"></div>
+                    <div class="relative mt-6 border-t border-slate-200/70 dark:border-white/10"></div>
 
-                    <div class="mt-6">
-                        <h1 class="text-2xl font-bold tracking-[-0.03em] text-primary-dark">Welcome back</h1>
-                        <p class="mt-1.5 text-sm leading-6 text-slate-500">Sign in with your assigned school account.</p>
+                    <div class="relative mt-6">
+                        <h1 class="text-2xl font-bold tracking-[-0.03em] text-primary-dark dark:text-white">Welcome back</h1>
+                        <p class="mt-1.5 text-sm leading-6 text-slate-500 dark:text-slate-400">Sign in with your assigned school account.</p>
                     </div>
 
                     {% if form.errors %}
-                    <div role="alert" class="mt-5 flex gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <div role="alert" class="alert alert-danger relative mt-5">
                         <svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
                         <span>
                             <span class="block font-semibold">We could not sign you in.</span>
-                            <span class="mt-0.5 block text-xs leading-5 text-red-600">Check your username and password, then try again.</span>
+                            <span class="mt-0.5 block text-xs leading-5 opacity-80">Check your username and password, then try again.</span>
                         </span>
                     </div>
                     {% endif %}
 
-                    <form method="post" data-login-form class="mt-6 space-y-4">
+                    <form method="post" data-login-form class="relative mt-6 space-y-4">
                         {% csrf_token %}
                         {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
                         <div>
-                            <label for="{{ form.username.id_for_label }}" class="mb-2 block text-sm font-semibold text-slate-700">Username</label>
+                            <label for="{{ form.username.id_for_label }}" class="field-label">Username</label>
                             {{ form.username }}
                         </div>
 
                         <div>
-                            <div class="mb-2 flex items-center justify-between">
-                                <label for="{{ form.password.id_for_label }}" class="block text-sm font-semibold text-slate-700">Password</label>
+                            <div class="mb-1.5 flex items-center justify-between">
+                                <label for="{{ form.password.id_for_label }}" class="field-label !mb-0">Password</label>
                                 <span class="text-xs text-slate-400">Case sensitive</span>
                             </div>
                             <div class="relative">
                                 {{ form.password }}
                                 <button type="button" data-password-toggle
-                                        class="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-lg text-slate-400 transition-colors hover:text-slate-600"
+                                        class="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-slate-400 transition-colors hover:text-slate-600"
                                         aria-label="Show password" aria-pressed="false" title="Show password">
                                     <svg data-eye-open class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
@@ -133,7 +145,7 @@
                     </form>
                 </div>
 
-                <p class="mt-6 text-center text-xs leading-5 text-slate-500">
+                <p class="mt-6 text-center text-xs leading-5 text-slate-500 dark:text-slate-400">
                     For authorized school personnel and registered student accounts.
                     <span class="mt-1 block text-slate-400">Access concerns? Contact the school administrator.</span>
                 </p>

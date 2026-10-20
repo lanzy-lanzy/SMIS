@@ -3,7 +3,7 @@
 {% block page_title %}Bulk Generate Form 137{% endblock %}
 {% block content %}
 <div class="max-w-2xl">
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+    <div class="glass-card p-6">
         <p class="text-sm text-gray-500 mb-6">Generate Form 137 for all students with validated grades in a school year.</p>
         <form method="post" class="space-y-4">
             {% csrf_token %}
@@ -16,8 +16,8 @@
                 </select>
             </div>
             <div class="flex gap-3 pt-4 border-t">
-                <button type="submit" class="bg-primary hover:bg-primary-800 text-white px-6 py-2 rounded-lg transition">Generate All</button>
-                <a href="{% url 'form137:form137_list' %}" class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition">Cancel</a>
+                <button type="submit" class="btn btn-primary">Generate All</button>
+                <a href="{% url 'form137:form137_list' %}" class="btn btn-secondary">Cancel</a>
             </div>
         </form>
     </div>

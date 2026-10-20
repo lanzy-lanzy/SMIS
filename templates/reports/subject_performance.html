@@ -2,10 +2,10 @@
 {% block title %}Subject Performance{% endblock %}
 {% block page_title %}Subject Performance{% endblock %}
 {% block content %}
-<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+<div class="glass-card">
     <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead class="bg-gray-50 dark:bg-slate-700">
+        <table class="data-table">
+            <thead class="data-table-head">
                 <tr>
                     <th class="px-4 py-3 text-left font-medium">Subject</th>
                     <th class="px-4 py-3 text-left font-medium">Code</th>
@@ -13,9 +13,9 @@
                     <th class="px-4 py-3 text-left font-medium">Average Grade</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+            <tbody class="divide-y divide-slate-500/15">
                 {% for item in subject_data %}
-                <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                <tr class="hover:bg-white/40 dark:hover:bg-white/5">
                     <td class="px-4 py-3">{{ item.subject.name }}</td>
                     <td class="px-4 py-3">{{ item.subject.code }}</td>
                     <td class="px-4 py-3">{{ item.subject.grade_level }}</td>

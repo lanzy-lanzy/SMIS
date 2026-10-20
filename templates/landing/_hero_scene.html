@@ -61,6 +61,31 @@ Daylight palette: it is a school, so the scene stays bright and welcoming.
     {# Speed: the campus itself - hill crest, main building, wings, flag. #}
     <svg class="landing-layer landing-layer-mid" data-parallax data-speed="0.88" viewBox="0 0 1440 900"
          preserveAspectRatio="xMidYMax slice" focusable="false">
+        <defs>
+            {# Glazing for the windows - a diagonal gradient plus a specular
+               streak reads as real glass rather than a flat blue rectangle. #}
+            <linearGradient id="scene-window" x1="0" y1="0" x2="0.8" y2="1">
+                <stop offset="0%" stop-color="#f2fbff"/>
+                <stop offset="38%" stop-color="#d7e9f5"/>
+                <stop offset="100%" stop-color="#a9cde4"/>
+            </linearGradient>
+            <linearGradient id="scene-window-warm" x1="0" y1="0" x2="0.8" y2="1">
+                <stop offset="0%" stop-color="#fff6e2"/>
+                <stop offset="40%" stop-color="#f7e3b6"/>
+                <stop offset="100%" stop-color="#e0bd7e"/>
+            </linearGradient>
+            {# Pediment sheened from the upper left, like a lit metal face. #}
+            <linearGradient id="scene-pediment" x1="0" y1="0" x2="0.9" y2="1">
+                <stop offset="0%" stop-color="#2a3d78"/>
+                <stop offset="48%" stop-color="#1b2a5b"/>
+                <stop offset="100%" stop-color="#131f45"/>
+            </linearGradient>
+            {# Nameplate face. #}
+            <linearGradient id="scene-sign" x1="0" y1="0" x2="0.4" y2="1">
+                <stop offset="0%" stop-color="#24356e"/>
+                <stop offset="100%" stop-color="#16224c"/>
+            </linearGradient>
+        </defs>
         <g transform="translate(720 936) scale(0.8) translate(-720 -900)">
             <path d="M-80 708 C 200 672 380 692 540 682 C 700 672 800 694 960 682
                      C 1120 670 1280 688 1520 672 L1520 900 L-80 900 Z"
@@ -70,6 +95,12 @@ Daylight palette: it is a school, so the scene stays bright and welcoming.
             <rect x="424" y="746" width="592" height="10" fill="#e3d7c6"/>
             <rect x="448" y="756" width="544" height="8" fill="#dccfbc"/>
 
+            {# Neumorphic contact shadow under the cornice - the building
+               reads as extruded from the facade rather than pasted on. #}
+            <rect x="540" y="424" width="360" height="12" fill="#1b2a5b" opacity="0.08"/>
+            <rect x="384" y="508" width="140" height="10" fill="#1b2a5b" opacity="0.06"/>
+            <rect x="916" y="508" width="140" height="10" fill="#1b2a5b" opacity="0.06"/>
+
             {# Wings #}
             <rect x="384" y="508" width="140" height="240" fill="#fbf5ec"/>
             <rect x="916" y="508" width="140" height="240" fill="#fbf5ec"/>
@@ -78,19 +109,40 @@ Daylight palette: it is a school, so the scene stays bright and welcoming.
             <rect x="374" y="491" width="160" height="3" fill="#1b2a5b" opacity="0.5"/>
             <rect x="906" y="491" width="160" height="3" fill="#1b2a5b" opacity="0.5"/>
 
+            {# Connector band tying the two wings to the central block, so
+               the whole campus reads as one building rather than three. #}
+            <rect x="524" y="496" width="392" height="12" fill="#f2e7d8"/>
+            <rect x="524" y="493" width="392" height="3" fill="#1b2a5b" opacity="0.5"/>
+            <rect x="524" y="508" width="392" height="8" fill="#fbf5ec"/>
+
             {# Main block #}
             <rect x="540" y="424" width="360" height="324" fill="#fdf8f1"/>
             <rect x="524" y="410" width="392" height="14" fill="#f2e7d8"/>
             <rect x="524" y="407" width="392" height="3" fill="#1b2a5b" opacity="0.5"/>
 
             {# Maroon pediment, gold inset line and clock #}
-            <polygon points="506,410 720,314 934,410" fill="#1b2a5b"/>
+            <polygon points="506,410 720,314 934,410" fill="url(#scene-pediment)"/>
             <polygon points="548,402 720,332 892,402" fill="none"
                      stroke="#f7c93e" stroke-opacity="0.8" stroke-width="1.6"/>
-            <circle cx="720" cy="372" r="15" fill="#fffaf2"
-                    stroke="#1b2a5b" stroke-opacity="0.85" stroke-width="1.6"/>
-            <path d="M720 372 V363 M720 372 L728 375" fill="none"
-                  stroke="#1b2a5b" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="720" cy="357" r="13" fill="#fffaf2"
+                    stroke="#f7c93e" stroke-opacity="0.75" stroke-width="1.6"/>
+            <path d="M720 357 V349 M720 357 L727 359.5" fill="none"
+                  stroke="#1b2a5b" stroke-width="1.7" stroke-linecap="round"/>
+
+            {# School name plate on the facade - the school is called
+               PAQUITO S. YU MEMORIAL NATIONAL HIGH SCHOOL. #}
+            <rect x="552" y="430" width="336" height="46" rx="5"
+                  fill="url(#scene-sign)" stroke="#f7c93e" stroke-opacity="0.9" stroke-width="1.8"/>
+            <rect x="557" y="435" width="326" height="36" rx="3" fill="none"
+                  stroke="#f7c93e" stroke-opacity="0.35" stroke-width="1"/>
+            <text x="720" y="454" text-anchor="middle"
+                  font-family="Inter, ui-sans-serif, system-ui, sans-serif"
+                  font-size="21" font-weight="800" letter-spacing="2.4"
+                  fill="#f7c93e">PAQUITO S. YU</text>
+            <text x="720" y="469" text-anchor="middle"
+                  font-family="Inter, ui-sans-serif, system-ui, sans-serif"
+                  font-size="7.6" font-weight="700" letter-spacing="1.7"
+                  fill="#fdf8f1" fill-opacity="0.85">MEMORIAL NATIONAL HIGH SCHOOL</text>
 
             {# Entrance #}
             <path d="M692 746 V686 Q720 654 748 686 V746 Z" fill="#1b2a5b"
@@ -98,24 +150,36 @@ Daylight palette: it is a school, so the scene stays bright and welcoming.
             <path d="M720 700 V746" stroke="#e9b723" stroke-opacity="0.45" stroke-width="1.4"/>
 
             {# Main windows (3 x 3) - two with a warm interior #}
-            <g fill="#d7e9f5" stroke="#1b2a5b" stroke-opacity="0.35" stroke-width="1.6">
-                <rect x="573" y="452" width="30" height="42" rx="2"/>
-                <rect x="705" y="452" width="30" height="42" rx="2"/>
-                <rect x="837" y="452" width="30" height="42" rx="2"/>
-                <rect x="573" y="516" width="30" height="42" rx="2"/>
-                <rect x="705" y="516" width="30" height="42" rx="2"/>
-                <rect x="837" y="516" width="30" height="42" rx="2"/>
-                <rect x="573" y="580" width="30" height="42" rx="2"/>
-                <rect x="705" y="580" width="30" height="42" rx="2"/>
-                <rect x="837" y="580" width="30" height="42" rx="2"/>
+            <g fill="url(#scene-window)" stroke="#1b2a5b" stroke-opacity="0.35" stroke-width="1.6">
+                <rect x="573" y="486" width="30" height="36" rx="2"/>
+                <rect x="705" y="486" width="30" height="36" rx="2"/>
+                <rect x="837" y="486" width="30" height="36" rx="2"/>
+                <rect x="573" y="530" width="30" height="36" rx="2"/>
+                <rect x="705" y="530" width="30" height="36" rx="2"/>
+                <rect x="837" y="530" width="30" height="36" rx="2"/>
+                <rect x="573" y="574" width="30" height="36" rx="2"/>
+                <rect x="705" y="574" width="30" height="36" rx="2"/>
+                <rect x="837" y="574" width="30" height="36" rx="2"/>
             </g>
-            <g fill="#f7e3b6" stroke="#1b2a5b" stroke-opacity="0.35" stroke-width="1.6">
-                <rect x="573" y="452" width="30" height="42" rx="2"/>
-                <rect x="837" y="516" width="30" height="42" rx="2"/>
+            <g fill="url(#scene-window-warm)" stroke="#1b2a5b" stroke-opacity="0.35" stroke-width="1.6">
+                <rect x="573" y="486" width="30" height="36" rx="2"/>
+                <rect x="837" y="530" width="30" height="36" rx="2"/>
+            </g>
+            {# Specular streak across the glazing #}
+            <g fill="#ffffff" opacity="0.38">
+                <rect x="577" y="489" width="9" height="30" rx="1.5" transform="skewX(-14)"/>
+                <rect x="709" y="489" width="9" height="30" rx="1.5" transform="skewX(-14)"/>
+                <rect x="841" y="489" width="9" height="30" rx="1.5" transform="skewX(-14)"/>
+                <rect x="577" y="533" width="9" height="30" rx="1.5" transform="skewX(-14)"/>
+                <rect x="709" y="533" width="9" height="30" rx="1.5" transform="skewX(-14)"/>
+                <rect x="841" y="533" width="9" height="30" rx="1.5" transform="skewX(-14)"/>
+                <rect x="577" y="577" width="9" height="30" rx="1.5" transform="skewX(-14)"/>
+                <rect x="709" y="577" width="9" height="30" rx="1.5" transform="skewX(-14)"/>
+                <rect x="841" y="577" width="9" height="30" rx="1.5" transform="skewX(-14)"/>
             </g>
 
             {# Wing windows (3 x 3 each), one warm on each side #}
-            <g fill="#d7e9f5" stroke="#1b2a5b" stroke-opacity="0.32" stroke-width="1.5">
+            <g fill="url(#scene-window)" stroke="#1b2a5b" stroke-opacity="0.32" stroke-width="1.5">
                 <rect x="403" y="528" width="26" height="34" rx="2"/>
                 <rect x="442" y="528" width="26" height="34" rx="2"/>
                 <rect x="481" y="528" width="26" height="34" rx="2"/>
@@ -135,9 +199,19 @@ Daylight palette: it is a school, so the scene stays bright and welcoming.
                 <rect x="972" y="664" width="26" height="34" rx="2"/>
                 <rect x="1011" y="664" width="26" height="34" rx="2"/>
             </g>
-            <g fill="#f7e3b6" stroke="#1b2a5b" stroke-opacity="0.32" stroke-width="1.5">
+            <g fill="url(#scene-window-warm)" stroke="#1b2a5b" stroke-opacity="0.32" stroke-width="1.5">
                 <rect x="481" y="528" width="26" height="34" rx="2"/>
                 <rect x="933" y="596" width="26" height="34" rx="2"/>
+            </g>
+            <g fill="#ffffff" opacity="0.34">
+                <rect x="406" y="531" width="8" height="28" rx="1.5" transform="skewX(-14)"/>
+                <rect x="445" y="531" width="8" height="28" rx="1.5" transform="skewX(-14)"/>
+                <rect x="484" y="531" width="8" height="28" rx="1.5" transform="skewX(-14)"/>
+                <rect x="406" y="599" width="8" height="28" rx="1.5" transform="skewX(-14)"/>
+                <rect x="445" y="599" width="8" height="28" rx="1.5" transform="skewX(-14)"/>
+                <rect x="936" y="531" width="8" height="28" rx="1.5" transform="skewX(-14)"/>
+                <rect x="975" y="531" width="8" height="28" rx="1.5" transform="skewX(-14)"/>
+                <rect x="936" y="599" width="8" height="28" rx="1.5" transform="skewX(-14)"/>
             </g>
         </g>
     </svg>

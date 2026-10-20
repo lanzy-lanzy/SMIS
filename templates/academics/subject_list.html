@@ -3,11 +3,11 @@
 {% block page_title %}Subjects{% endblock %}
 {% block content %}
 <div class="space-y-6">
-    <div class="flex items-center justify-between">
-        <h1 class="text-xl font-bold">Subjects</h1>
-        <button onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:subject_create' %}' } }))" class="bg-primary hover:bg-primary-800 text-white px-4 py-2 rounded-lg transition">Add Subject</button>
+    <div class="page-head flex-col items-stretch sm:flex-row sm:items-center sm:justify-between">
+            <h1 class="page-head-title">Subjects</h1>
+        <button onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:subject_create' %}' } }))" class="btn btn-primary">Add Subject</button>
     </div>
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+    <div class="glass-card">
         <div class="overflow-x-auto">
             {% include 'academics/partials/subject_table.html' %}
         </div>

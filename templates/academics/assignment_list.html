@@ -11,17 +11,17 @@
         </div>
         <div class="flex gap-2">
             <button onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:assignment_bulk_create' %}' } }))" 
-                    class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition">
+                    class="inline-flex items-center gap-2 btn btn-accent">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                 Bulk Assign
             </button>
             <a href="{% url 'academics:assignment_export' %}" 
-               class="inline-flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition">
+               class="inline-flex items-center gap-2 btn btn-secondary">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 Export
             </a>
             <button onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:assignment_create' %}' } }))" 
-                    class="inline-flex items-center gap-2 bg-primary hover:bg-primary-800 text-white px-4 py-2 rounded-lg transition">
+                    class="inline-flex items-center gap-2 btn btn-primary">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 Add Assignment
             </button>
@@ -30,34 +30,34 @@
 
     <!-- Stats Cards -->
     <div x-show="showStats" x-transition class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
+        <div class="glass-card p-4">
             <div class="text-sm text-gray-500 dark:text-gray-400">Total Assignments</div>
             <div class="text-2xl font-bold text-primary" id="stat-total">{{ total_assignments }}</div>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
+        <div class="glass-card p-4">
             <div class="text-sm text-gray-500 dark:text-gray-400">Active Teachers</div>
             <div class="text-2xl font-bold text-emerald-600" id="stat-teachers">{{ active_teachers }}</div>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
+        <div class="glass-card p-4">
             <div class="text-sm text-gray-500 dark:text-gray-400">Unassigned Teachers</div>
             <div class="text-2xl font-bold text-orange-500" id="stat-unassigned">{{ unassigned_teachers }}</div>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
+        <div class="glass-card p-4">
             <div class="text-sm text-gray-500 dark:text-gray-400">Sections Covered</div>
             <div class="text-2xl font-bold text-purple-600" id="stat-sections">{{ sections_covered }}</div>
         </div>
     </div>
 
     <!-- View Toggle & Filters -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
+    <div class="glass-card p-4">
         <div class="flex flex-col lg:flex-row lg:items-center gap-4">
             <!-- View Toggle -->
-            <div class="flex items-center gap-2 bg-gray-100 dark:bg-slate-700 rounded-lg p-1">
-                <button @click="view = 'teacher'" :class="view === 'teacher' ? 'bg-white dark:bg-slate-600 shadow' : ''" 
+            <div class="flex items-center gap-2 segmented">
+                <button @click="view = 'teacher'" :class="view === 'teacher' ? 'is-active' : ''" 
                         class="px-4 py-2 rounded-md text-sm font-medium transition">
                     By Teacher
                 </button>
-                <button @click="view = 'section'" :class="view === 'section' ? 'bg-white dark:bg-slate-600 shadow' : ''" 
+                <button @click="view = 'section'" :class="view === 'section' ? 'is-active' : ''" 
                         class="px-4 py-2 rounded-md text-sm font-medium transition">
                     By Section
                 </button>
@@ -96,7 +96,7 @@
             </div>
 
             <!-- Toggle Stats -->
-            <button @click="showStats = !showStats" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition" title="Toggle Stats">
+            <button @click="showStats = !showStats" class="app-icon-button" title="Toggle Stats">
                 <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
             </button>
         </div>
@@ -104,7 +104,7 @@
 
     <!-- Teacher View -->
     <div x-show="view === 'teacher'" x-transition>
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+        <div class="glass-card">
             <div class="overflow-x-auto" id="assignment-table" hx-get="{% url 'academics:assignment_list' %}?view=teacher" hx-trigger="refreshTable from:body">
                 {% include 'academics/partials/assignment_table.html' %}
             </div>
@@ -113,7 +113,7 @@
 
     <!-- Section View -->
     <div x-show="view === 'section'" x-transition>
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+        <div class="glass-card">
             <div class="overflow-x-auto" id="section-table">
                 {% include 'academics/partials/section_table.html' %}
             </div>
@@ -121,7 +121,7 @@
     </div>
 
     <!-- Teacher Workload -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+    <div class="glass-card p-6">
         <h3 class="text-lg font-semibold mb-4">Teacher Workload</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for teacher in teacher_workloads %}

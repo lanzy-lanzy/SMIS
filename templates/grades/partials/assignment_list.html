@@ -4,7 +4,7 @@
 {% if grade_groups %}
 <div class="space-y-6" x-data="{ openGroups: {} }">
     {% for group in grade_groups %}
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
+    <div class="glass-card overflow-hidden">
         <!-- Grade Level Header -->
         <button type="button"
                 @click="openGroups['gl_{{ group.grouper.pk }}'] = !openGroups['gl_{{ group.grouper.pk }}']"
@@ -31,7 +31,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {% for assignment in group.list %}
                 {% with sub_status=submissions_status|getitem:assignment.pk %}
-                <div class="group relative bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-primary/30 dark:hover:border-primary/40 hover:shadow-lg transition-all duration-200 overflow-hidden">
+                <div class="group relative glass-card transition-all duration-200 overflow-hidden">
                     <!-- Status stripe -->
                     <div class="absolute top-0 left-0 right-0 h-1
                         {% if sub_status == 'validated' %}bg-emerald-500
@@ -99,7 +99,7 @@
                         <div class="flex items-center gap-2">
                             {% if user.is_teacher or user.is_admin %}
                             <a href="{% url 'grades:grade_encode' assignment.pk %}?period={{ current_period.pk }}"
-                               class="flex-1 inline-flex items-center justify-center gap-1.5 bg-primary hover:bg-primary-800 text-white px-3 py-2 rounded-lg transition text-sm font-medium">
+                               class="flex-1 inline-flex items-center justify-center gap-1.5 btn btn-primary btn-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                 Encode
                             </a>
@@ -120,14 +120,14 @@
     {% endfor %}
 </div>
 {% else %}
-<div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-12 text-center">
+<div class="glass-card p-12 text-center">
     <div class="w-16 h-16 rounded-2xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mx-auto mb-4">
         <svg class="w-8 h-8 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
     </div>
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No assignments found</h3>
     <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">Contact your administrator to assign you to subjects and sections.</p>
     {% if user.is_admin %}
-    <a href="{% url 'academics:assignment_list' %}" class="inline-flex items-center gap-2 bg-primary hover:bg-primary-800 text-white px-5 py-2.5 rounded-lg transition font-medium">
+    <a href="{% url 'academics:assignment_list' %}" class="inline-flex items-center gap-2 btn btn-primary">
         Manage Assignments
     </a>
     {% endif %}
@@ -139,13 +139,13 @@
     <p class="text-sm text-gray-500">Showing {{ assignments.start_index }}-{{ assignments.end_index }} of {{ assignments.paginator.count }}</p>
     <div class="flex gap-1">
         {% if assignments.has_previous %}
-        <a href="?page={{ assignments.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&laquo;</a>
+        <a href="?page={{ assignments.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="page-link">&laquo;</a>
         {% endif %}
         {% for num in assignments.paginator.page_range %}
-        <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="px-3 py-1 border rounded {% if assignments.number == num %}bg-primary text-white{% else %}hover:bg-gray-50 dark:hover:bg-slate-700{% endif %}">{{ num }}</a>
+        <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="page-link {% if assignments.number == num %}is-active{% endif %}">{{ num }}</a>
         {% endfor %}
         {% if assignments.has_next %}
-        <a href="?page={{ assignments.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="px-3 py-1 border rounded hover:bg-gray-50 dark:hover:bg-slate-700">&raquo;</a>
+        <a href="?page={{ assignments.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if subject_filter %}&subject={{ subject_filter }}{% endif %}{% if section_filter %}&section={{ section_filter }}{% endif %}{% if period_filter %}&period={{ period_filter }}{% endif %}" class="page-link">&raquo;</a>
         {% endif %}
     </div>
 </div>
