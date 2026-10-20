@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#e8f2fb">
+    <meta name="theme-color" content="#eef2f9">
     <meta name="description" content="The School Management Information System of Paquito S. Yu Memorial National High School. A secure, centralized system for learner records, academic workflows, grade validation, Form 137 preparation, and school reporting.">
     <meta property="og:type" content="website">
     <meta property="og:title" content="SMIS | Paquito S. Yu Memorial National High School">
@@ -19,48 +19,51 @@
     <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-smis.png' %}">
     <title>SMIS | Paquito S. Yu Memorial National High School</title>
     <script>document.documentElement.classList.add('js');</script>
+    <link rel="preload" as="image" href="{% static 'images/campus-hero.jpg' %}"
+          imagesrcset="{% static 'images/campus-hero-sm.jpg' %} 1000w, {% static 'images/campus-hero.jpg' %} 2000w"
+          imagesizes="100vw">
     <link rel="stylesheet" href="{% versioned_static 'css/output.css' %}">
     <script defer src="{% versioned_static 'js/alpine.min.js' %}"></script>
     <script defer src="{% versioned_static 'js/landing.js' %}"></script>
     <style>[x-cloak] { display: none !important; }</style>
 </head>
-<body class="bg-white text-slate-700 antialiased" x-data="{ mobileMenu: false }" @keydown.escape.window="mobileMenu = false">
-    <a href="#main-content" class="fixed left-4 top-4 z-[70] -translate-y-24 rounded-md bg-white px-4 py-2 text-sm font-semibold text-primary shadow-lg transition focus:translate-y-0">Skip to content</a>
+<body class="landing-page min-h-screen text-slate-600 antialiased" x-data="{ mobileMenu: false }" @keydown.escape.window="mobileMenu = false">
+    <a href="#main-content" class="fixed left-4 top-4 z-[70] -translate-y-24 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-glass transition focus:translate-y-0">Skip to content</a>
 
-    <header id="site-header" class="site-header fixed inset-x-0 top-0 z-50 border-b border-transparent">
-        <div class="mx-auto flex h-[4.5rem] max-w-7xl items-center justify-between gap-4 px-5 sm:px-6 lg:px-8">
+    <header id="site-header" class="site-header fixed inset-x-0 top-0 z-50 px-4 pt-3 sm:px-6 sm:pt-4">
+        <div class="site-header-bar mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-3 sm:h-[4.4rem] sm:px-5 lg:px-6">
             <a href="{% url 'dashboard:landing' %}" class="flex min-w-0 items-center gap-3" aria-label="SMIS home">
-                <img src="{% static 'images/psyu-logo.png' %}" alt="Paquito S. Yu Memorial NHS logo" class="h-10 w-10 shrink-0 rounded-full object-cover shadow-md ring-1 ring-white/25">
+                <img src="{% static 'images/psyu-logo.png' %}" alt="Paquito S. Yu Memorial NHS logo" class="h-10 w-10 shrink-0 rounded-full object-cover shadow-neu-sm ring-2 ring-white/80">
                 <span class="min-w-0">
                     <span class="site-brand-name block text-base font-black tracking-[0.14em]">SMIS</span>
                     <span class="site-brand-sub hidden truncate text-[10px] font-semibold uppercase tracking-[0.09em] sm:block">Paquito S. Yu Memorial NHS</span>
                 </span>
             </a>
 
-            <nav class="hidden items-center gap-8 lg:flex" aria-label="Public navigation">
-                <a href="#capabilities" class="site-nav-link text-sm font-semibold transition">Capabilities</a>
-                <a href="#workflow" class="site-nav-link text-sm font-semibold transition">How it works</a>
-                <a href="#about" class="site-nav-link text-sm font-semibold transition">About</a>
+            <nav class="hidden items-center gap-1.5 lg:flex" aria-label="Public navigation">
+                <a href="#capabilities" class="site-nav-link">Capabilities</a>
+                <a href="#workflow" class="site-nav-link">How it works</a>
+                <a href="#about" class="site-nav-link">About</a>
             </nav>
 
-            <div class="hidden lg:block">
-                <a href="{% url 'accounts:login' %}" class="site-login formal-button px-5">
+            <div class="flex items-center gap-2">
+                <a href="{% url 'accounts:login' %}" class="site-login formal-button hidden px-5 lg:inline-flex">
                     Sign in
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 12h14m-5-5l5 5-5 5"/></svg>
                 </a>
-            </div>
 
-            <button @click="mobileMenu = !mobileMenu" class="site-menu-btn app-icon-button lg:hidden" :aria-expanded="mobileMenu" aria-controls="mobile-menu" aria-label="Toggle menu">
-                <svg x-show="!mobileMenu" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7h16M4 12h16M4 17h16"/></svg>
-                <svg x-show="mobileMenu" x-cloak class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
+                <button @click="mobileMenu = !mobileMenu" class="site-menu-btn app-icon-button lg:hidden" :aria-expanded="mobileMenu" aria-controls="mobile-menu" aria-label="Toggle menu">
+                    <svg x-show="!mobileMenu" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7h16M4 12h16M4 17h16"/></svg>
+                    <svg x-show="mobileMenu" x-cloak class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
         </div>
 
-        <div id="mobile-menu" x-show="mobileMenu" x-transition.opacity x-cloak class="site-mobile-panel px-5 py-5 lg:hidden">
-            <nav class="mx-auto flex max-w-7xl flex-col gap-1" aria-label="Mobile navigation">
-                <a @click="mobileMenu = false" href="#capabilities" class="site-mobile-link rounded-md px-3 py-3 text-sm font-semibold">Capabilities</a>
-                <a @click="mobileMenu = false" href="#workflow" class="site-mobile-link rounded-md px-3 py-3 text-sm font-semibold">How it works</a>
-                <a @click="mobileMenu = false" href="#about" class="site-mobile-link rounded-md px-3 py-3 text-sm font-semibold">About</a>
+        <div id="mobile-menu" x-show="mobileMenu" x-transition.opacity x-cloak class="site-mobile-panel mx-auto mt-2 max-w-7xl px-4 py-4 lg:hidden">
+            <nav class="flex flex-col gap-1" aria-label="Mobile navigation">
+                <a @click="mobileMenu = false" href="#capabilities" class="site-mobile-link">Capabilities</a>
+                <a @click="mobileMenu = false" href="#workflow" class="site-mobile-link">How it works</a>
+                <a @click="mobileMenu = false" href="#about" class="site-mobile-link">About</a>
                 <a href="{% url 'accounts:login' %}" class="site-login formal-button mt-3">Sign in to SMIS</a>
             </nav>
         </div>
@@ -70,205 +73,278 @@
         <section id="hero" class="landing-hero relative isolate overflow-hidden">
             {% include "landing/_hero_scene.html" %}
 
-            {# The building's nameplate sits low in the frame, so the copy is
-               anchored to the top of the hero to keep the two from colliding. #}
-            <div id="hero-content" class="relative z-10 mx-auto flex max-w-5xl flex-col items-center justify-start px-6 pb-24 pt-20 text-center sm:pt-24 lg:pt-16">
-                <p class="landing-eyebrow">Paquito S. Yu Memorial National High School</p>
-                <h1 class="mt-7 max-w-4xl text-balance text-[2.1rem] font-bold leading-[1.08] tracking-[-0.045em] text-primary-dark sm:text-5xl lg:text-[3.9rem]">
-                    School information, managed with clarity and confidence.
-                </h1>
-                <p class="mt-6 max-w-2xl text-pretty text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
-                    A secure, centralized system for learner records, academic workflows, grade validation, Form 137 preparation, and school reporting.
-                </p>
-                <div class="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
-                    <a href="{% url 'accounts:login' %}" class="landing-btn-primary">
-                        Sign in to SMIS
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 12h14m-5-5l5 5-5 5"/></svg>
-                    </a>
-                    <a href="#capabilities" class="landing-btn-glass">Explore the system</a>
-                </div>
-                <p class="mt-9 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-500">Authorized school accounts only</p>
-            </div>
-
-            {# Floating glass preview - the workspace rendered in the same
-               material the sign-in screen uses. #}
-            <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 hidden lg:block" aria-hidden="true">
-                <div class="mx-auto flex max-w-7xl justify-end px-5 sm:px-6 lg:px-8">
-                    <div class="landing-glass landing-float mb-24 w-[19rem] rounded-2xl p-4">
-                        <div class="flex items-center justify-between">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Enrollment</p>
-                            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Live
-                            </span>
+            {# Copy lives in a liquid-glass panel on the left so the building and
+               palms on the right half of the photograph stay readable. #}
+            <div id="hero-content" class="landing-hero-content relative z-10 w-full">
+                <div class="mx-auto grid w-full max-w-7xl items-center gap-10 px-5 pb-24 pt-28 sm:px-6 sm:pt-32 lg:grid-cols-[minmax(0,1fr)_19.5rem] lg:gap-14 lg:px-8 lg:pb-28 lg:pt-32">
+                    <div class="landing-glass-liquid landing-hero-panel w-full max-w-[46rem] p-7 sm:p-9 lg:p-11">
+                        <p class="landing-eyebrow">Paquito S. Yu Memorial National High School</p>
+                        <h1 class="mt-6 text-[1.98rem] font-bold leading-[1.08] tracking-[-0.045em] text-primary-dark sm:text-balance sm:text-[2.9rem] sm:leading-[1.06] lg:text-[3.45rem]">
+                            School information, managed with clarity and confidence.
+                        </h1>
+                        <p class="mt-5 max-w-xl text-pretty text-[0.95rem] leading-7 text-slate-600 sm:text-base sm:leading-8">
+                            A secure, centralized system for learner records, academic workflows, grade validation, Form 137 preparation, and school reporting.
+                        </p>
+                        <div class="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3.5">
+                            <a href="{% url 'accounts:login' %}" class="landing-btn-primary">
+                                Sign in to SMIS
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 12h14m-5-5l5 5-5 5"/></svg>
+                            </a>
+                            <a href="#capabilities" class="landing-btn-glass">Explore the system</a>
                         </div>
-                        <p class="mt-2 text-3xl font-bold tracking-[-0.03em] text-primary-dark">63</p>
-                        <p class="text-[11px] font-medium text-slate-500">Active learners this year</p>
-                        <div class="mt-4 flex h-14 items-end gap-1.5">
-                            <span class="w-full rounded-t bg-primary-200/70" style="height: 42%"></span>
-                            <span class="w-full rounded-t bg-primary-300/70" style="height: 66%"></span>
-                            <span class="w-full rounded-t bg-primary-400/80" style="height: 100%"></span>
-                            <span class="w-full rounded-t bg-primary-300/70" style="height: 55%"></span>
-                            <span class="w-full rounded-t bg-primary-200/70" style="height: 74%"></span>
-                            <span class="w-full rounded-t bg-primary-300/70" style="height: 38%"></span>
-                            <span class="w-full rounded-t bg-accent/80" style="height: 60%"></span>
-                        </div>
-                        <div class="mt-4 flex items-center gap-2.5 border-t border-white/70 pt-3 dark:border-white/10">
-                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-white/80 text-emerald-600 shadow-neu-sm">
-                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M5 13l4 4L19 7"/></svg>
+                        <div class="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-white/60 pt-5 text-[10.5px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                            <span class="inline-flex items-center gap-2">
+                                <svg class="h-3.5 w-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l7 3v5c0 4.4-3 8.3-7 10-4-1.7-7-5.6-7-10V6l7-3z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.5 12l1.8 1.8 3.4-3.4"/></svg>
+                                Authorized accounts only
                             </span>
-                            <div class="min-w-0">
-                                <p class="text-[11px] font-bold text-slate-700">Grade validation</p>
-                                <p class="text-[10px] text-slate-500">Workflow in progress</p>
-                            </div>
+                            <span class="hidden h-1 w-1 rounded-full bg-slate-400/70 sm:block" aria-hidden="true"></span>
+                            <span>Role-based workspaces</span>
                         </div>
                     </div>
+
+                    <aside class="hidden lg:block">
+                        <div class="landing-glass-liquid landing-float rounded-[1.75rem] p-5">
+                            <div class="flex items-center justify-between">
+                                <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Enrollment</p>
+                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50/80 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Live
+                                </span>
+                            </div>
+                            <p class="mt-2 text-[2rem] font-bold leading-none tracking-[-0.03em] text-primary-dark">63</p>
+                            <p class="mt-1 text-[11px] font-medium text-slate-500">Active learners this year</p>
+                            <div class="landing-neu-inset mt-4 flex h-16 items-end gap-1.5 rounded-xl p-2">
+                                <span class="w-full rounded-t-[3px] bg-primary-300/80" style="height: 42%"></span>
+                                <span class="w-full rounded-t-[3px] bg-primary-400/80" style="height: 66%"></span>
+                                <span class="w-full rounded-t-[3px] bg-primary-500/85" style="height: 100%"></span>
+                                <span class="w-full rounded-t-[3px] bg-primary-400/80" style="height: 55%"></span>
+                                <span class="w-full rounded-t-[3px] bg-primary-300/80" style="height: 74%"></span>
+                                <span class="w-full rounded-t-[3px] bg-primary-300/80" style="height: 38%"></span>
+                                <span class="w-full rounded-t-[3px] bg-accent/90" style="height: 60%"></span>
+                            </div>
+                            <div class="mt-4 flex items-center gap-2.5 border-t border-white/60 pt-3">
+                                <span class="landing-icon-tile h-8 w-8 rounded-[0.6rem] text-emerald-600">
+                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M5 13l4 4L19 7"/></svg>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-[11px] font-bold text-slate-700">Grade validation</p>
+                                    <p class="text-[10px] text-slate-500">Workflow in progress</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="landing-neu mt-4 flex items-center gap-3.5 rounded-2xl p-4">
+                            <span class="landing-icon-tile h-10 w-10 rounded-xl text-primary">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 3h7l4 4v14H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14 3v4h4M10 12h5M10 16h5"/></svg>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">Form 137</p>
+                                <p class="text-sm font-bold text-primary-dark">Records ready to print</p>
+                            </div>
+                        </div>
+                    </aside>
                 </div>
             </div>
 
-            <a id="hero-cue" href="#intro" class="absolute bottom-3 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2.5 text-[10px] font-bold uppercase tracking-[0.32em] text-slate-400 transition-colors hover:text-primary sm:flex" aria-label="Scroll to content">
+            <a id="hero-cue" href="#intro" class="absolute bottom-4 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2.5 text-[10px] font-bold uppercase tracking-[0.32em] text-slate-500 transition-colors hover:text-primary sm:flex" aria-label="Scroll to content">
                 <span>Scroll</span>
-                <span class="h-10 w-px bg-gradient-to-b from-slate-300 to-transparent"></span>
+                <span class="h-9 w-px bg-gradient-to-b from-slate-400/70 to-transparent"></span>
             </a>
         </section>
 
-        <section id="intro" class="landing-canvas scroll-mt-24 border-b border-slate-200/70 bg-white/40">
-            <div class="mx-auto grid max-w-7xl gap-4 px-5 py-8 sm:px-6 md:grid-cols-3 md:px-8">
-                <div class="landing-glass p-6" data-reveal>
-                    <p class="text-sm font-bold text-primary-dark">One dependable record</p>
-                    <p class="mt-1.5 text-sm leading-6 text-slate-500">Keep student and academic information organized in one school workspace.</p>
-                </div>
-                <div class="landing-glass p-6" data-reveal style="--reveal-delay: 120ms">
-                    <p class="text-sm font-bold text-primary-dark">Clear accountability</p>
-                    <p class="mt-1.5 text-sm leading-6 text-slate-500">Track submissions, reviews, validations, and important record changes.</p>
-                </div>
-                <div class="landing-glass p-6" data-reveal style="--reveal-delay: 240ms">
-                    <p class="text-sm font-bold text-primary-dark">Better decisions</p>
-                    <p class="mt-1.5 text-sm leading-6 text-slate-500">Turn school data into timely reports for academic planning and support.</p>
+        <section id="intro" class="landing-canvas scroll-mt-28">
+            <div class="mx-auto max-w-7xl px-5 py-10 sm:px-6 sm:py-12 lg:px-8">
+                <div class="grid gap-5 md:grid-cols-3">
+                    <article class="landing-neu p-6" data-reveal>
+                        <div class="flex items-center gap-3.5">
+                            <span class="landing-icon-tile h-10 w-10 rounded-xl text-primary">
+                                <svg class="h-[1.15rem] w-[1.15rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
+                            </span>
+                            <p class="text-sm font-bold text-primary-dark">One dependable record</p>
+                        </div>
+                        <p class="mt-3 text-sm leading-6 text-slate-500">Keep student and academic information organized in one school workspace.</p>
+                    </article>
+                    <article class="landing-neu p-6" data-reveal style="--reveal-delay: 120ms">
+                        <div class="flex items-center gap-3.5">
+                            <span class="landing-icon-tile h-10 w-10 rounded-xl text-primary">
+                                <svg class="h-[1.15rem] w-[1.15rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5h6a2 2 0 012 2v12a2 2 0 01-2 2H9a2 2 0 01-2-2V7a2 2 0 012-2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 3h4v2h-4zM9.5 11h5M9.5 15h3"/></svg>
+                            </span>
+                            <p class="text-sm font-bold text-primary-dark">Clear accountability</p>
+                        </div>
+                        <p class="mt-3 text-sm leading-6 text-slate-500">Track submissions, reviews, validations, and important record changes.</p>
+                    </article>
+                    <article class="landing-neu p-6" data-reveal style="--reveal-delay: 240ms">
+                        <div class="flex items-center gap-3.5">
+                            <span class="landing-icon-tile h-10 w-10 rounded-xl text-primary">
+                                <svg class="h-[1.15rem] w-[1.15rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 19V5M4 19h16"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 15V10M12 15V7M16 15v-3"/></svg>
+                            </span>
+                            <p class="text-sm font-bold text-primary-dark">Better decisions</p>
+                        </div>
+                        <p class="mt-3 text-sm leading-6 text-slate-500">Turn school data into timely reports for academic planning and support.</p>
+                    </article>
                 </div>
             </div>
         </section>
 
-        <section id="capabilities" class="landing-canvas relative scroll-mt-24 overflow-hidden py-24 sm:py-28">
-            <div class="pointer-events-none absolute -right-40 top-24 h-[26rem] w-[26rem] rounded-full bg-primary-50 blur-3xl" data-parallax data-depth="0.1" aria-hidden="true"></div>
+        <section id="capabilities" class="landing-canvas relative scroll-mt-24 overflow-hidden py-20 sm:py-24">
+            <div class="landing-bloom pointer-events-none absolute -right-32 top-24 h-[24rem] w-[24rem] rounded-full bg-primary-100/60 blur-3xl" data-parallax data-depth="0.1" aria-hidden="true"></div>
             <div class="relative mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
                 <div class="max-w-2xl" data-reveal>
-                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-primary">Core capabilities</p>
-                    <h2 class="mt-3 text-3xl font-bold tracking-[-0.035em] text-primary-dark sm:text-4xl">Essential school operations, connected.</h2>
+                    <p class="landing-kicker">Core capabilities</p>
+                    <h2 class="mt-4 text-3xl font-bold tracking-[-0.035em] text-primary-dark sm:text-[2.35rem]">Essential school operations, connected.</h2>
                     <p class="mt-4 text-base leading-7 text-slate-600">SMIS gives each authorized user a focused view of the records and workflows they are responsible for.</p>
                 </div>
 
-                <div class="mt-14 grid gap-5 lg:grid-cols-2">
-                    <article class="landing-glass group flex gap-6 p-6 transition hover:-translate-y-1" data-reveal>
-                        <span class="landing-num">01</span>
-                        <div>
-                            <h3 class="text-base font-bold text-primary-dark transition-colors group-hover:text-primary">Student records</h3>
-                            <p class="mt-2 text-sm leading-6 text-slate-600">Maintain learner profiles, enrollment details, grade levels, sections, and status information.</p>
+                <div class="mt-12 grid gap-5 lg:grid-cols-2 lg:gap-6">
+                    <article class="landing-neu group p-6 lg:p-7" data-reveal>
+                        <div class="flex items-start gap-5">
+                            <span class="landing-icon-tile text-primary">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 12a4 4 0 100-8 4 4 0 000 8z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4.5 20a7.5 7.5 0 0115 0"/></svg>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="landing-card-index">01</p>
+                                <h3 class="mt-1.5 text-base font-bold text-primary-dark">Student records</h3>
+                                <p class="mt-2 text-sm leading-6 text-slate-600">Maintain learner profiles, enrollment details, grade levels, sections, and status information.</p>
+                            </div>
                         </div>
                     </article>
-                    <article class="landing-glass group flex gap-6 p-6 transition hover:-translate-y-1" data-reveal style="--reveal-delay: 80ms">
-                        <span class="landing-num">02</span>
-                        <div>
-                            <h3 class="text-base font-bold text-primary-dark transition-colors group-hover:text-primary">Grade management</h3>
-                            <p class="mt-2 text-sm leading-6 text-slate-600">Support encoding, submission, registrar review, validation, and academic status monitoring.</p>
+                    <article class="landing-neu group p-6 lg:p-7" data-reveal style="--reveal-delay: 80ms">
+                        <div class="flex items-start gap-5">
+                            <span class="landing-icon-tile text-primary">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M9 4h6a2 2 0 012 2v13a2 2 0 01-2 2H9a2 2 0 01-2-2V6a2 2 0 012-2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M10 2.8h4v2.4h-4zM10.2 12l1.6 1.6 3-3.2"/></svg>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="landing-card-index">02</p>
+                                <h3 class="mt-1.5 text-base font-bold text-primary-dark">Grade management</h3>
+                                <p class="mt-2 text-sm leading-6 text-slate-600">Support encoding, submission, registrar review, validation, and academic status monitoring.</p>
+                            </div>
                         </div>
                     </article>
-                    <article class="landing-glass group flex gap-6 p-6 transition hover:-translate-y-1" data-reveal style="--reveal-delay: 160ms">
-                        <span class="landing-num">03</span>
-                        <div>
-                            <h3 class="text-base font-bold text-primary-dark transition-colors group-hover:text-primary">Form 137 preparation</h3>
-                            <p class="mt-2 text-sm leading-6 text-slate-600">Prepare official academic records from validated student and grade information.</p>
+                    <article class="landing-neu group p-6 lg:p-7" data-reveal style="--reveal-delay: 160ms">
+                        <div class="flex items-start gap-5">
+                            <span class="landing-icon-tile text-primary">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M7 3h7l4 4v14H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M14 3v4h4M10 12h5M10 16h5"/></svg>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="landing-card-index">03</p>
+                                <h3 class="mt-1.5 text-base font-bold text-primary-dark">Form 137 preparation</h3>
+                                <p class="mt-2 text-sm leading-6 text-slate-600">Prepare official academic records from validated student and grade information.</p>
+                            </div>
                         </div>
                     </article>
-                    <article class="landing-glass group flex gap-6 p-6 transition hover:-translate-y-1" data-reveal style="--reveal-delay: 80ms">
-                        <span class="landing-num">04</span>
-                        <div>
-                            <h3 class="text-base font-bold text-primary-dark transition-colors group-hover:text-primary">Reports and analytics</h3>
-                            <p class="mt-2 text-sm leading-6 text-slate-600">Review grade trends, section performance, subject outcomes, and students needing support.</p>
+                    <article class="landing-neu group p-6 lg:p-7" data-reveal style="--reveal-delay: 80ms">
+                        <div class="flex items-start gap-5">
+                            <span class="landing-icon-tile text-primary">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 19V5M4 19h16"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M8 15.5V9.5M12.5 15.5V6.5M17 15.5v-4"/></svg>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="landing-card-index">04</p>
+                                <h3 class="mt-1.5 text-base font-bold text-primary-dark">Reports and analytics</h3>
+                                <p class="mt-2 text-sm leading-6 text-slate-600">Review grade trends, section performance, subject outcomes, and students needing support.</p>
+                            </div>
                         </div>
                     </article>
-                    <article class="landing-glass group flex gap-6 p-6 transition hover:-translate-y-1" data-reveal style="--reveal-delay: 160ms">
-                        <span class="landing-num">05</span>
-                        <div>
-                            <h3 class="text-base font-bold text-primary-dark transition-colors group-hover:text-primary">Academic setup</h3>
-                            <p class="mt-2 text-sm leading-6 text-slate-600">Manage school years, grade levels, sections, subjects, periods, and teacher assignments.</p>
+                    <article class="landing-neu group p-6 lg:p-7" data-reveal style="--reveal-delay: 160ms">
+                        <div class="flex items-start gap-5">
+                            <span class="landing-icon-tile text-primary">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 8.5l8-4 8 4-8 4-8-4z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 8.5V16l8 4 8-4V8.5M12 12.5V20"/></svg>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="landing-card-index">05</p>
+                                <h3 class="mt-1.5 text-base font-bold text-primary-dark">Academic setup</h3>
+                                <p class="mt-2 text-sm leading-6 text-slate-600">Manage school years, grade levels, sections, subjects, periods, and teacher assignments.</p>
+                            </div>
                         </div>
                     </article>
-                    <article class="landing-glass group flex gap-6 p-6 transition hover:-translate-y-1" data-reveal style="--reveal-delay: 240ms">
-                        <span class="landing-num">06</span>
-                        <div>
-                            <h3 class="text-base font-bold text-primary-dark transition-colors group-hover:text-primary">Access and audit</h3>
-                            <p class="mt-2 text-sm leading-6 text-slate-600">Give administrators, teachers, registrars, and students the appropriate system access.</p>
+                    <article class="landing-neu group p-6 lg:p-7" data-reveal style="--reveal-delay: 240ms">
+                        <div class="flex items-start gap-5">
+                            <span class="landing-icon-tile text-primary">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 3l7 3v5c0 4.4-3 8.3-7 10-4-1.7-7-5.6-7-10V6l7-3z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M9.5 12l1.8 1.8 3.4-3.4"/></svg>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="landing-card-index">06</p>
+                                <h3 class="mt-1.5 text-base font-bold text-primary-dark">Access and audit</h3>
+                                <p class="mt-2 text-sm leading-6 text-slate-600">Give administrators, teachers, registrars, and students the appropriate system access.</p>
+                            </div>
                         </div>
                     </article>
                 </div>
             </div>
         </section>
 
-        <section id="workflow" class="relative scroll-mt-24 overflow-hidden bg-primary-dark py-24 text-white sm:py-28">
+        <section id="workflow" class="landing-dark relative scroll-mt-24 overflow-hidden py-20 text-white sm:py-24">
             <div class="landing-grain pointer-events-none absolute inset-0 opacity-60" aria-hidden="true"></div>
-            <div class="pointer-events-none absolute -left-28 top-1/3 h-80 w-80 rounded-full bg-primary/30 blur-3xl" data-parallax data-depth="0.08" aria-hidden="true"></div>
-            <div class="relative mx-auto grid max-w-7xl gap-14 px-5 sm:px-6 lg:grid-cols-[.85fr_1.15fr] lg:gap-20 lg:px-8">
-                <div class="lg:sticky lg:top-28 lg:self-start" data-reveal>
-                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-accent-500">Designed around school work</p>
-                    <h2 class="mt-3 text-3xl font-bold tracking-[-0.035em] sm:text-4xl">From data entry to an accountable record.</h2>
+            <div class="pointer-events-none absolute -left-24 top-1/4 h-80 w-80 rounded-full bg-primary/40 blur-3xl" data-parallax data-depth="0.08" aria-hidden="true"></div>
+            <div class="pointer-events-none absolute -right-16 top-0 h-72 w-72 rounded-full bg-accent/10 blur-3xl" data-parallax data-depth="0.12" aria-hidden="true"></div>
+            <div class="relative mx-auto grid max-w-7xl gap-12 px-5 sm:px-6 lg:grid-cols-[.85fr_1.15fr] lg:gap-20 lg:px-8">
+                <div class="lg:sticky lg:top-32 lg:self-start" data-reveal>
+                    <p class="landing-kicker landing-kicker-dark">Designed around school work</p>
+                    <h2 class="mt-4 text-3xl font-bold tracking-[-0.035em] sm:text-[2.35rem]">From data entry to an accountable record.</h2>
                     <p class="mt-5 max-w-xl text-base leading-7 text-slate-300">Each step is organized around responsibility, helping school personnel move work forward without losing context.</p>
                 </div>
                 <ol id="workflow-steps" class="relative pl-8 sm:pl-10">
                     <span class="workflow-rail" aria-hidden="true"><span class="workflow-rail-fill"></span></span>
                     <li class="workflow-step relative pb-5" data-reveal style="--reveal-delay: 60ms">
-                        <div class="landing-glass-dark rounded-2xl p-6 transition duration-300">
-                            <span class="workflow-step-index text-xs font-black tracking-[0.18em]">01</span>
-                            <h3 class="mt-3 text-lg font-bold">Record</h3>
-                            <p class="mt-2 text-sm leading-6 text-slate-300">Encode student, academic, and grade information in the appropriate workspace.</p>
+                        <div class="landing-glass-dark landing-dark-step rounded-2xl p-6">
+                            <div class="flex items-center gap-3">
+                                <span class="landing-dark-index">01</span>
+                                <h3 class="text-lg font-bold">Record</h3>
+                            </div>
+                            <p class="mt-3 text-sm leading-6 text-slate-300">Encode student, academic, and grade information in the appropriate workspace.</p>
                         </div>
                     </li>
                     <li class="workflow-step relative pb-5" data-reveal style="--reveal-delay: 140ms">
-                        <div class="landing-glass-dark rounded-2xl p-6 transition duration-300">
-                            <span class="workflow-step-index text-xs font-black tracking-[0.18em]">02</span>
-                            <h3 class="mt-3 text-lg font-bold">Review</h3>
-                            <p class="mt-2 text-sm leading-6 text-slate-300">Check submissions, identify issues, and return records that require correction.</p>
+                        <div class="landing-glass-dark landing-dark-step rounded-2xl p-6">
+                            <div class="flex items-center gap-3">
+                                <span class="landing-dark-index">02</span>
+                                <h3 class="text-lg font-bold">Review</h3>
+                            </div>
+                            <p class="mt-3 text-sm leading-6 text-slate-300">Check submissions, identify issues, and return records that require correction.</p>
                         </div>
                     </li>
                     <li class="workflow-step relative pb-5" data-reveal style="--reveal-delay: 220ms">
-                        <div class="landing-glass-dark rounded-2xl p-6 transition duration-300">
-                            <span class="workflow-step-index text-xs font-black tracking-[0.18em]">03</span>
-                            <h3 class="mt-3 text-lg font-bold">Validate</h3>
-                            <p class="mt-2 text-sm leading-6 text-slate-300">Confirm accurate academic information before it is used in official records.</p>
+                        <div class="landing-glass-dark landing-dark-step rounded-2xl p-6">
+                            <div class="flex items-center gap-3">
+                                <span class="landing-dark-index">03</span>
+                                <h3 class="text-lg font-bold">Validate</h3>
+                            </div>
+                            <p class="mt-3 text-sm leading-6 text-slate-300">Confirm accurate academic information before it is used in official records.</p>
                         </div>
                     </li>
                     <li class="workflow-step relative" data-reveal style="--reveal-delay: 300ms">
-                        <div class="landing-glass-dark rounded-2xl p-6 transition duration-300">
-                            <span class="workflow-step-index text-xs font-black tracking-[0.18em]">04</span>
-                            <h3 class="mt-3 text-lg font-bold">Report</h3>
-                            <p class="mt-2 text-sm leading-6 text-slate-300">Use trusted information for Form 137 preparation and school performance reports.</p>
+                        <div class="landing-glass-dark landing-dark-step rounded-2xl p-6">
+                            <div class="flex items-center gap-3">
+                                <span class="landing-dark-index">04</span>
+                                <h3 class="text-lg font-bold">Report</h3>
+                            </div>
+                            <p class="mt-3 text-sm leading-6 text-slate-300">Use trusted information for Form 137 preparation and school performance reports.</p>
                         </div>
                     </li>
                 </ol>
             </div>
         </section>
 
-        <section id="about" class="landing-canvas relative scroll-mt-24 overflow-hidden py-24 sm:py-28">
-            <div class="pointer-events-none absolute -left-40 bottom-16 h-[24rem] w-[24rem] rounded-full bg-accent-50 blur-3xl" data-parallax data-depth="0.09" aria-hidden="true"></div>
-            <div class="relative mx-auto grid max-w-7xl items-center gap-14 px-5 sm:px-6 lg:grid-cols-2 lg:gap-20 lg:px-8">
-                <div data-reveal>
-                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-primary">Built for the school community</p>
-                    <div class="landing-glass mt-8 divide-y divide-slate-200/70 p-6">
-                        <div class="flex gap-5 py-5 first:pt-0">
-                            <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/60 text-xs font-black text-primary shadow-neu-sm">A</span>
+        <section id="about" class="landing-canvas relative scroll-mt-24 overflow-hidden py-20 sm:py-24">
+            <div class="pointer-events-none absolute -left-40 bottom-10 h-[22rem] w-[22rem] rounded-full bg-accent-100/50 blur-3xl" data-parallax data-depth="0.09" aria-hidden="true"></div>
+            <div class="relative mx-auto grid max-w-7xl items-center gap-12 px-5 sm:px-6 lg:grid-cols-[1.02fr_.98fr] lg:gap-16 lg:px-8">
+                <div class="landing-neu p-6 sm:p-8" data-reveal>
+                    <p class="text-sm font-bold text-primary-dark">Built for the school community</p>
+                    <div class="mt-2 divide-y divide-slate-300/50">
+                        <div class="flex gap-4 py-5">
+                            <span class="landing-icon-tile h-10 w-10 rounded-xl text-[0.7rem] font-black text-primary">A</span>
                             <div>
                                 <h3 class="font-bold text-primary-dark">Administrators</h3>
                                 <p class="mt-1 text-sm leading-6 text-slate-600">Configure the academic structure, manage users, and maintain oversight.</p>
                             </div>
                         </div>
-                        <div class="flex gap-5 py-5">
-                            <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/60 text-xs font-black text-primary shadow-neu-sm">T</span>
+                        <div class="flex gap-4 py-5">
+                            <span class="landing-icon-tile h-10 w-10 rounded-xl text-[0.7rem] font-black text-primary">T</span>
                             <div>
                                 <h3 class="font-bold text-primary-dark">Teachers and registrars</h3>
                                 <p class="mt-1 text-sm leading-6 text-slate-600">Handle grade entry, submission, review, and official record preparation.</p>
                             </div>
                         </div>
-                        <div class="flex gap-5 py-5 last:pb-0">
-                            <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/60 text-xs font-black text-primary shadow-neu-sm">S</span>
+                        <div class="flex gap-4 py-5 last:pb-0">
+                            <span class="landing-icon-tile h-10 w-10 rounded-xl text-[0.7rem] font-black text-primary">S</span>
                             <div>
                                 <h3 class="font-bold text-primary-dark">Students</h3>
                                 <p class="mt-1 text-sm leading-6 text-slate-600">View authorized academic information through a focused student experience.</p>
@@ -277,8 +353,8 @@
                     </div>
                 </div>
                 <div data-reveal style="--reveal-delay: 120ms">
-                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-primary">About SMIS</p>
-                    <h2 class="mt-3 text-3xl font-bold tracking-[-0.035em] text-primary-dark sm:text-4xl">A more orderly way to manage academic information.</h2>
+                    <p class="landing-kicker">About SMIS</p>
+                    <h2 class="mt-4 text-3xl font-bold tracking-[-0.035em] text-primary-dark sm:text-[2.35rem]">A more orderly way to manage academic information.</h2>
                     <p class="mt-5 text-base leading-7 text-slate-600">The School Management Information System supports Paquito S. Yu Memorial National High School in maintaining consistent records and more transparent academic processes.</p>
                     <p class="mt-4 text-base leading-7 text-slate-600">Its role-based workspaces help each user focus on the tasks and information relevant to their responsibilities.</p>
                     <a href="{% url 'accounts:login' %}" class="landing-btn-primary mt-9">
@@ -289,30 +365,39 @@
             </div>
         </section>
 
-        <section class="relative overflow-hidden bg-primary-dark px-5 py-20 text-white sm:px-6 sm:py-24 lg:px-8">
-            <div class="landing-grain pointer-events-none absolute inset-0 opacity-60" aria-hidden="true"></div>
-            <div class="pointer-events-none absolute -top-24 right-[12%] h-72 w-72 rounded-full bg-accent/15 blur-3xl" data-parallax data-depth="0.12" aria-hidden="true"></div>
-            <div class="relative mx-auto flex max-w-4xl flex-col items-center gap-7 text-center" data-reveal>
-                <h2 class="text-2xl font-bold tracking-[-0.025em] sm:text-3xl">Ready to access the school workspace?</h2>
-                <p class="max-w-xl text-sm leading-6 text-primary-100 sm:text-base">Sign in with your authorized SMIS account to continue.</p>
-                <a href="{% url 'accounts:login' %}" class="landing-button-light">
-                    Sign in to SMIS
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 12h14m-5-5l5 5-5 5"/></svg>
-                </a>
+        <section class="relative px-4 pb-20 pt-2 sm:px-6 sm:pb-24 lg:px-8">
+            <div class="landing-cta mx-auto max-w-6xl" data-reveal>
+                <div class="landing-cta-grain pointer-events-none absolute inset-0" aria-hidden="true"></div>
+                <div class="relative z-10 flex flex-col items-center gap-5 px-6 py-14 text-center sm:px-10 sm:py-16">
+                    <p class="landing-cta-kicker">Secure sign in</p>
+                    <h2 class="max-w-2xl text-2xl font-bold tracking-[-0.03em] text-white sm:text-[2.1rem]">Ready to access the school workspace?</h2>
+                    <p class="max-w-xl text-sm leading-6 text-primary-100 sm:text-base">Sign in with your authorized SMIS account to continue.</p>
+                    <a href="{% url 'accounts:login' %}" class="landing-button-light mt-2">
+                        Sign in to SMIS
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 12h14m-5-5l5 5-5 5"/></svg>
+                    </a>
+                </div>
             </div>
         </section>
     </main>
 
-    <footer class="border-t border-white/60 bg-white/50 backdrop-blur-xl">
-        <div class="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-8 text-sm text-slate-500 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+    <footer class="landing-footer">
+        <div class="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-10 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
             <div class="flex items-center gap-3">
-                <img src="{% static 'images/psyu-logo.png' %}" alt="Paquito S. Yu Memorial NHS logo" class="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-white/60 shadow-neu-sm">
+                <img src="{% static 'images/psyu-logo.png' %}" alt="Paquito S. Yu Memorial NHS logo" class="h-9 w-9 shrink-0 rounded-full object-cover shadow-neu-sm ring-2 ring-white/80">
                 <div>
-                    <p class="font-bold text-primary-dark">Paquito S. Yu Memorial National High School</p>
-                    <p class="text-xs">School Management Information System</p>
+                    <p class="text-sm font-bold text-primary-dark">Paquito S. Yu Memorial National High School</p>
+                    <p class="text-xs text-slate-500">School Management Information System</p>
                 </div>
             </div>
-            <p>&copy; {% now "Y" %} All rights reserved.</p>
+            <div class="flex flex-col gap-2 md:items-end">
+                <p class="text-sm text-slate-500">&copy; {% now "Y" %} All rights reserved.</p>
+                <p class="text-[11px] text-slate-400">
+                    Campus photo:
+                    <a href="https://commons.wikimedia.org/wiki/File:Vito_elementary_school_Gabaldon_building.jpg" class="underline decoration-slate-300 underline-offset-2 transition-colors hover:text-primary" rel="noopener noreferrer" target="_blank">Kramthenik27</a>
+                    · <a href="https://creativecommons.org/licenses/by-sa/4.0/" class="underline decoration-slate-300 underline-offset-2 transition-colors hover:text-primary" rel="noopener noreferrer" target="_blank">CC BY-SA 4.0</a>
+                </p>
+            </div>
         </div>
     </footer>
 </body>

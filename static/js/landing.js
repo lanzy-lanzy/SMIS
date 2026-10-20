@@ -1,9 +1,10 @@
 /**
  * Public landing page interactions.
  *
- *  - Hero scene parallax: the layered SVG scenery is translated from the scroll
- *    position, plus a subtle pointer offset. `data-depth` on each layer decides
- *    how slow it moves (small = far away) so the campus reads with depth.
+ *  - Hero scene parallax: the campus photograph and its colour orbs are
+ *    translated from the scroll position, plus a subtle pointer offset.
+ *    `data-speed` on the photo layer decides how slow it drifts; `data-depth`
+ *    on each decoration decides how far it floats.
  *  - `[data-reveal]` elements fade/slide in once, staggered by `--reveal-delay`.
  *  - Header switches from transparent-over-hero to solid after scrolling.
  *  - Workflow rail fills and the current step lights up while scrolling.
