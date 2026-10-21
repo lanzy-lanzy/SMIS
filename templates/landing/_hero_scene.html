@@ -2,9 +2,9 @@
 {% comment %}
 Hero media for the public landing page.
 
-A high-definition photograph of a Gabaldon-style Philippine school building
-carries the scene. The layers above the photograph are what give the hero its
-liquid-glass read:
+A high-definition photograph of the Paquito S. Yu Memorial National High
+School campus carries the scene. The layers above the photograph are what
+give the hero its liquid-glass read:
 
   - .landing-hero-veil  a directional wash that seats the copy panel on the
                         left and dissolves the photograph into the page
@@ -15,15 +15,14 @@ liquid-glass read:
   - .landing-layer      the photograph itself, oversized and parallaxed from
                         static/js/landing.js (`data-speed` < 1 = distant).
 
-To use the school's own campus photograph, replace
+To replace the campus photograph, overwrite
 static/images/campus-hero.jpg (2000x1500) and campus-hero-sm.jpg (1000x750).
-Credit for the current photo sits in the page footer.
 {% endcomment %}
 <div class="pointer-events-none absolute inset-0" aria-hidden="true">
     <div class="landing-layer landing-hero-media" data-parallax data-speed="0.94">
         <picture>
             <source media="(max-width: 767px)" srcset="{% static 'images/campus-hero-sm.jpg' %}">
-            <img src="{% static 'images/campus-hero.jpg' %}" alt="" width="2000" height="1500"
+            <img src="{% static 'images/campus-hero.jpg' %}" alt="Paquito S. Yu Memorial National High School campus" width="2000" height="1500"
                  loading="eager" fetchpriority="high" decoding="async">
         </picture>
     </div>

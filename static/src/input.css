@@ -23,6 +23,7 @@
 
 @theme {
     --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
 
     --radius-glass: 1.25rem;
 
@@ -1211,12 +1212,14 @@
     }
 
     /* ------------------------------------------------------------------
-       Public landing page
+       Public landing page · "Editorial Glass"
+       Warm paper canvas, ink navy, gold accents, Instrument Serif display
+       italics. Flat cards with hairlines replace the old neumorphic set;
+       the liquid-glass hero panel remains the signature surface.
        ------------------------------------------------------------------ */
 
     /* Header: a floating glass capsule. It starts nearly transparent over
-       the hero photograph and gains density once the page scrolls, so the
-       navigation never fights the campus image for attention. */
+       the hero photograph and gains density once the page scrolls. */
     .site-header-bar {
         border-radius: 1.25rem;
         border: 1px solid rgba(255, 255, 255, 0.55);
@@ -1231,8 +1234,8 @@
     }
 
     .site-header.is-solid .site-header-bar {
-        border-color: rgba(255, 255, 255, 0.75);
-        background-color: rgba(255, 255, 255, 0.80);
+        border-color: rgba(255, 255, 255, 0.80);
+        background-color: rgba(255, 255, 255, 0.86);
         box-shadow:
             0 24px 52px -28px rgba(18, 29, 63, 0.50),
             inset 0 1px 0 rgba(255, 255, 255, 0.95);
@@ -1241,8 +1244,6 @@
     .site-header .site-brand-name { color: #121D3F; }
     .site-header .site-brand-sub { color: #64748b; }
 
-    /* Nav links behave like soft pressed keys: a glass pill on hover, an
-       inset track on the current section. */
     .site-header .site-nav-link {
         display: inline-flex;
         align-items: center;
@@ -1257,7 +1258,7 @@
 
     .site-header .site-nav-link:hover {
         color: #121D3F;
-        background: rgba(255, 255, 255, 0.68);
+        background: rgba(255, 255, 255, 0.72);
         box-shadow:
             inset 0 1px 0 rgba(255, 255, 255, 0.9),
             0 8px 18px -14px rgba(18, 29, 63, 0.45);
@@ -1293,7 +1294,7 @@
     .site-mobile-panel {
         border-radius: 1.25rem;
         border: 1px solid rgba(255, 255, 255, 0.65);
-        background: rgba(255, 255, 255, 0.94);
+        background: rgba(255, 255, 255, 0.95);
         box-shadow:
             0 28px 56px -32px rgba(18, 29, 63, 0.55),
             inset 0 1px 0 rgba(255, 255, 255, 0.95);
@@ -1310,23 +1311,22 @@
         color: #334155;
         font-size: 0.9rem;
         font-weight: 620;
-        transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+        transition: background-color 180ms ease, color 180ms ease;
     }
 
     .site-mobile-link:hover {
-        background: #eef2f9;
+        background: #f0ede3;
         color: #0f172a;
-        box-shadow: var(--neu-shadow-inset);
     }
 
     /* Page canvas ---------------------------------------------------------
-       A cool neumorphic base with slow aurora blooms on a fixed layer. The
-       blooms are what the liquid glass refracts; without them the frosted
-       panels read as flat plastic. */
+       Warm paper with faint gold/blue blooms on a fixed layer. The blooms
+       are what the liquid glass refracts; without them the frosted panels
+       read as flat plastic. */
     .landing-page {
         position: relative;
         z-index: 0;
-        background-color: #eef2f9;
+        background-color: #f5f2ea;
     }
 
     .landing-page::before {
@@ -1336,22 +1336,20 @@
         z-index: -1;
         pointer-events: none;
         background-image:
-            radial-gradient(52rem 34rem at 4% -6%, rgba(47, 111, 224, 0.16), transparent 62%),
-            radial-gradient(44rem 30rem at 98% 4%, rgba(247, 201, 62, 0.18), transparent 60%),
-            radial-gradient(52rem 38rem at 88% 92%, rgba(27, 42, 91, 0.12), transparent 64%),
-            radial-gradient(40rem 28rem at 14% 86%, rgba(56, 189, 248, 0.12), transparent 62%);
+            radial-gradient(52rem 34rem at 4% -6%, rgba(47, 111, 224, 0.10), transparent 62%),
+            radial-gradient(44rem 30rem at 98% 4%, rgba(247, 201, 62, 0.22), transparent 60%),
+            radial-gradient(52rem 38rem at 88% 92%, rgba(27, 42, 91, 0.08), transparent 64%),
+            radial-gradient(40rem 28rem at 14% 86%, rgba(233, 183, 35, 0.12), transparent 62%);
     }
 
-    /* Hero scene ---------------------------------------------------------
-       A grid, not flex: the single content block must always stretch to the
-       full width so the copy panel and stats aside keep their columns. */
+    /* Hero scene --------------------------------------------------------- */
     .landing-hero {
         position: relative;
         display: grid;
         align-content: center;
         min-height: 100vh;
         min-height: 100svh;
-        background-color: #dde6f2;
+        background-color: #e7e1d2;
     }
 
     /* Liquid glass ---------------------------------------------------------
@@ -1433,58 +1431,255 @@
         .landing-hero-panel { animation: none; }
     }
 
-    /* Neumorphism ----------------------------------------------------------
-       Surfaces are cut from the same cool tone as the canvas and lit from
-       the top-left, so a card reads as extruded rather than drawn on. */
-    .landing-neu {
-        border-radius: 1.5rem;
-        border: 1px solid rgba(255, 255, 255, 0.65);
-        background: linear-gradient(150deg, #f8fafe 0%, #e9eef8 100%);
+    /* Flat surfaces --------------------------------------------------------
+       The light sections use clean white cards with hairline borders and a
+       soft ambient shadow - extrusion is gone; hierarchy comes from type
+       and spacing instead. */
+    .landing-card {
+        border: 1px solid rgba(18, 29, 63, 0.09);
+        background: rgba(255, 255, 255, 0.92);
         box-shadow:
-            10px 10px 26px -6px rgba(116, 138, 174, 0.30),
-            -10px -10px 24px rgba(255, 255, 255, 0.92),
-            inset 0 1px 0 rgba(255, 255, 255, 0.90);
-        transition: transform 260ms var(--ease-liquid), box-shadow 260ms var(--ease-liquid);
+            0 1px 2px rgba(18, 29, 63, 0.05),
+            0 16px 36px -24px rgba(18, 29, 63, 0.22);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
     }
 
-    .landing-neu:hover {
-        transform: translateY(-4px);
-        box-shadow:
-            14px 18px 36px -8px rgba(108, 130, 168, 0.34),
-            -12px -12px 28px rgba(255, 255, 255, 0.96),
-            inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    .landing-inset {
+        border: 1px solid rgba(18, 29, 63, 0.07);
+        background: rgba(241, 240, 233, 0.85);
     }
 
-    .landing-neu-inset {
-        border-radius: 0.9rem;
-        background: #e9eef7;
-        box-shadow:
-            inset 4px 4px 9px rgba(116, 138, 174, 0.24),
-            inset -4px -4px 9px rgba(255, 255, 255, 0.90);
-    }
-
-    .landing-icon-tile {
+    .landing-icon-badge {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         width: 3rem;
         height: 3rem;
         flex: none;
-        border-radius: 0.9rem;
-        background: linear-gradient(150deg, #fbfdff 0%, #e4eaf5 100%);
-        color: #1B2A5B;
-        box-shadow:
-            6px 6px 14px rgba(116, 138, 174, 0.30),
-            -6px -6px 14px rgba(255, 255, 255, 0.95);
-        transition: box-shadow 240ms ease, color 240ms ease;
+        border: 1px solid rgba(42, 71, 166, 0.14);
+        background: #eef2fc;
     }
 
-    .group:hover .landing-icon-tile {
-        color: #2F6FE0;
-        box-shadow:
-            inset 3px 3px 7px rgba(116, 138, 174, 0.26),
-            inset -3px -3px 7px rgba(255, 255, 255, 0.92);
+    /* Display serif accents ------------------------------------------------
+       Instrument Serif carries the editorial emphasis inside the otherwise
+       grotesque headlines. It ships only in 400, so the surrounding bold
+       weight must be neutralised to avoid faux-bold rendering. */
+    .landing-serif {
+        font-family: var(--font-display);
+        font-style: italic;
+        font-weight: 400;
+        letter-spacing: -0.01em;
+        color: #2A47A6;
     }
+
+    .landing-serif-gold { color: #FBCB3B; }
+
+    /* Hero stats strip -----------------------------------------------------
+       A glass rail pinned to the hero's bottom edge; it dissolves the photo
+       into the page while carrying the school's key numbers. */
+    .landing-stats-strip {
+        border-top: 1px solid rgba(255, 255, 255, 0.40);
+        background: rgba(250, 248, 243, 0.55);
+        backdrop-filter: blur(20px) saturate(170%);
+        -webkit-backdrop-filter: blur(20px) saturate(170%);
+    }
+
+    .landing-stat {
+        padding: 1.05rem 0.5rem;
+        text-align: center;
+    }
+
+    .landing-stat:nth-child(even) {
+        border-left: 1px solid rgba(255, 255, 255, 0.45);
+    }
+
+    .landing-stat:nth-child(n+3) {
+        border-top: 1px solid rgba(255, 255, 255, 0.45);
+    }
+
+    @media (min-width: 1024px) {
+        .landing-stat { padding: 1.5rem 1rem; }
+        .landing-stat:nth-child(n+3) { border-top: 0; }
+        .landing-stat:nth-child(n+2) { border-left: 1px solid rgba(255, 255, 255, 0.45); }
+    }
+
+    .landing-stat-value {
+        font-family: var(--font-display);
+        font-size: 1.9rem;
+        line-height: 1;
+        color: #121D3F;
+        letter-spacing: -0.01em;
+    }
+
+    @media (min-width: 1024px) {
+        .landing-stat-value { font-size: 2.3rem; }
+    }
+
+    .landing-stat-label {
+        margin-top: 0.4rem;
+        font-size: 0.625rem;
+        font-weight: 750;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #5b6a85;
+    }
+
+    /* Principles -----------------------------------------------------------
+       Hairline-topped editorial columns with serif numerals. */
+    .principle-item {
+        border-top: 1px solid rgba(18, 29, 63, 0.14);
+        padding-top: 1.5rem;
+    }
+
+    .principle-index {
+        font-family: var(--font-display);
+        font-style: italic;
+        font-size: 1.35rem;
+        line-height: 1;
+        color: #E9B723;
+    }
+
+    .principle-title {
+        margin-top: 0.75rem;
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: #121D3F;
+    }
+
+    /* Capability cards ----------------------------------------------------- */
+    .cap-card {
+        position: relative;
+        border-radius: 1.4rem;
+        border: 1px solid rgba(18, 29, 63, 0.09);
+        background: rgba(255, 255, 255, 0.92);
+        padding: 1.6rem;
+        box-shadow:
+            0 1px 2px rgba(18, 29, 63, 0.05),
+            0 16px 36px -26px rgba(18, 29, 63, 0.20);
+        transition: transform 260ms var(--ease-liquid), box-shadow 260ms var(--ease-liquid), border-color 260ms ease;
+    }
+
+    @media (min-width: 1024px) {
+        .cap-card { padding: 1.8rem; }
+    }
+
+    .cap-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(42, 71, 166, 0.26);
+        box-shadow:
+            0 2px 3px rgba(18, 29, 63, 0.05),
+            0 30px 54px -30px rgba(18, 29, 63, 0.34);
+    }
+
+    .cap-arrow {
+        position: absolute;
+        top: 1.25rem;
+        right: 1.25rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.1rem;
+        height: 2.1rem;
+        border-radius: 999px;
+        border: 1px solid rgba(18, 29, 63, 0.10);
+        color: #97AEE5;
+        opacity: 0;
+        transform: translate(-4px, 4px);
+        transition: opacity 220ms ease, transform 260ms var(--ease-liquid), color 220ms ease, border-color 220ms ease;
+    }
+
+    .cap-card:hover .cap-arrow {
+        opacity: 1;
+        transform: translate(0, 0);
+        color: #2A47A6;
+        border-color: rgba(42, 71, 166, 0.30);
+    }
+
+    .cap-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        margin-top: 1.4rem;
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: #2A47A6;
+        transition: gap 220ms var(--ease-liquid), color 220ms ease;
+    }
+
+    .cap-link:hover { gap: 0.7rem; color: #1B2A5B; }
+
+    /* Miniature report-card visual inside the wide capability card */
+    .cap-visual {
+        width: 100%;
+        max-width: 15.5rem;
+        flex: none;
+        border-radius: 1rem;
+        border: 1px solid rgba(18, 29, 63, 0.10);
+        background: #fff;
+        padding: 0.9rem 1rem 0.75rem;
+        box-shadow:
+            0 1px 2px rgba(18, 29, 63, 0.06),
+            0 18px 30px -22px rgba(18, 29, 63, 0.30);
+        transform: rotate(-1.5deg);
+        transition: transform 320ms var(--ease-liquid);
+    }
+
+    .cap-card:hover .cap-visual { transform: rotate(0deg) translateY(-2px); }
+
+    .cap-visual-head {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-bottom: 1px solid rgba(18, 29, 63, 0.10);
+        padding-bottom: 0.55rem;
+    }
+
+    .cap-visual-title {
+        font-size: 0.625rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #121D3F;
+    }
+
+    .cap-visual-chip {
+        margin-left: auto;
+        border-radius: 999px;
+        background: #ecfdf5;
+        border: 1px solid rgba(5, 150, 105, 0.22);
+        padding: 0.1rem 0.5rem;
+        font-size: 0.5625rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #047857;
+    }
+
+    .cap-visual-row,
+    .cap-visual-total {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        padding: 0.34rem 0;
+        font-size: 0.6875rem;
+        color: #5b6a85;
+        border-bottom: 1px dashed rgba(18, 29, 63, 0.10);
+    }
+
+    .cap-visual-row b { font-weight: 700; color: #121D3F; }
+
+    .cap-visual-total {
+        border-bottom: 0;
+        border-top: 1px solid rgba(18, 29, 63, 0.16);
+        margin-top: 0.2rem;
+        padding-top: 0.5rem;
+        font-weight: 700;
+        color: #121D3F;
+    }
+
+    .cap-visual-total b { color: #2A47A6; }
 
     /* Section labels ------------------------------------------------------- */
     .landing-kicker {
@@ -1516,7 +1711,7 @@
         transition: color 220ms ease;
     }
 
-    .group:hover .landing-card-index { color: #2F6FE0; }
+    .cap-card:hover .landing-card-index { color: #2F6FE0; }
 
     /* Dark surface used by the workflow band ------------------------------- */
     .landing-glass-dark {
@@ -1546,13 +1741,11 @@
 
     .landing-canvas {
         background:
-            radial-gradient(42rem 30rem at 90% 12%, rgba(247, 201, 62, 0.10), transparent 62%),
-            radial-gradient(40rem 28rem at 4% 78%, rgba(47, 111, 224, 0.08), transparent 62%);
+            radial-gradient(42rem 30rem at 90% 12%, rgba(247, 201, 62, 0.14), transparent 62%),
+            radial-gradient(40rem 28rem at 4% 78%, rgba(47, 111, 224, 0.07), transparent 62%);
     }
 
-    /* Liquid buttons ------------------------------------------------------
-       Primary is a lit navy pane; secondary is a neumorphic key that presses
-       into the canvas on click. */
+    /* Buttons -------------------------------------------------------------- */
     .landing-btn-primary {
         display: inline-flex;
         min-height: 3.25rem;
@@ -1597,35 +1790,31 @@
         justify-content: center;
         gap: 0.55rem;
         border-radius: 1rem;
-        border: 1px solid rgba(255, 255, 255, 0.90);
-        background: linear-gradient(150deg, rgba(255, 255, 255, 0.94) 0%, rgba(233, 238, 248, 0.88) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.85);
+        background: rgba(255, 255, 255, 0.66);
         padding: 0.8rem 1.65rem;
         color: #121d3f;
         font-size: 0.9rem;
         font-weight: 700;
         letter-spacing: -0.01em;
         box-shadow:
-            6px 6px 16px rgba(116, 138, 174, 0.28),
-            -6px -6px 16px rgba(255, 255, 255, 0.95),
+            0 12px 26px -16px rgba(18, 29, 63, 0.35),
             inset 0 1px 0 rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(14px) saturate(160%);
         -webkit-backdrop-filter: blur(14px) saturate(160%);
-        transition: transform 220ms var(--ease-liquid), box-shadow 220ms var(--ease-liquid), background 220ms ease;
+        transition: transform 220ms var(--ease-liquid), box-shadow 220ms var(--ease-liquid), background-color 220ms ease;
     }
 
     .landing-btn-glass:hover {
         transform: translateY(-2px);
+        background: rgba(255, 255, 255, 0.88);
         box-shadow:
-            9px 11px 22px rgba(116, 138, 174, 0.32),
-            -8px -8px 20px rgba(255, 255, 255, 1),
+            0 20px 36px -18px rgba(18, 29, 63, 0.42),
             inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
     .landing-btn-glass:active {
         transform: translateY(0);
-        box-shadow:
-            inset 4px 4px 9px rgba(116, 138, 174, 0.26),
-            inset -4px -4px 9px rgba(255, 255, 255, 0.92);
     }
 
     /* Floating glass preview card in the hero */
@@ -1671,7 +1860,7 @@
         height: 100%;
         object-fit: cover;
         object-position: 58% 36%;
-        filter: saturate(0.94) contrast(1.02);
+        filter: saturate(0.96) contrast(1.02);
     }
 
     /* Directional wash: brightens the left third where the copy panel sits,
@@ -1679,13 +1868,12 @@
        into the page canvas at the bottom. */
     .landing-hero-veil {
         background:
-            linear-gradient(180deg, rgba(238, 242, 249, 0.68) 0%, rgba(238, 242, 249, 0.16) 15%, rgba(238, 242, 249, 0) 36%),
-            linear-gradient(180deg, rgba(238, 242, 249, 0) 54%, rgba(238, 242, 249, 0.55) 80%, #eef2f9 100%),
+            linear-gradient(180deg, rgba(245, 242, 234, 0.66) 0%, rgba(245, 242, 234, 0.15) 15%, rgba(245, 242, 234, 0) 36%),
+            linear-gradient(180deg, rgba(245, 242, 234, 0) 52%, rgba(245, 242, 234, 0.45) 80%, rgba(245, 242, 234, 0.92) 100%),
             radial-gradient(54rem 40rem at 6% 50%, rgba(255, 255, 255, 0.50), rgba(255, 255, 255, 0) 60%);
     }
 
-    /* Refraction colour for the liquid glass. The panel's blur samples these
-       blooms, which is what gives its edges a tint instead of plain grey. */
+    /* Refraction colour for the liquid glass. */
     .landing-orb {
         position: absolute;
         border-radius: 999px;
@@ -1733,24 +1921,23 @@
         opacity: var(--hero-opacity, 1);
     }
 
-    /* A recessed neumorphic chip rather than a letter-spaced line: the pill
-       sits on the glass panel like a pressed label. */
+    /* Eyebrow chip on the hero panel */
     .landing-eyebrow {
         display: inline-flex;
         align-items: center;
         gap: 0.55rem;
         border-radius: 999px;
         border: 1px solid rgba(255, 255, 255, 0.72);
-        background: rgba(255, 255, 255, 0.55);
+        background: rgba(255, 255, 255, 0.58);
         padding: 0.4rem 0.9rem;
         color: #8a5b06;
         font-size: 0.625rem;
         font-weight: 750;
         letter-spacing: 0.18em;
         text-transform: uppercase;
-        box-shadow:
-            inset 2px 2px 6px rgba(116, 138, 174, 0.18),
-            inset -2px -2px 6px rgba(255, 255, 255, 0.92);
+        box-shadow: 0 6px 16px -10px rgba(18, 29, 63, 0.30);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
     }
 
     .landing-eyebrow::before {
@@ -1766,6 +1953,70 @@
         .landing-eyebrow { letter-spacing: 0.13em; }
     }
 
+    /* About photo card ------------------------------------------------------ */
+    .about-photo-card {
+        position: relative;
+    }
+
+    .about-photo {
+        display: block;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+        border-radius: 1.75rem;
+        border: 1px solid rgba(18, 29, 63, 0.10);
+        box-shadow:
+            0 1px 2px rgba(18, 29, 63, 0.06),
+            0 34px 60px -34px rgba(18, 29, 63, 0.38);
+    }
+
+    .about-photo-badge {
+        position: absolute;
+        left: 1.25rem;
+        bottom: -1.15rem;
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        border-radius: 1rem;
+        border: 1px solid rgba(18, 29, 63, 0.10);
+        background: rgba(255, 255, 255, 0.94);
+        padding: 0.55rem 0.95rem 0.55rem 0.55rem;
+        box-shadow:
+            0 1px 2px rgba(18, 29, 63, 0.06),
+            0 18px 34px -20px rgba(18, 29, 63, 0.35);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* Role list inside About */
+    .role-row {
+        display: flex;
+        gap: 1rem;
+        padding: 1.25rem 0;
+    }
+
+    .role-mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        flex: none;
+        border-radius: 0.8rem;
+        background: #121D3F;
+        color: #F7C93E;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        box-shadow: 0 10px 20px -12px rgba(18, 29, 63, 0.55);
+        transition: background-color 220ms ease, transform 260ms var(--ease-liquid);
+    }
+
+    .role-row:hover .role-mark {
+        background: #2A47A6;
+        transform: translateY(-2px);
+    }
+
     /* Light key used inside the dark call-to-action slab ------------------ */
     .landing-button-light {
         display: inline-flex;
@@ -1775,7 +2026,7 @@
         gap: 0.55rem;
         border: 1px solid rgba(255, 255, 255, 0.95);
         border-radius: 0.95rem;
-        background: linear-gradient(150deg, #ffffff 0%, #e9eef8 100%);
+        background: linear-gradient(150deg, #ffffff 0%, #eef0ea 100%);
         padding: 0.8rem 1.6rem;
         color: #121D3F;
         font-size: 0.9rem;
@@ -1790,7 +2041,7 @@
 
     .landing-button-light:hover {
         transform: translateY(-2px);
-        background: linear-gradient(150deg, #ffffff 0%, #f2f6fd 100%);
+        background: linear-gradient(150deg, #ffffff 0%, #f5f6f0 100%);
         box-shadow:
             0 28px 46px -20px rgba(7, 12, 28, 0.85),
             inset 0 1px 0 rgba(255, 255, 255, 1),
@@ -1805,8 +2056,7 @@
             inset -2px -2px 6px rgba(255, 255, 255, 0.95);
     }
 
-    /* Closing call-to-action: a navy liquid-glass slab. ::before draws the
-       masked hairline ring, ::after the diagonal specular sheen. */
+    /* Closing call-to-action: a navy liquid-glass slab. */
     .landing-cta {
         position: relative;
         isolation: isolate;
@@ -1884,14 +2134,22 @@
         box-shadow: 0 0 0 3px rgba(247, 201, 62, 0.18);
     }
 
-    /* The page closes on a hairline instead of a hard band. */
+    /* Footer ---------------------------------------------------------------- */
     .landing-footer {
         position: relative;
-        border-top: 1px solid rgba(148, 163, 184, 0.28);
-        background: linear-gradient(180deg, rgba(238, 242, 249, 0.55) 0%, rgba(238, 242, 249, 0.95) 100%);
+        border-top: 1px solid rgba(18, 29, 63, 0.10);
+        background: rgba(250, 248, 243, 0.72);
         backdrop-filter: blur(16px) saturate(140%);
         -webkit-backdrop-filter: blur(16px) saturate(140%);
     }
+
+    .footer-link {
+        color: #5b6a85;
+        font-weight: 600;
+        transition: color 180ms ease;
+    }
+
+    .footer-link:hover { color: #121D3F; }
 
     /* Scroll-linked reveals. Hidden state only applies when JS is running so
        the page is fully readable without it. */
@@ -1931,8 +2189,6 @@
         transform-origin: top center;
     }
 
-    /* Step numbers sit in recessed dark chips so each card reads as a
-       pressed plate rather than a flat translucent box. */
     .landing-dark-index {
         display: inline-flex;
         align-items: center;
@@ -1966,9 +2222,6 @@
 
     .workflow-step.is-active h3 { color: #fff; }
 
-    /* Rail nodes - each step gets a marker that lights up as the section
-       scrolls past. The offset is derived from the list's own padding so
-       the node always lands on the rail. */
     #workflow-steps {
         --wf-pad: 2rem;
     }
