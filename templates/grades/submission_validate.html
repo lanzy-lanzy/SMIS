@@ -20,7 +20,8 @@
                         <th class="px-4 py-3 text-left font-medium">Written <span class="text-xs font-normal text-gray-400">({{ grades.0.written_work_weight|floatformat:"g" }}%)</span></th>
                         <th class="px-4 py-3 text-left font-medium">Performance <span class="text-xs font-normal text-gray-400">({{ grades.0.performance_task_weight|floatformat:"g" }}%)</span></th>
                         <th class="px-4 py-3 text-left font-medium">Assessment <span class="text-xs font-normal text-gray-400">({{ grades.0.assessment_weight|floatformat:"g" }}%)</span></th>
-                        <th class="px-4 py-3 text-left font-medium">Grade</th>
+                        <th class="px-4 py-3 text-left font-medium">Initial Grade</th>
+                        <th class="px-4 py-3 text-left font-medium">Term Grade</th>
                         <th class="px-4 py-3 text-left font-medium">Remarks</th>
                     </tr>
                 </thead>
@@ -31,6 +32,7 @@
                         <td class="px-4 py-3">{{ grade.written_work }}/{{ grade.written_work_highest }} <span class="text-xs text-gray-400">(WS {{ grade.written_work_ws|floatformat:2 }})</span></td>
                         <td class="px-4 py-3">{{ grade.performance_task }}/{{ grade.performance_task_highest }} <span class="text-xs text-gray-400">(WS {{ grade.performance_task_ws|floatformat:2 }})</span></td>
                         <td class="px-4 py-3">{{ grade.assessment }}/{{ grade.assessment_highest }} <span class="text-xs text-gray-400">(WS {{ grade.assessment_ws|floatformat:2 }})</span></td>
+                        <td class="px-4 py-3">{{ grade.initial_grade|floatformat:2 }}</td>
                         <td class="px-4 py-3 font-medium">{{ grade.quarter_grade }}</td>
                         <td class="px-4 py-3">
                             <span class="px-2 py-1 text-xs rounded-full {% if grade.remarks == 'Passed' %}bg-green-100 text-green-800{% elif grade.remarks == 'Failed' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">

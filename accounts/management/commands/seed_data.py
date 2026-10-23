@@ -8,7 +8,7 @@ from django.db import transaction
 from accounts.models import User, AuditLog
 from academics.models import SchoolYear, GradeLevel, Section, Subject, TeacherAssignment, GradingPeriod
 from students.models import Student, ENROLLED_STATUSES
-from grades.models import Grade, GradeSubmission, GradeValidation
+from grades.models import Grade, GradeSubmission, GradeValidation, transmute_grade
 from form137.models import Form137Record
 
 
@@ -397,7 +397,8 @@ class Command(BaseCommand):
                     written = random.randint(70, 95)
                     performance = random.randint(70, 95)
                     assessment = random.randint(70, 95)
-                    quarter_grade = Decimal((written + performance + assessment) / 3).quantize(Decimal('0.01'))
+                    initial_grade = Decimal((written + performance + assessment) / 3).quantize(Decimal('0.01'))
+                    quarter_grade = transmute_grade(initial_grade)
                     remarks = 'Passed' if quarter_grade >= 75 else ('Incomplete' if quarter_grade >= 60 else 'Failed')
 
                     grade, _ = Grade.objects.update_or_create(
@@ -410,6 +411,7 @@ class Command(BaseCommand):
                             'written_work': written,
                             'performance_task': performance,
                             'assessment': assessment,
+                            'initial_grade': initial_grade,
                             'quarter_grade': quarter_grade,
                             'final_grade': quarter_grade,
                             'remarks': remarks,
@@ -464,7 +466,8 @@ class Command(BaseCommand):
             for subject in self._get_subjects_for_level(prev_level):
                 for order in range(1, 4):
                     gp = grading_periods['2024-2025'][order]
-                    quarter_grade = Decimal(random.randint(75, 92))
+                    initial_grade = Decimal(random.randint(75, 92))
+                    quarter_grade = transmute_grade(initial_grade)
                     Grade.objects.get_or_create(
                         student=student,
                         subject=subject,
@@ -475,6 +478,7 @@ class Command(BaseCommand):
                             'written_work': random.randint(75, 92),
                             'performance_task': random.randint(75, 92),
                             'assessment': random.randint(75, 92),
+                            'initial_grade': initial_grade,
                             'quarter_grade': quarter_grade,
                             'final_grade': quarter_grade,
                             'remarks': 'Passed' if quarter_grade >= 75 else 'Failed',

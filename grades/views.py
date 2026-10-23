@@ -6,7 +6,8 @@ from django.views.decorators.cache import never_cache
 from django.db.models import Q, Avg, Count, Subquery, OuterRef, Case, When, Value, IntegerField, DecimalField
 from django.utils import timezone
 from .models import (
-    Grade, GradeSubmission, GradeValidation, weighted_quarter_grade,
+    Grade, GradeSubmission, GradeValidation, weighted_quarter_grade, transmute_grade,
+    TRANSMUTATION_BANDS, DESCRIPTOR_BANDS,
     WW_WEIGHT, PT_WEIGHT, AS_WEIGHT,
 )
 from academics.models import TeacherAssignment, GradingPeriod, SchoolYear, Section, Subject
@@ -586,13 +587,16 @@ def grade_save(request, assignment_pk):
 
         student_ids_with_data.append(student.id)
 
-        quarter_grade = weighted_quarter_grade(
+        initial_grade = weighted_quarter_grade(
             written, written_highest,
             performance, performance_highest,
             assessment, assessment_highest,
             weights['ww'], weights['pt'], weights['as'],
         )
-        remarks = 'Passed' if quarter_grade >= 75 else ('Incomplete' if quarter_grade >= 60 else 'Failed')
+        # The weighted total is the initial grade; the official term grade is that
+        # value run through the transmutation table. Remarks follow the term grade.
+        term_grade = transmute_grade(initial_grade)
+        remarks = 'Passed' if term_grade >= 75 else ('Incomplete' if term_grade >= 60 else 'Failed')
         
         status = 'submitted' if action == 'submit' else 'draft'
 
@@ -623,8 +627,9 @@ def grade_save(request, assignment_pk):
                 'written_work_weight': weights['ww'],
                 'performance_task_weight': weights['pt'],
                 'assessment_weight': weights['as'],
-                'quarter_grade': quarter_grade,
-                'final_grade': quarter_grade,
+                'initial_grade': initial_grade,
+                'quarter_grade': term_grade,
+                'final_grade': term_grade,
                 'remarks': remarks,
                 'status': status,
                 'encoded_by': existing_grade.encoded_by if existing_grade else request.user,
@@ -939,7 +944,7 @@ def grade_export(request):
     response['Content-Disposition'] = 'attachment; filename="grades_export.csv"'
     
     writer = csv.writer(response)
-    writer.writerow(['Student', 'LRN', 'Subject', 'Section', 'Grade Level', 'School Year', 'Grading Period', 'WW 1', 'WW 2', 'WW 3', 'WW Total', 'WW Highest', 'PT 1', 'PT 2', 'PT 3', 'PT Total', 'PT Highest', 'QA 1', 'QA 2', 'QA 3', 'QA Total', 'QA Highest', 'Quarter Grade', 'Final Grade', 'Remarks', 'Status'])
+    writer.writerow(['Student', 'LRN', 'Subject', 'Section', 'Grade Level', 'School Year', 'Grading Period', 'WW 1', 'WW 2', 'WW 3', 'WW Total', 'WW Highest', 'PT 1', 'PT 2', 'PT 3', 'PT Total', 'PT Highest', 'QA 1', 'QA 2', 'QA 3', 'QA Total', 'QA Highest', 'Initial Grade', 'Term Grade', 'Final Grade', 'Remarks', 'Status'])
     
     grades = Grade.objects.select_related(
         'student', 'subject', 'section', 'section__grade_level', 'school_year', 'grading_period'
@@ -963,6 +968,7 @@ def grade_export(request):
             grade.assessment_1, grade.assessment_2, grade.assessment_3,
             grade.assessment,
             grade.assessment_highest,
+            grade.initial_grade,
             grade.quarter_grade,
             grade.final_grade,
             grade.remarks,
@@ -970,6 +976,32 @@ def grade_export(request):
         ])
     
     return response
+
+
+@role_required('admin', 'registrar', 'teacher')
+def transmutation_table(request):
+    """Reference sheet for the initial -> term grade conversion.
+
+    Rendered from the same band constants the save path uses, so the sheet shown
+    in the sidebar can never drift from how grades are actually transmuted.
+    """
+    descriptor_rows = []
+    previous_low = None
+    for index, (low, name, summary) in enumerate(DESCRIPTOR_BANDS):
+        if index == 0:
+            label = f'{low} – 100'
+        elif index == len(DESCRIPTOR_BANDS) - 1:
+            label = f'Below {previous_low}'
+        else:
+            label = f'{low} – {previous_low - 1}'
+        descriptor_rows.append({'range': label, 'name': name, 'summary': summary})
+        previous_low = low
+
+    return render(request, 'grades/transmutation_table.html', {
+        'bands': TRANSMUTATION_BANDS,
+        'descriptors': DESCRIPTOR_BANDS,
+        'descriptor_rows': descriptor_rows,
+    })
 
 
 @teacher_or_admin_required
@@ -1371,13 +1403,15 @@ def grade_save_all(request):
             student_ids_with_data.append(student.id)
             has_data = True
             
-            quarter_grade = weighted_quarter_grade(
+            initial_grade = weighted_quarter_grade(
                 written, written_highest,
                 performance, performance_highest,
                 assessment, assessment_highest,
                 weights['ww'], weights['pt'], weights['as'],
             )
-            remarks = 'Passed' if quarter_grade >= 75 else ('Incomplete' if quarter_grade >= 60 else 'Failed')
+            # Weighted total = initial grade; the stored term grade is transmuted.
+            term_grade = transmute_grade(initial_grade)
+            remarks = 'Passed' if term_grade >= 75 else ('Incomplete' if term_grade >= 60 else 'Failed')
             status = 'submitted' if action == 'submit' else 'draft'
             
             grade, created = Grade.objects.update_or_create(
@@ -1407,8 +1441,9 @@ def grade_save_all(request):
                     'written_work_weight': weights['ww'],
                     'performance_task_weight': weights['pt'],
                     'assessment_weight': weights['as'],
-                    'quarter_grade': quarter_grade,
-                    'final_grade': quarter_grade,
+                    'initial_grade': initial_grade,
+                    'quarter_grade': term_grade,
+                    'final_grade': term_grade,
                     'remarks': remarks,
                     'status': status,
                     'encoded_by': existing_grade.encoded_by if existing_grade else request.user,

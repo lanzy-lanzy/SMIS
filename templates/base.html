@@ -157,6 +157,10 @@
                         <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
                         <span>Submission Review</span>
                     </a>
+                    <a href="{% url 'grades:transmutation_table' %}" class="app-nav-link {% if request.resolver_match.url_name == 'transmutation_table' %}is-active{% endif %}" @click="if (window.innerWidth < 1024) sidebarOpen = false">
+                        <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 5h16v14H4V5zm0 5h16m-11-5v14m5-14v14"/></svg>
+                        <span>Transmutation Table</span>
+                    </a>
                     {% endif %}
 
                     {% if user.is_registrar %}

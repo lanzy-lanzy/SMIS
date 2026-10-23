@@ -122,11 +122,44 @@ function modal() {
     };
 }
 
+// Transmutation of the initial (weighted) grade into the official term grade,
+// mirroring grades/models.py. Bounds are integer hundredths so the comparison is
+// exact at the 2-decimal precision the initial grade is stored with.
+const TRANSMUTATION_BANDS = [
+    [9950, 100], [9832, 99], [9714, 98], [9596, 97], [9478, 96], [9360, 95],
+    [9242, 94], [9124, 93], [9006, 92], [8888, 91], [8770, 90], [8652, 89],
+    [8534, 88], [8416, 87], [8298, 86], [8180, 85], [8062, 84], [7944, 83],
+    [7826, 82], [7708, 81], [7590, 80], [7472, 79], [7354, 78], [7236, 77],
+    [7118, 76], [7000, 75], [6534, 74], [6067, 73], [5601, 72], [5134, 71],
+    [4667, 70], [4201, 69], [3734, 68], [3268, 67], [2801, 66], [2335, 65],
+    [1868, 64], [1401, 63], [935, 62], [468, 61], [0, 60],
+];
+
+const DESCRIPTOR_BANDS = [
+    [90, 'Advancing'], [80, 'Benchmarking'], [75, 'Connecting'],
+    [65, 'Developing'], [0, 'Emerging'],
+];
+
+function transmuteGrade(initial) {
+    const hundredths = Math.max(0, Math.min(10000, Math.round(Number(initial) * 100)));
+    for (const [min, term] of TRANSMUTATION_BANDS) {
+        if (hundredths >= min) return term;
+    }
+    return 60;
+}
+
+function gradeDescriptor(term) {
+    for (const [min, name] of DESCRIPTOR_BANDS) {
+        if (term >= min) return name;
+    }
+    return 'Emerging';
+}
+
 // Alpine.js grade-entry row component: dynamic item-count (scored/highest) badge,
-// live percentage & weighted score per category, the live weighted quarter
-// (initial) grade, and the DepEd letter description. `init` is
-// { w: { v: [v1..v5] }, p: { v: [v1..v3] }, a: { v: [v1..v3] } } seeded from the
-// saved grade. The per-row numerator (raw total) is owned by the row; the
+// live percentage & weighted score per category, the live initial (weighted)
+// grade, and the term grade it transmutes to with its descriptor. `init` is
+// { w: { v: [v1..v5] }, p: { v: [v1..v3] }, a: { v: [v1..v3] }, savedInitial } seeded
+// from the saved grade. The per-row numerator (raw total) is owned by the row; the
 // denominator ("highest possible score") and the category weights (ww/pt/qa and
 // wwMax/ptMax/qaMax, teacher-configured once on the <table> scope) resolve
 // through the Alpine prototype-chain scope, so every row's badge reflects the
@@ -143,10 +176,17 @@ function gradeRow(init) {
             get total() { return this.v.reduce((s, x) => s + (parseFloat(x) || 0), 0); },
         };
     }
+    function saved(value) {
+        const n = Number(value);
+        // Rows created but never encoded store 0, which is not a grade: show "-"
+        // instead of transmuting an empty row to the table's floor of 60.
+        return n > 0 ? n : null;
+    }
     return {
         _w: cat(init.w),
         _p: cat(init.p),
         _a: cat(init.a),
+        _savedInitial: saved(init.savedInitial),
         fmt(n) {
             if (!isFinite(n)) return '0';
             return String(Math.round(n * 100) / 100);
@@ -171,16 +211,19 @@ function gradeRow(init) {
                   + this.ps(this._p, this.ptMax) * this._pt
                   + this.ps(this._a, this.qaMax) * this._qa) / w;
         },
-        // Term grade = initial (weighted) grade rounded to nearest whole number.
-        get termGrade() { return Math.round(this.liveQG); },
-        // DepEd Order 8/2015 letter descriptor from the term grade.
+        // Initial grade: the weighted total at the 2-decimal precision it is stored
+        // with, so the preview transmutes exactly like the server. Rows with nothing
+        // entered fall back to their saved initial grade.
+        get initialGrade() {
+            const entered = (this._w.total + this._p.total + this._a.total) > 0;
+            return entered ? Math.round(this.liveQG * 100) / 100 : this._savedInitial;
+        },
+        // Term grade: the initial grade run through the transmutation table.
+        get termGrade() {
+            return this.initialGrade === null ? null : transmuteGrade(this.initialGrade);
+        },
         get description() {
-            const g = this.termGrade;
-            if (g >= 90) return 'A';
-            if (g >= 85) return 'B';
-            if (g >= 80) return 'C';
-            if (g >= 75) return 'D';
-            return 'E';
+            return this.termGrade === null ? '-' : gradeDescriptor(this.termGrade);
         },
     };
 }

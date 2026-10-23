@@ -14,5 +14,6 @@ urlpatterns = [
     path('submissions/<int:pk>/validate/', views.submission_validate, name='submission_validate'),
     path('submissions/<int:pk>/delete/', views.submission_delete, name='submission_delete'),
     path('export/', views.grade_export, name='grade_export'),
+    path('transmutation/', views.transmutation_table, name='transmutation_table'),
     path('encode-modal/', views.encode_modal, name='encode_modal'),
 ]

@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Transmutation Table{% endblock %}
+{% block page_title %}Transmutation Table{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">Transmutation Table</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Basis for converting the initial grade into the term grade</p>
+        </div>
+        <a href="{% url 'grades:grade_list' %}" class="inline-flex items-center gap-2 btn btn-secondary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to Grades
+        </a>
+    </div>
+
+    <!-- Workflow -->
+    <div class="glass-card p-5">
+        <p class="text-sm text-gray-600 dark:text-gray-300">
+            The weighted totals of Written Work, Performance Task and Quarterly Assessment give the
+            <strong>initial grade</strong>. That initial grade is read against the table below to obtain the
+            <strong>term grade</strong>, which is the grade recorded on the class record, report card and Form 137.
+        </p>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6 items-start">
+        <!-- Transmutation bands -->
+        <div class="glass-card overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-100 dark:border-slate-700">
+                <h2 class="font-semibold text-gray-900 dark:text-white">Initial Grade to Term Grade</h2>
+            </div>
+            <div class="max-h-[32rem] overflow-y-auto">
+                <table class="data-table">
+                    <thead class="data-table-head sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium">Initial Grade (Min)</th>
+                            <th class="px-4 py-3 text-left font-medium">Initial Grade (Max)</th>
+                            <th class="px-4 py-3 text-right font-medium">Term Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-500/15">
+                        {% for low, high, term in bands %}
+                        <tr>
+                            <td class="px-4 py-2 text-left">{{ low|floatformat:2 }}</td>
+                            <td class="px-4 py-2 text-left">{{ high|floatformat:2 }}</td>
+                            <td class="px-4 py-2 text-right font-semibold text-primary">{{ term }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Descriptors -->
+        <div class="space-y-6">
+            <div class="glass-card overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-100 dark:border-slate-700">
+                    <h2 class="font-semibold text-gray-900 dark:text-white">Term Grade Descriptor</h2>
+                </div>
+                <table class="data-table">
+                    <thead class="data-table-head">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium">Term Grade</th>
+                            <th class="px-4 py-3 text-left font-medium">Descriptor</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-500/15">
+                        {% for row in descriptor_rows %}
+                        <tr>
+                            <td class="px-4 py-2">{{ row.range }}</td>
+                            <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">{{ row.name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="glass-card p-5">
+                <h2 class="font-semibold text-gray-900 dark:text-white mb-3">General Description</h2>
+                <dl class="space-y-3">
+                    {% for low, name, summary in descriptors %}
+                    <div>
+                        <dt class="text-sm font-semibold text-gray-900 dark:text-white">{{ name }}</dt>
+                        <dd class="text-sm text-gray-600 dark:text-gray-300">{{ summary }}</dd>
+                    </div>
+                    {% endfor %}
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
