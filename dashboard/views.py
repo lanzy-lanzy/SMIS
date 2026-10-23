@@ -25,6 +25,14 @@ def index(request):
     current_sy = SchoolYear.objects.filter(is_current=True).first()
 
     total_students = Student.objects.filter(status__in=ENROLLED_STATUSES).count()
+    sex_counts = Student.objects.filter(status__in=ENROLLED_STATUSES).aggregate(
+        male=Count('id', filter=Q(sex='M')),
+        female=Count('id', filter=Q(sex='F')),
+    )
+    male_learners = sex_counts['male']
+    female_learners = sex_counts['female']
+    male_share = round(male_learners * 100 / total_students) if total_students else 0
+    female_share = round(female_learners * 100 / total_students) if total_students else 0
     total_teachers = User.objects.filter(role='teacher', is_active=True).count()
 
     pending_submissions = GradeSubmission.objects.filter(status='pending').count()
@@ -151,6 +159,10 @@ def index(request):
 
     return render(request, 'dashboard/index.html', {
         'total_students': total_students,
+        'male_learners': male_learners,
+        'female_learners': female_learners,
+        'male_share': male_share,
+        'female_share': female_share,
         'total_teachers': total_teachers,
         'total_sections': Section.objects.filter(school_year=current_sy).count() if current_sy else 0,
         'pending_submissions': pending_submissions,
