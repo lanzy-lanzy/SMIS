@@ -36,8 +36,8 @@
                         <td class="px-4 py-3">{{ grade.subject }}</td>
                         <td class="px-4 py-3">{{ grade.grading_period }}</td>
                         <td class="px-4 py-3">{{ grade.school_year }}</td>
-                        <td class="px-4 py-3 font-medium">{{ grade.quarter_grade }}</td>
-                        <td class="px-4 py-3 font-medium">{{ grade.final_grade }}</td>
+                        <td class="px-4 py-3 font-medium">{{ grade.quarter_grade|floatformat:"g" }}</td>
+                        <td class="px-4 py-3 font-medium">{{ grade.final_grade|floatformat:"g" }}</td>
                         <td class="px-4 py-3">
                             <span class="px-2 py-1 text-xs rounded-full {% if grade.remarks == 'Passed' %}bg-green-100 text-green-800{% elif grade.remarks == 'Failed' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
                                 {{ grade.remarks }}

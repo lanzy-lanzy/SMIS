@@ -135,7 +135,7 @@
                         <thead class="data-table-head">
                             <tr>
                                 <th class="px-4 py-3 text-left font-medium">Subject</th>
-                                <th class="px-4 py-3 text-left font-medium">Grade</th>
+                                <th class="px-4 py-3 text-left font-medium">Term Grade</th>
                                 <th class="px-4 py-3 text-left font-medium">Status</th>
                                 <th class="px-4 py-3 text-left font-medium">Remarks</th>
                             </tr>
@@ -144,7 +144,7 @@
                             {% for grade in quarter.grades %}
                             <tr class="hover:bg-white/40 dark:hover:bg-white/5 transition-colors">
                                 <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ grade.subject }}</td>
-                                <td class="px-4 py-3 font-bold text-primary">{{ grade.quarter_grade }}</td>
+                                <td class="px-4 py-3 font-bold text-primary">{{ grade.quarter_grade|floatformat:"g" }}</td>
                                 <td class="px-4 py-3">
                                     {% if grade.status == 'validated' or grade.status == 'locked' %}
                                     <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium">
