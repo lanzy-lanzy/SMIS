@@ -9,6 +9,7 @@ from accounts.models import User, AuditLog
 from academics.models import SchoolYear, GradeLevel, Section, Subject, TeacherAssignment, GradingPeriod
 from students.models import Student, ENROLLED_STATUSES
 from grades.models import Grade, GradeSubmission, GradeValidation, transmute_grade
+from grades.mapeh import is_mapeh_subject
 from form137.models import Form137Record
 
 
@@ -55,7 +56,14 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Database seeded successfully.'))
 
     def _reset_sample_data(self):
-        """Clear data that will be re-seeded. Keep any manually created admin accounts."""
+        """Clear data that will be re-seeded.
+
+        Preserves the admin, registrar and teacher accounts (and their profile
+        data) exactly as requested; only learner/sample student users and all
+        academic + grade records are wiped so the reseed rebuilds them fresh
+        against the current ``models.py`` (including the MAPEH ``Grade.component``
+        layout).
+        """
         GradeValidation.objects.all().delete()
         GradeSubmission.objects.all().delete()
         Grade.objects.all().delete()
@@ -68,8 +76,8 @@ class Command(BaseCommand):
         SchoolYear.objects.all().delete()
         Student.objects.all().delete()
 
-        # Delete seeded sample users but preserve existing admins/superusers
-        User.objects.filter(is_superuser=False, is_staff=False).delete()
+        # Remove student-role sample users but keep admin / registrar / teacher.
+        User.objects.exclude(role__in=['admin', 'registrar', 'teacher']).delete()
 
     def _create_users(self):
         """Create sample users for every role."""
@@ -169,9 +177,9 @@ class Command(BaseCommand):
         return {'2024-2025': sy24_25, '2025-2026': sy25_26}
 
     def _create_grade_levels(self):
-        """Create Grade 7-12 levels."""
+        """Create the Grade 7 level (minimal seed footprint)."""
         grade_levels = {}
-        for level in range(7, 13):
+        for level in [7]:
             gl, _ = GradeLevel.objects.get_or_create(
                 level=level,
                 defaults={'name': f'Grade {level}', 'description': f'Grade {level} level'}
@@ -180,9 +188,9 @@ class Command(BaseCommand):
         return grade_levels
 
     def _create_sections(self, school_years, grade_levels, teachers):
-        """Create sections A/B/C for each grade level and school year."""
+        """Create one section per grade level and school year."""
         sections = {}
-        section_names = ['A', 'B', 'C']
+        section_names = ['A']
 
         for sy_name, sy in school_years.items():
             sections[sy_name] = {}
@@ -218,11 +226,10 @@ class Command(BaseCommand):
             'Technology and Livelihood Education': 'TLE',
         }
 
-        # Core subjects per grade level
+        # Core subjects per grade level (5 subjects, MAPEH kept for its
+        # Music & Arts / PE & Health component rows)
         core_subjects = [
-            'Filipino', 'English', 'Mathematics', 'Science',
-            'Araling Panlipunan', 'Edukasyon sa Pagpapakatao',
-            'MAPEH', 'Technology and Livelihood Education'
+            'Filipino', 'English', 'Mathematics', 'Science', 'MAPEH',
         ]
 
         subjects = {}
@@ -275,9 +282,9 @@ class Command(BaseCommand):
 
         # Distribute teachers across subjects/sections
         teacher_idx = 0
-        for level in range(7, 13):
+        for level in sorted(subjects):
             for subject in subjects[level]:
-                # Assign 2-3 sections per subject to spread workload
+                # Assign up to 2 sections per subject to spread workload
                 for section in sections['2025-2026'][level][:2]:
                     teacher = teachers[teacher_idx % len(teachers)]
                     assignment, _ = TeacherAssignment.objects.get_or_create(
@@ -298,16 +305,17 @@ class Command(BaseCommand):
         last_names = ['Castillo', 'Gonzales', 'Mendoza', 'Santos', 'Ramos', 'Reyes', 'Cruz', 'Garcia', 'Torres', 'Rivera',
                       'Flores', 'Dela Cruz', 'Bautista', 'Domingo', 'Villanueva', 'Santiago', 'Aquino', 'Navarro', 'Salazar', 'Lim']
 
-        statuses = ['transferred_in'] * 8 + ['balik_aral', 'repeater', 'transferred_out', 'dropped']
+        statuses = ['active', 'transferred_in', 'balik_aral', 'repeater']
         sexes = ['M', 'F']
 
         students = []
         student_idx = 1
+        total_students = 5
 
-        for level in range(7, 13):
+        for level in sorted(grade_levels):
             for section in sections['2025-2026'][level]:
-                # 4-6 students per section
-                for _ in range(random.randint(4, 6)):
+                # Seed exactly 5 learners in total (they land in the first section)
+                for _ in range(max(0, total_students - student_idx + 1)):
                     sex = random.choice(sexes)
                     first = random.choice(first_names_m if sex == 'M' else first_names_f)
                     last = random.choice(last_names)
@@ -353,7 +361,13 @@ class Command(BaseCommand):
         return students
 
     def _create_grades_and_submissions(self, students, assignments, grading_periods, school_years, sections, users):
-        """Create grades for all terms with realistic workflow statuses."""
+        """Create grades for all terms with realistic workflow statuses.
+
+        MAPEH is one Subject but two Grade rows per learner/term (component
+        'ma' and 'peh'); every other subject keeps a single component='' row.
+        A MAPEH GradeSubmission is shared by both components because the
+        submission's unique key has no component field.
+        """
         teachers = users['teachers']
         registrar = users['registrar']
         current_sy = school_years['2025-2026']
@@ -378,6 +392,7 @@ class Command(BaseCommand):
                     continue
 
                 teacher = assignment.teacher
+                components = ['ma', 'peh'] if is_mapeh_subject(subject.name) else ['']
 
                 for order in range(1, 4):
                     gp = grading_periods['2025-2026'][order]
@@ -393,33 +408,10 @@ class Command(BaseCommand):
                         # Term 3: some drafts, some submitted
                         status = random.choice(['draft', 'submitted', 'validated'])
 
-                    # Generate realistic grades
-                    written = random.randint(70, 95)
-                    performance = random.randint(70, 95)
-                    assessment = random.randint(70, 95)
-                    initial_grade = Decimal((written + performance + assessment) / 3).quantize(Decimal('0.01'))
-                    quarter_grade = transmute_grade(initial_grade)
-                    remarks = 'Passed' if quarter_grade >= 75 else ('Incomplete' if quarter_grade >= 60 else 'Failed')
-
-                    grade, _ = Grade.objects.update_or_create(
-                        student=student,
-                        subject=subject,
-                        grading_period=gp,
-                        school_year=current_sy,
-                        defaults={
-                            'section': section,
-                            'written_work': written,
-                            'performance_task': performance,
-                            'assessment': assessment,
-                            'initial_grade': initial_grade,
-                            'quarter_grade': quarter_grade,
-                            'final_grade': quarter_grade,
-                            'remarks': remarks,
-                            'status': status,
-                            'encoded_by': teacher,
-                            'updated_by': teacher,
-                        }
-                    )
+                    for component in components:
+                        self._encode_grade_row(
+                            student, subject, gp, section, current_sy, teacher, status, component,
+                        )
 
                     # Create submission records for submitted/validated grades
                     if status in ['submitted', 'validated']:
@@ -464,29 +456,51 @@ class Command(BaseCommand):
             prev_section = prev_sections[prev_level][0] if prev_sections.get(prev_level) else student.section
 
             for subject in self._get_subjects_for_level(prev_level):
+                components = ['ma', 'peh'] if is_mapeh_subject(subject.name) else ['']
                 for order in range(1, 4):
                     gp = grading_periods['2024-2025'][order]
-                    initial_grade = Decimal(random.randint(75, 92))
-                    quarter_grade = transmute_grade(initial_grade)
-                    Grade.objects.get_or_create(
-                        student=student,
-                        subject=subject,
-                        grading_period=gp,
-                        school_year=prev_sy,
-                        defaults={
-                            'section': prev_section,
-                            'written_work': random.randint(75, 92),
-                            'performance_task': random.randint(75, 92),
-                            'assessment': random.randint(75, 92),
-                            'initial_grade': initial_grade,
-                            'quarter_grade': quarter_grade,
-                            'final_grade': quarter_grade,
-                            'remarks': 'Passed' if quarter_grade >= 75 else 'Failed',
-                            'status': 'validated',
-                            'encoded_by': random.choice(teachers),
-                            'updated_by': random.choice(teachers),
-                        }
-                    )
+                    for component in components:
+                        self._encode_grade_row(
+                            student, subject, gp, prev_section, prev_sy,
+                            random.choice(teachers), 'validated', component,
+                            min_score=75, max_score=92,
+                        )
+
+    def _encode_grade_row(self, student, subject, gp, section, school_year, teacher, status,
+                          component, min_score=70, max_score=95):
+        """Write one Grade row for a MAPEH component (or '' for a normal subject).
+
+        MAPEH components get independent random scores so the two rows differ;
+        reports average them into the single MAPEH parent grade.
+        """
+        written = random.randint(min_score, max_score)
+        performance = random.randint(min_score, max_score)
+        assessment = random.randint(min_score, max_score)
+        initial_grade = Decimal((written + performance + assessment) / 3).quantize(Decimal('0.01'))
+        quarter_grade = transmute_grade(initial_grade)
+        remarks = 'Passed' if quarter_grade >= 75 else ('Incomplete' if quarter_grade >= 60 else 'Failed')
+
+        grade, _ = Grade.objects.update_or_create(
+            student=student,
+            subject=subject,
+            grading_period=gp,
+            school_year=school_year,
+            component=component,
+            defaults={
+                'section': section,
+                'written_work': written,
+                'performance_task': performance,
+                'assessment': assessment,
+                'initial_grade': initial_grade,
+                'quarter_grade': quarter_grade,
+                'final_grade': quarter_grade,
+                'remarks': remarks,
+                'status': status,
+                'encoded_by': teacher,
+                'updated_by': teacher,
+            }
+        )
+        return grade
 
     def _get_subjects_for_level(self, level):
         """Helper to fetch subjects for a grade level."""
