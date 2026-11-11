@@ -25,6 +25,14 @@ class StudentForm(forms.ModelForm):
                     'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white'
                 })
 
+        # The address fields are TextAreas, which default to a ten-row box and a
+        # draggable resize handle. Pin them to one line so they match every other
+        # field's height, and drop the handle so the box cannot be stretched.
+        for field in self.fields.values():
+            if isinstance(field.widget, forms.Textarea):
+                field.widget.attrs['rows'] = 1
+                field.widget.attrs['class'] += ' resize-none'
+
         # Status describes the pupil's enrolment (Transferred In / Out,
         # Balik-Aral, Repeater), so it is chosen explicitly. A record saved
         # under the old status set keeps its value when edited.

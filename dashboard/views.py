@@ -5,7 +5,9 @@ from django.utils import timezone
 from datetime import datetime
 from students.models import Student, ENROLLED_STATUSES
 from grades.models import Grade, GradeSubmission
-from academics.models import SchoolYear, GradeLevel, Section, TeacherAssignment
+from academics.models import (
+    SchoolYear, GradeLevel, Section, TeacherAssignment, GradingPeriod,
+)
 from accounts.models import User, AuditLog
 from form137.models import Form137Record
 
@@ -23,6 +25,9 @@ def index(request):
         return redirect('students:student_dashboard')
 
     current_sy = SchoolYear.objects.filter(is_current=True).first()
+
+    if request.user.is_teacher:
+        return _teacher_dashboard(request, current_sy)
 
     total_students = Student.objects.filter(status__in=ENROLLED_STATUSES).count()
     sex_counts = Student.objects.filter(status__in=ENROLLED_STATUSES).aggregate(
@@ -180,6 +185,62 @@ def index(request):
         'announcements': announcements,
         'current_sy': current_sy,
         'today': timezone.now(),
+    })
+
+
+def _teacher_dashboard(request, current_sy):
+    """Teacher landing page: learner and class cards scoped to their assignments."""
+    assignments = (
+        TeacherAssignment.objects
+        .filter(teacher=request.user, school_year=current_sy)
+        .select_related('subject', 'section', 'section__grade_level')
+        .annotate(
+            learner_count=Count(
+                'section__student',
+                filter=Q(section__student__status__in=ENROLLED_STATUSES),
+                distinct=True,
+            )
+        )
+        .order_by('section__grade_level__level', 'section__name', 'subject__name')
+    ) if current_sy else TeacherAssignment.objects.none()
+
+    section_ids = list(assignments.values_list('section_id', flat=True))
+    learners = (
+        Student.objects.filter(section_id__in=section_ids, status__in=ENROLLED_STATUSES)
+        if section_ids else Student.objects.none()
+    )
+    sex_counts = learners.aggregate(
+        male=Count('id', filter=Q(sex='M')),
+        female=Count('id', filter=Q(sex='F')),
+    )
+    total_learners = learners.count()
+
+    current_period = GradingPeriod.objects.filter(is_current=True).first()
+    pending_submissions = GradeSubmission.objects.filter(
+        teacher=request.user, status='pending'
+    ).count()
+    validated_grades = Grade.objects.filter(
+        section_id__in=section_ids,
+        school_year=current_sy,
+        status__in=['validated', 'locked'],
+    ).count() if current_sy and section_ids else 0
+
+    advised_sections = Section.objects.filter(
+        adviser=request.user, school_year=current_sy
+    ).select_related('grade_level') if current_sy else Section.objects.none()
+
+    return render(request, 'dashboard/teacher.html', {
+        'current_sy': current_sy,
+        'today': timezone.now(),
+        'assignments': assignments,
+        'current_period': current_period,
+        'total_learners': total_learners,
+        'male_learners': sex_counts['male'],
+        'female_learners': sex_counts['female'],
+        'total_classes': assignments.count(),
+        'pending_submissions': pending_submissions,
+        'validated_grades': validated_grades,
+        'advised_sections': advised_sections,
     })
 
 

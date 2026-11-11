@@ -6,7 +6,9 @@
     <div class="p-5 border-b border-gray-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
             <h3 class="font-semibold text-gray-900 dark:text-white">Select a Learner</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Report cards can be exported once a term's submissions are all approved.</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+                {% if user.is_teacher %}Report cards for learners in your classes.{% else %}Report cards can be exported once a term's submissions are all approved.{% endif %}
+            </p>
         </div>
         <form method="get" class="flex gap-2">
             <div class="relative">

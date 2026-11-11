@@ -1,68 +1,102 @@
-<table id="section-table" class="data-table">
+<table id="section-table" class="data-table sections-table"{% if section_selection %} hx-get="{% url 'academics:section_list' %}?{{ pagination_query }}{% if sections_with_teachers.number > 1 %}&amp;page={{ sections_with_teachers.number }}{% endif %}" hx-trigger="refresh" hx-target="this" hx-swap="outerHTML"{% endif %}>
     <thead class="data-table-head">
         <tr>
-            <th class="px-4 py-3 text-left font-medium">Section</th>
-            <th class="px-4 py-3 text-left font-medium">Grade Level</th>
-            <th class="px-4 py-3 text-left font-medium">Adviser</th>
-            <th class="px-4 py-3 text-left font-medium">Assigned Teachers</th>
-            <th class="px-4 py-3 text-left font-medium">School Year</th>
+            {% if section_selection %}
+            <th scope="col" class="sections-select-col">
+                <input type="checkbox" aria-label="Select all sections on this page"
+                       :checked="allSelected"
+                       x-effect="$el.indeterminate = selected.length > 0 && !allSelected"
+                       @change="toggleAll($event.target.checked)">
+            </th>
+            {% endif %}
+            <th scope="col" class="text-left">Section</th>
+            <th scope="col" class="text-left">Grade</th>
+            <th scope="col" class="text-left">Learners</th>
+            <th scope="col" class="text-left">Adviser</th>
+            <th scope="col" class="text-left">Teaching team</th>
+            <th scope="col" class="text-left">School year</th>
+            {% if section_selection %}
+            <th scope="col" class="text-right">Actions</th>
+            {% endif %}
         </tr>
     </thead>
     <tbody class="divide-y divide-slate-500/15">
         {% for section in sections_with_teachers %}
-        <tr class="hover:bg-white/40 dark:hover:bg-white/5">
-            <td class="px-4 py-3 font-medium">{{ section.name }}</td>
-            <td class="px-4 py-3">{{ section.grade_level }}</td>
-            <td class="px-4 py-3">
+        <tr>
+            {% if section_selection %}
+            <td class="sections-select-col">
+                <input type="checkbox" name="section_ids" value="{{ section.pk }}" x-model="selected" aria-label="Select {{ section.name }}">
+            </td>
+            {% endif %}
+            <td>
+                <span class="section-name">{{ section.name }}</span>
+                <span class="section-mobile-meta">
+                    {{ section.grade_level.name }} - {{ section.school_year.name }}
+                    {% if section.adviser %}<span>Adviser: {{ section.adviser.get_full_name|default:section.adviser.username }}</span>{% endif %}
+                </span>
+            </td>
+            <td><span class="sections-grade-tag" aria-label="{{ section.grade_level.name }}">{{ section.grade_level.level }}</span></td>
+            <td>
+                <span class="sections-count"><strong>{{ section.student_count }}</strong><span>learners</span></span>
+            </td>
+            <td>
                 {% if section.adviser %}
-                <div class="flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">
-                        {{ section.adviser.first_name|first }}{{ section.adviser.last_name|first }}
-                    </div>
-                    <span>{{ section.adviser.get_full_name }}</span>
+                <div class="sections-person">
+                    <span class="sections-avatar" aria-hidden="true">{{ section.adviser.first_name|first }}{{ section.adviser.last_name|first }}</span>
+                    <span class="sections-person-name" title="{{ section.adviser.get_full_name|default:section.adviser.username }}">{{ section.adviser.get_full_name|default:section.adviser.username }}</span>
                 </div>
                 {% else %}
-                <span class="text-gray-400">Not assigned</span>
+                <span class="sections-muted">Not assigned</span>
                 {% endif %}
             </td>
-            <td class="px-4 py-3">
-                <div class="flex flex-wrap gap-1">
-                    {% for assignment in section.assignments.all %}
-                    <span class="px-2 py-1 text-xs rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-400">
-                        {{ assignment.teacher.last_name }} ({{ assignment.subject.code }})
-                    </span>
-                    {% empty %}
-                    <span class="text-gray-400 text-sm">No teachers assigned</span>
-                    {% endfor %}
-                </div>
+            <td>
+                {% if section.teacher_count %}
+                <span class="sections-staffing">{{ section.teacher_count }} teacher{{ section.teacher_count|pluralize }}</span>
+                <span class="sections-staffing-sub">{{ section.subject_count }} subject{{ section.subject_count|pluralize }}</span>
+                {% else %}
+                <span class="sections-muted">No assignments</span>
+                {% endif %}
             </td>
-            <td class="px-4 py-3">{{ section.school_year }}</td>
+            <td>{{ section.school_year.name }}{% if section.school_year.is_current %}<span class="sections-muted"> (current)</span>{% endif %}</td>
+            {% if section_selection %}
+            <td class="text-right">
+                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:section_edit' section.pk %}' } }))" class="link-action mr-2">Edit</button>
+                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:section_delete' section.pk %}' } }))" class="link-action link-action-danger">Delete</button>
+            </td>
+            {% endif %}
         </tr>
         {% empty %}
         <tr>
-            <td colspan="5" class="px-4 py-8 text-center text-gray-500">
-                <div class="flex flex-col items-center gap-2">
-                    <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                    <p>No sections found for the selected filters</p>
+            <td colspan="{% if section_selection %}8{% else %}6{% endif %}">
+                <div class="sections-empty">
+                    <strong>No sections match these filters</strong>
+                    <p>Try a different school year, grade level, or search term.</p>
+                    {% if filters_active %}<a href="{% url 'academics:section_list' %}">Clear filters</a>{% endif %}
                 </div>
             </td>
         </tr>
         {% endfor %}
     </tbody>
+    {% if sections_with_teachers.has_other_pages %}
+    <tfoot>
+        <tr>
+            <td colspan="{% if section_selection %}8{% else %}6{% endif %}">
+                <nav class="sections-pagination" aria-label="Section pages">
+                    <span class="sections-muted">Page {{ sections_with_teachers.number }} of {{ sections_with_teachers.paginator.num_pages }}</span>
+                    <div class="sections-pagination-links">
+                        {% if sections_with_teachers.has_previous %}
+                        <a href="?{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ sections_with_teachers.previous_page_number }}" class="page-link" aria-label="Previous page">&lsaquo;</a>
+                        {% endif %}
+                        {% for num in sections_with_teachers.paginator.page_range %}
+                        <a href="?{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ num }}" class="page-link {% if sections_with_teachers.number == num %}is-active{% endif %}" {% if sections_with_teachers.number == num %}aria-current="page"{% endif %}>{{ num }}</a>
+                        {% endfor %}
+                        {% if sections_with_teachers.has_next %}
+                        <a href="?{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ sections_with_teachers.next_page_number }}" class="page-link" aria-label="Next page">&rsaquo;</a>
+                        {% endif %}
+                    </div>
+                </nav>
+            </td>
+        </tr>
+    </tfoot>
+    {% endif %}
 </table>
-{% if sections_with_teachers.has_other_pages %}
-<div class="px-4 py-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
-    <p class="text-sm text-gray-500">Showing {{ sections_with_teachers.start_index }}-{{ sections_with_teachers.end_index }} of {{ sections_with_teachers.paginator.count }}</p>
-    <div class="flex gap-1">
-        {% if sections_with_teachers.has_previous %}
-        <a href="?page={{ sections_with_teachers.previous_page_number }}" class="page-link">&laquo;</a>
-        {% endif %}
-        {% for num in sections_with_teachers.paginator.page_range %}
-        <a href="?page={{ num }}" class="page-link {% if sections_with_teachers.number == num %}is-active{% endif %}">{{ num }}</a>
-        {% endfor %}
-        {% if sections_with_teachers.has_next %}
-        <a href="?page={{ sections_with_teachers.next_page_number }}" class="page-link">&raquo;</a>
-        {% endif %}
-    </div>
-</div>
-{% endif %}

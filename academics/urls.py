@@ -17,6 +17,7 @@ urlpatterns = [
     path('sections/create/', views.section_create, name='section_create'),
     path('sections/<int:pk>/edit/', views.section_edit, name='section_edit'),
     path('sections/<int:pk>/delete/', views.section_delete, name='section_delete'),
+    path('sections/bulk-delete/', views.section_bulk_delete, name='section_bulk_delete'),
     path('subjects/', views.subject_list, name='subject_list'),
     path('subjects/create/', views.subject_create, name='subject_create'),
     path('subjects/<int:pk>/edit/', views.subject_edit, name='subject_edit'),

@@ -1,17 +1,24 @@
 from decimal import Decimal, ROUND_HALF_UP
 from io import BytesIO
+from statistics import mean, median, stdev
+from types import SimpleNamespace
 
 from django.http import HttpResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Count, Q
 from django.utils.text import slugify
 from students.models import Student, ENROLLED_STATUSES
-from grades.models import Grade, GradeSubmission
-from academics.models import SchoolYear, GradeLevel, Section, Subject, GradingPeriod
+from grades.models import Grade, GradeSubmission, grade_descriptor
+from grades.mapeh import mapeh_component, merge_mapeh_grades, merge_mapeh_periods
+from academics.models import (
+    SchoolYear, GradeLevel, Section, Subject, GradingPeriod, TeacherAssignment,
+)
 from accounts.models import User
-from accounts.decorators import registrar_or_admin_required
+from accounts.decorators import registrar_or_admin_required, role_required
+from .sf6 import build_sf6_summary
 
 
 def _completed_period_orders(school_year):
@@ -42,6 +49,31 @@ def _compute_age(birthdate, reference=None):
 
 
 SCHOOL_HEAD_NAME = 'EUGENE A. BATILONG'
+SCHOOL_NAME = 'PAQUITO S. YU MEMORIAL NATIONAL HIGH SCHOOL'
+SCHOOL_ID = '314235'
+SCHOOL_REGION = 'Region IX'
+SCHOOL_DIVISION = 'Zamboanga del Sur'
+SCHOOL_DISTRICT = 'Dumingag I'
+
+# Learning-area order used on the Class Summary (Master Grade Sheet), matching
+# the printed form: core subjects first, then MAPEH, GMRC/VE and EPP/TLE.
+CLASS_SUMMARY_SUBJECT_ORDER = [
+    'Filipino',
+    'English',
+    'Mathematics',
+    'Science',
+    'Araling Panlipunan (AP)',
+    'MAPEH',
+    'GMRC / Values Education',
+    'EPP/TLE',
+]
+
+# Compact column headings for the Class Summary, mirroring the printed sheet.
+CLASS_SUMMARY_SHORT_LABELS = {
+    'Araling Panlipunan (AP)': 'AP',
+    'GMRC / Values Education': 'GMRC/VE',
+    'Physical Education and Health': 'PE and Health',
+}
 
 # Canonical Learner's Performance Report rows (in print order) mapped to the
 # subject names used in this system. MAPEH components render as italic sub-rows
@@ -130,7 +162,15 @@ def _build_grade_rows(subjects_map, terms, completed):
         if label == 'MAPEH':
             components = [(name, by_label.get(name)) for name, _ in MAPEH_COMPONENT_ROWS]
             components = [(name, pm) for name, pm in components if pm]
-            rows.append(make_row('MAPEH', by_label.get('MAPEH') or {}, 'parent' if components else 'normal'))
+            parent_map = dict(by_label.get('MAPEH') or {})
+            if components:
+                merged = merge_mapeh_periods([
+                    {order: grade.quarter_grade for order, grade in pm.items()}
+                    for _name, pm in components
+                ])
+                for order, value in merged.items():
+                    parent_map.setdefault(order, SimpleNamespace(quarter_grade=Decimal(value)))
+            rows.append(make_row('MAPEH', parent_map, 'parent' if components else 'normal'))
             for name, pm in components:
                 rows.append(make_row(name, pm, 'sub'))
             continue
@@ -140,9 +180,198 @@ def _build_grade_rows(subjects_map, terms, completed):
     return rows
 
 
+def _selected_school_year(request):
+    sy_id = request.GET.get('sy', '').strip()
+    if sy_id:
+        school_year = SchoolYear.objects.filter(pk=sy_id).first()
+        if school_year:
+            return school_year
+    return SchoolYear.objects.filter(is_current=True).first() or SchoolYear.objects.first()
+
+
+def _teacher_section_ids(user, school_year):
+    """Section IDs a teacher is assigned to for the given school year."""
+    if not school_year:
+        return []
+    return list(
+        TeacherAssignment.objects
+        .filter(teacher=user, school_year=school_year)
+        .values_list('section_id', flat=True)
+        .distinct()
+    )
+
+
+def _teacher_access_section_ids(user, school_year):
+    """Sections a teacher may view report cards for: taught or advised."""
+    if not school_year:
+        return []
+    advised = Section.objects.filter(
+        adviser=user, school_year=school_year
+    ).values_list('id', flat=True)
+    return list(set(_teacher_section_ids(user, school_year)) | set(advised))
+
+
+def _teacher_can_access_student(user, student):
+    if not user.is_teacher:
+        return True
+    if not student.section_id:
+        return False
+    if TeacherAssignment.objects.filter(teacher=user, section_id=student.section_id).exists():
+        return True
+    return Section.objects.filter(pk=student.section_id, adviser=user).exists()
+
+
+def _ordered_subjects(subjects, order=None):
+    """Order learning areas using the Class Summary layout, then by name."""
+    aliases = _subject_alias_map()
+    order = order or CLASS_SUMMARY_SUBJECT_ORDER
+    positions = {label: i for i, label in enumerate(order)}
+    component_labels = {label for label, _names in MAPEH_COMPONENT_ROWS}
+
+    def position(subject):
+        label = aliases.get(_subject_key(subject.name))
+        if label in component_labels:
+            label = 'MAPEH'
+        return positions.get(label, len(order))
+
+    return sorted(
+        subjects,
+        key=lambda subject: (position(subject), subject.name.lower()),
+    )
+
+
+def _class_summary_label(subject):
+    label = _subject_alias_map().get(_subject_key(subject.name), subject.name)
+    return CLASS_SUMMARY_SHORT_LABELS.get(label, label)
+
+
+def _average_grade(values):
+    """Whole-number average of the given term grades, or None when empty."""
+    present = [Decimal(value) for value in values if value is not None]
+    if not present:
+        return None
+    return int((sum(present) / Decimal(len(present))).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+
+
+def _exam_analysis(grades, terms):
+    analyses = []
+    for term in terms:
+        term_grades = [grade for grade in grades if grade.grading_period_id == term.pk]
+        items = []
+        for number, label in enumerate(('ST1', 'ST2', 'TE'), start=1):
+            scores = []
+            maxima = []
+            for grade in term_grades:
+                score = getattr(grade, f'assessment_{number}')
+                highest = getattr(grade, f'assessment_{number}_highest')
+                if score is not None:
+                    scores.append(float(score))
+                if highest is not None:
+                    maxima.append(float(highest))
+
+            examinees = len(scores)
+            highest_possible = max(maxima) if maxima else None
+            average = mean(scores) if scores else None
+            has_percentage_base = highest_possible is not None and highest_possible > 0
+            passed = (
+                sum(score >= highest_possible * 0.75 for score in scores)
+                if has_percentage_base else None
+            )
+            below = examinees - passed if passed is not None else None
+            items.append({
+                'label': label,
+                'examinees': examinees,
+                'highest_possible': highest_possible,
+                'passed_count': passed,
+                'passed_percent': passed / examinees * 100 if examinees and passed is not None else None,
+                'below_count': below,
+                'below_percent': below / examinees * 100 if examinees and below is not None else None,
+                'mean': average,
+                'median': median(scores) if scores else None,
+                'sd': stdev(scores) if len(scores) > 1 else None,
+                'mps': average / highest_possible * 100 if average is not None and has_percentage_base else None,
+                'highest_score': max(scores) if scores else None,
+                'lowest_score': min(scores) if scores else None,
+                'total_score': sum(scores) if scores else None,
+            })
+
+        rows = []
+
+        def add_row(label, key, number_format):
+            rows.append({
+                'label': label,
+                'cells': [item[key] for item in items],
+                'format': number_format,
+                'class': 'analysis-mps' if key == 'mps' else '',
+            })
+
+        add_row('Number of Examinees', 'examinees', '0')
+        add_row('Highest Possible Score', 'highest_possible', 'g')
+        rows.append({'group': 'Criterion-Referenced'})
+        add_row('75% & Above (n)', 'passed_count', '0')
+        add_row('75% & Above (%)', 'passed_percent', '2')
+        add_row('Below 75% (n)', 'below_count', '0')
+        add_row('Below 75% (%)', 'below_percent', '2')
+        rows.append({'group': 'Norm-Referenced'})
+        add_row('Mean', 'mean', '2')
+        add_row('Median', 'median', '2')
+        add_row('Standard Deviation', 'sd', '2')
+        add_row('MPS/PL (%)', 'mps', '2')
+        rows.append({'group': 'Other Information'})
+        add_row('Highest Score', 'highest_score', 'g')
+        add_row('Lowest Score', 'lowest_score', 'g')
+        add_row('Total Score', 'total_score', 'g')
+        analyses.append({'term': term, 'items': items, 'rows': rows})
+    return analyses
+
+
+def _assign_ranks(rows, key='final_grade'):
+    """Rank rows by descending grade, averaging the ranks of tied learners."""
+    ranked = sorted(
+        (row for row in rows if row.get(key) is not None),
+        key=lambda row: row[key],
+        reverse=True,
+    )
+    index = 0
+    while index < len(ranked):
+        end = index
+        while end + 1 < len(ranked) and ranked[end + 1][key] == ranked[index][key]:
+            end += 1
+        average_rank = Decimal(index + 1 + end + 1) / Decimal(2)
+        label = int(average_rank) if average_rank == average_rank.to_integral_value() else float(average_rank)
+        for position in range(index, end + 1):
+            ranked[position]['rank'] = label
+        index = end + 1
+    return rows
+
+
+def _school_header(school_year):
+    return {
+        'school_region': SCHOOL_REGION,
+        'school_division': SCHOOL_DIVISION,
+        'school_name': SCHOOL_NAME,
+        'school_id': SCHOOL_ID,
+        'school_head_name': SCHOOL_HEAD_NAME,
+        'school_year': school_year,
+    }
+
+
 @registrar_or_admin_required
 def reports_index(request):
     return render(request, 'reports/index.html')
+
+
+@registrar_or_admin_required
+def sf6_report(request):
+    """School Form 6 - Summarized Report on Promotion and Learning Progress."""
+    school_year = _selected_school_year(request)
+    return render(request, 'reports/sf6.html', {
+        **_school_header(school_year),
+        'school_district': SCHOOL_DISTRICT,
+        'school_years': SchoolYear.objects.all(),
+        'selected_sy': school_year,
+        'sf6': build_sf6_summary(school_year),
+    })
 
 
 @registrar_or_admin_required
@@ -292,7 +521,7 @@ def student_history(request, student_pk):
     })
 
 
-@registrar_or_admin_required
+@role_required('admin', 'registrar', 'teacher')
 def report_card_select(request):
     """Learner picker that lists students and links to each report card."""
     query = request.GET.get('q', '').strip()
@@ -301,6 +530,9 @@ def report_card_select(request):
         .select_related('grade_level', 'section', 'school_year')
         .order_by('last_name', 'first_name')
     )
+    if request.user.is_teacher:
+        section_ids = _teacher_access_section_ids(request.user, _selected_school_year(request))
+        students = students.filter(section_id__in=section_ids)
     if query:
         students = students.filter(
             Q(first_name__icontains=query)
@@ -346,7 +578,11 @@ def _report_card_context(request, student):
 
     rows = _build_grade_rows(subjects_map, terms, completed)
 
-    finals = [r['final'] for r in rows if r['final'] is not None]
+    mapeh_parent = next((r for r in rows if r['name'] == 'MAPEH' and r['final'] is not None), None)
+    finals = [
+        r['final'] for r in rows
+        if r['final'] is not None and not (mapeh_parent is not None and r['style'] == 'sub')
+    ]
     general_average = None
     if finals:
         general_average = int((Decimal(sum(finals)) / Decimal(len(finals))).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
@@ -392,19 +628,25 @@ def _report_card_context(request, student):
     }
 
 
-@registrar_or_admin_required
+@role_required('admin', 'registrar', 'teacher')
 def report_card(request, student_pk):
     """Per-learner Learner's Performance Report (report card) for HTML print."""
     student = get_object_or_404(Student, pk=student_pk)
+    if not _teacher_can_access_student(request.user, student):
+        messages.error(request, 'Access denied. This learner is not in one of your classes.')
+        return redirect('reports:report_card_select')
     return render(request, 'reports/report_card.html', _report_card_context(request, student))
 
 
-@registrar_or_admin_required
+@role_required('admin', 'registrar', 'teacher')
 def report_card_pdf(request, student_pk):
     """Server-generated PDF of the same report card (mirrors the HTML layout)."""
     from .report_card_pdf import build_report_card_pdf
 
     student = get_object_or_404(Student, pk=student_pk)
+    if not _teacher_can_access_student(request.user, student):
+        messages.error(request, 'Access denied. This learner is not in one of your classes.')
+        return redirect('reports:report_card_select')
     context = _report_card_context(request, student)
 
     buffer = BytesIO()
@@ -414,3 +656,255 @@ def report_card_pdf(request, student_pk):
     response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
     return response
+
+
+@role_required('admin', 'registrar', 'teacher')
+def report_templates(request):
+    """Hub for the printable templates: Class Record, Class Summary, Report Cards."""
+    school_year = _selected_school_year(request)
+    is_adviser = True
+    if request.user.is_teacher:
+        is_adviser = bool(
+            school_year
+            and Section.objects.filter(adviser=request.user, school_year=school_year).exists()
+        )
+    return render(request, 'reports/templates.html', {
+        'selected_sy': school_year,
+        'is_adviser': is_adviser,
+    })
+
+
+@role_required('admin', 'registrar', 'teacher')
+def class_record(request):
+    """Class Record - Final Grades for one subject/section, per the printed form."""
+    school_year = _selected_school_year(request)
+    school_years = SchoolYear.objects.all()
+
+    sections = (
+        Section.objects.filter(school_year=school_year)
+        .select_related('grade_level')
+        .order_by('grade_level__level', 'name')
+    ) if school_year else Section.objects.none()
+
+    if request.user.is_teacher:
+        sections = sections.filter(id__in=_teacher_section_ids(request.user, school_year))
+
+    section_id = request.GET.get('section', '').strip()
+    section = sections.filter(pk=section_id).first() if section_id else sections.first()
+
+    if section:
+        if request.user.is_teacher:
+            subjects = Subject.objects.filter(
+                is_active=True,
+                assignments__teacher=request.user,
+                assignments__section=section,
+                assignments__school_year=school_year,
+            ).distinct()
+        else:
+            subjects = Subject.objects.filter(
+                grade_level=section.grade_level, is_active=True
+            )
+        subjects = _ordered_subjects(subjects)
+    else:
+        subjects = []
+
+    subject_id = request.GET.get('subject', '').strip()
+    subject = next((s for s in subjects if str(s.pk) == subject_id), None)
+    if subject is None and subjects:
+        subject = subjects[0]
+
+    terms = list(
+        GradingPeriod.objects.filter(school_year=school_year).order_by('order')
+    ) if school_year else []
+
+    rows_by_sex = {'M': [], 'F': []}
+    exam_analysis = []
+    if section and subject and terms:
+        students = (
+            Student.objects
+            .filter(section=section, status__in=ENROLLED_STATUSES)
+            .order_by('last_name', 'first_name')
+        )
+        grades = (
+            Grade.objects
+            .filter(
+                section=section,
+                subject=subject,
+                school_year=school_year,
+                status__in=['validated', 'locked'],
+            )
+            .select_related('student', 'grading_period')
+        )
+        grades_map = {}
+        for grade in grades:
+            grades_map.setdefault(grade.student_id, {})[grade.grading_period.order] = grade.quarter_grade
+
+        for student in students:
+            if student.sex not in rows_by_sex:
+                continue
+            period_grades = grades_map.get(student.id, {})
+            term_cells = [period_grades.get(period.order) for period in terms]
+            final_grade = _average_grade(term_cells)
+            rows_by_sex[student.sex].append({
+                'student': student,
+                'term_cells': term_cells,
+                'final_grade': final_grade,
+                'descriptor': grade_descriptor(final_grade) if final_grade is not None else '',
+                'remark': ('Passed' if final_grade >= 75 else 'Failed') if final_grade is not None else '',
+            })
+
+        rows_by_sex['M'] = [
+            dict(row, no=number)
+            for number, row in enumerate(rows_by_sex['M'], start=1)
+        ]
+        rows_by_sex['F'] = [
+            dict(row, no=number)
+            for number, row in enumerate(rows_by_sex['F'], start=1)
+        ]
+        exam_analysis = _exam_analysis(grades, terms)
+
+    teacher_name = request.user.get_full_name().upper()
+    if not request.user.is_teacher and subject and section and school_year:
+        assignment = (
+            subject.assignments
+            .filter(section=section, school_year=school_year)
+            .select_related('teacher')
+            .first()
+        )
+        teacher_name = assignment.teacher.get_full_name().upper() if assignment else ''
+
+    context = {
+        **_school_header(school_year),
+        'school_years': school_years,
+        'sections': sections,
+        'subjects': subjects,
+        'terms': terms,
+        'section': section,
+        'subject': subject,
+        'male_rows': rows_by_sex['M'],
+        'female_rows': rows_by_sex['F'],
+        'exam_analysis': exam_analysis,
+        'teacher_name': teacher_name,
+        'selected_sy': school_year,
+    }
+    return render(request, 'reports/class_record.html', context)
+
+
+@role_required('admin', 'registrar', 'teacher')
+def class_summary(request):
+    """Class Summary (Master Grade Sheet) for a section and quarter."""
+    school_year = _selected_school_year(request)
+    school_years = SchoolYear.objects.all()
+
+    sections = (
+        Section.objects.filter(school_year=school_year)
+        .select_related('grade_level', 'adviser')
+        .order_by('grade_level__level', 'name')
+    ) if school_year else Section.objects.none()
+
+    if request.user.is_teacher:
+        sections = sections.filter(adviser=request.user)
+
+    section_id = request.GET.get('section', '').strip()
+    section = sections.filter(pk=section_id).first() if section_id else sections.first()
+
+    periods = list(
+        GradingPeriod.objects.filter(school_year=school_year).order_by('order')
+    ) if school_year else []
+    term_id = request.GET.get('term', '').strip()
+    term = next((p for p in periods if str(p.pk) == term_id), None)
+    if term is None:
+        term = next((p for p in periods if p.is_current), periods[0] if periods else None)
+
+    subjects = [
+        {'model': subject, 'label': _class_summary_label(subject)}
+        for subject in _ordered_subjects(
+            Subject.objects.filter(grade_level=section.grade_level, is_active=True)
+        )
+    ] if section else []
+
+    mapeh_entry = None
+    component_entries = [entry for entry in subjects if mapeh_component(entry['model'].name)]
+    if component_entries:
+        mapeh_entry = {
+            'model': None,
+            'label': 'MAPEH',
+            'component_ids': [entry['model'].id for entry in component_entries],
+        }
+        insert_at = max(subjects.index(entry) for entry in component_entries) + 1
+        subjects.insert(insert_at, mapeh_entry)
+
+    male_rows, female_rows = [], []
+    if section:
+        students = (
+            Student.objects
+            .filter(section=section, status__in=ENROLLED_STATUSES)
+            .order_by('last_name', 'first_name')
+        )
+        grades = (
+            Grade.objects
+            .filter(
+                section=section,
+                school_year=school_year,
+                status__in=['validated', 'locked'],
+            )
+            .select_related('student', 'subject', 'grading_period')
+        )
+        grades_map = {}
+        for grade in grades:
+            grades_map.setdefault(grade.student_id, {}).setdefault(
+                grade.subject_id, {}
+            )[grade.grading_period.order] = grade.quarter_grade
+
+        for student in students:
+            student_grades = grades_map.get(student.id, {})
+            subject_grades = []
+            for subject in subjects:
+                if subject['model'] is None:
+                    values = [
+                        student_grades.get(component_id, {}).get(term.order) if term else None
+                        for component_id in subject['component_ids']
+                    ]
+                    subject_grades.append(merge_mapeh_grades(values))
+                else:
+                    subject_grades.append(
+                        student_grades.get(subject['model'].id, {}).get(term.order)
+                        if term else None
+                    )
+            if mapeh_entry is not None:
+                component_ids = set(mapeh_entry['component_ids'])
+                average_values = [
+                    value for subject, value in zip(subjects, subject_grades)
+                    if subject['model'] is None or subject['model'].id not in component_ids
+                ]
+            else:
+                average_values = subject_grades
+            final_grade = _average_grade(average_values)
+            row = {
+                'student': student,
+                'subject_grades': subject_grades,
+                'final_grade': final_grade,
+                'age': _compute_age(student.birthdate),
+                'rank': None,
+            }
+            if student.sex == 'M':
+                male_rows.append(row)
+            elif student.sex == 'F':
+                female_rows.append(row)
+
+        _assign_ranks(male_rows + female_rows)
+
+    context = {
+        **_school_header(school_year),
+        'school_years': school_years,
+        'sections': sections,
+        'section': section,
+        'subjects': subjects,
+        'periods': periods,
+        'term': term,
+        'male_rows': male_rows,
+        'female_rows': female_rows,
+        'adviser_name': section.adviser.get_full_name().upper() if section and section.adviser else '',
+        'selected_sy': school_year,
+    }
+    return render(request, 'reports/class_summary.html', context)

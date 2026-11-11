@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Summary - {% if section %}{{ section.grade_level.name }} {{ section.name }}{% endif %}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #e5e7eb;
+            color: #000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 8pt;
+            line-height: 1.15;
+            padding: 18px;
+        }
+
+        .actions {
+            align-items: center;
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin: 0 auto 8px;
+            max-width: 11.69in;
+        }
+
+        .btn {
+            align-items: center;
+            background: #1b2a5b;
+            border: 0;
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            display: inline-flex;
+            font: 600 13px Arial, Helvetica, sans-serif;
+            gap: 6px;
+            padding: 9px 14px;
+            text-decoration: none;
+        }
+        .btn-secondary { background: #4b5563; }
+
+        .filters {
+            align-items: center;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 0 auto 14px;
+            max-width: 11.69in;
+            padding: 12px 14px;
+        }
+        .filters label {
+            align-items: center;
+            color: #334155;
+            display: inline-flex;
+            font: 600 12px Arial, Helvetica, sans-serif;
+            gap: 6px;
+        }
+        .filters select {
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font: 500 12px Arial, Helvetica, sans-serif;
+            max-width: 230px;
+            padding: 6px 8px;
+        }
+
+        .page {
+            background: #fff;
+            box-shadow: 0 4px 22px rgba(0, 0, 0, 0.22);
+            margin: 0 auto;
+            min-height: 8.27in;
+            padding: 0.32in 0.4in;
+            width: 11.69in;
+        }
+
+        .topline {
+            display: flex;
+            font-size: 8pt;
+            font-weight: 600;
+            justify-content: space-between;
+            margin-bottom: 2px;
+        }
+        .school-name {
+            font-size: 11.5pt;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .school-meta {
+            font-size: 8pt;
+            margin-top: 1px;
+            text-align: center;
+        }
+
+        .title {
+            border-bottom: 2px solid #000;
+            border-top: 2px solid #000;
+            font-size: 12pt;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            margin: 8px 0 6px;
+            padding: 3px 0;
+            text-align: center;
+        }
+
+        .meta {
+            display: flex;
+            flex-wrap: wrap;
+            font-size: 8.5pt;
+            gap: 2px 26px;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        table {
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #000;
+            font-size: 7.6pt;
+            padding: 2px 3px;
+            vertical-align: middle;
+        }
+        thead th {
+            background: #e5e7eb;
+            font-size: 6.8pt;
+            font-weight: 700;
+            line-height: 1.05;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .col-no { width: 0.3in; text-align: center; }
+        .col-name { text-align: left; width: 1.5in; }
+        .col-lrn { text-align: center; width: 0.85in; }
+        .col-dob { text-align: center; width: 0.7in; }
+        .col-age { text-align: center; width: 0.35in; }
+        .col-sex { text-align: center; width: 0.35in; }
+        .col-final { text-align: center; width: 0.55in; }
+        .col-rank { text-align: center; width: 0.4in; }
+        .col-subject { text-align: center; }
+
+        tr.group-row td {
+            background: #f1f5f9;
+            font-size: 8pt;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            padding: 3px 4px;
+            text-align: left;
+        }
+        .empty-row td {
+            color: #64748b;
+            font-style: italic;
+            padding: 10px;
+            text-align: center;
+        }
+        .note {
+            color: #475569;
+            font-size: 7pt;
+            margin-top: 6px;
+        }
+
+        .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 32px;
+        }
+        .signature { text-align: center; width: 42%; }
+        .signature .line {
+            border-bottom: 1px solid #000;
+            height: 16px;
+            margin-bottom: 3px;
+        }
+        .signature .role { font-size: 7.6pt; font-weight: 600; }
+        .signature .name { font-size: 7.6pt; text-transform: uppercase; }
+
+        .empty-state {
+            border: 1px dashed #94a3b8;
+            border-radius: 8px;
+            color: #475569;
+            padding: 28px;
+            text-align: center;
+        }
+
+        @media print {
+            @page { margin: 0.25in; size: A4 landscape; }
+            body { background: #fff; padding: 0; }
+            .actions, .filters { display: none !important; }
+            .page { box-shadow: none; margin: 0; min-height: 0; padding: 0; width: auto; }
+            .signatures { margin-top: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="actions">
+        <a href="{% url 'dashboard:index' %}" class="btn btn-secondary">Back</a>
+        <button type="button" class="btn" onclick="window.print()">Print</button>
+    </div>
+
+    <form method="get" class="filters">
+        <label>School Year
+            <select name="sy" onchange="this.form.submit()">
+                {% for sy in school_years %}
+                <option value="{{ sy.pk }}" {% if selected_sy and sy.pk == selected_sy.pk %}selected{% endif %}>{{ sy.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Section
+            <select name="section" onchange="this.form.submit()">
+                {% for sec in sections %}
+                <option value="{{ sec.pk }}" {% if section and sec.pk == section.pk %}selected{% endif %}>{{ sec.grade_level.name }} &ndash; {{ sec.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Quarter
+            <select name="term" onchange="this.form.submit()">
+                {% for period in periods %}
+                <option value="{{ period.pk }}" {% if term and period.pk == term.pk %}selected{% endif %}>{{ period.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    </form>
+
+    <div class="page">
+        <div class="topline">
+            <span>{{ school_region }}</span>
+            <span>Division of {{ school_division }}</span>
+        </div>
+        <div class="school-name">{{ school_name }}</div>
+        <div class="school-meta">School ID: {{ school_id }}{% if selected_sy %} &nbsp;|&nbsp; School Year: {{ selected_sy.name }}{% endif %}</div>
+
+        <div class="title">CLASS SUMMARY</div>
+
+        {% if section %}
+        <div class="meta">
+            <span><strong>Grade Level:</strong> {{ section.grade_level.level }}</span>
+            <span><strong>Section:</strong> {{ section.name }}</span>
+            <span><strong>Adviser:</strong> {{ adviser_name|default:"—" }}</span>
+            <span><strong>Quarter:</strong> {{ term.name|upper|default:"—" }}</span>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-no">No.</th>
+                    <th class="col-name">Learners' Names</th>
+                    <th class="col-lrn">LRN</th>
+                    <th class="col-dob">Date of Birth</th>
+                    <th class="col-age">Age</th>
+                    <th class="col-sex">Sex</th>
+                    {% for subject in subjects %}
+                    <th class="col-subject">{{ subject.label }}</th>
+                    {% endfor %}
+                    <th class="col-final">Final Grade</th>
+                    <th class="col-rank">Rank</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="group-row"><td colspan="{{ subjects|length|add:8 }}">MALE</td></tr>
+                {% for row in male_rows %}
+                <tr>
+                    <td class="col-no">{{ forloop.counter }}</td>
+                    <td class="col-name">{{ row.student.last_name|upper }}, {{ row.student.first_name|upper }}{% if row.student.middle_name %}, {{ row.student.middle_name|upper }}{% endif %}</td>
+                    <td class="col-lrn">{{ row.student.lrn }}</td>
+                    <td class="col-dob">{{ row.student.birthdate|date:"m-d-Y" }}</td>
+                    <td class="col-age">{{ row.age }}</td>
+                    <td class="col-sex">{{ row.student.sex }}</td>
+                    {% for cell in row.subject_grades %}
+                    <td class="col-subject">{% if cell is not None %}{{ cell|floatformat:"0" }}{% endif %}</td>
+                    {% endfor %}
+                    <td class="col-final">{% if row.final_grade is not None %}{{ row.final_grade }}{% endif %}</td>
+                    <td class="col-rank">{% if row.rank is not None %}{{ row.rank }}{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr class="empty-row"><td colspan="{{ subjects|length|add:8 }}">No male learners recorded for this section.</td></tr>
+                {% endfor %}
+
+                <tr class="group-row"><td colspan="{{ subjects|length|add:8 }}">FEMALE</td></tr>
+                {% for row in female_rows %}
+                <tr>
+                    <td class="col-no">{{ forloop.counter }}</td>
+                    <td class="col-name">{{ row.student.last_name|upper }}, {{ row.student.first_name|upper }}{% if row.student.middle_name %}, {{ row.student.middle_name|upper }}{% endif %}</td>
+                    <td class="col-lrn">{{ row.student.lrn }}</td>
+                    <td class="col-dob">{{ row.student.birthdate|date:"m-d-Y" }}</td>
+                    <td class="col-age">{{ row.age }}</td>
+                    <td class="col-sex">{{ row.student.sex }}</td>
+                    {% for cell in row.subject_grades %}
+                    <td class="col-subject">{% if cell is not None %}{{ cell|floatformat:"0" }}{% endif %}</td>
+                    {% endfor %}
+                    <td class="col-final">{% if row.final_grade is not None %}{{ row.final_grade }}{% endif %}</td>
+                    <td class="col-rank">{% if row.rank is not None %}{{ row.rank }}{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr class="empty-row"><td colspan="{{ subjects|length|add:8 }}">No female learners recorded for this section.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p class="note">Term grades are shown for the selected quarter. Only validated and locked grades are reflected; the final grade is the average of the subject term grades for the quarter, and rank is computed across the whole section.</p>
+
+        <div class="signatures">
+            <div class="signature">
+                <div class="line"></div>
+                <div class="name">{{ adviser_name|default:"—" }}</div>
+                <div class="role">Class Adviser</div>
+            </div>
+            <div class="signature">
+                <div class="line"></div>
+                <div class="name">{{ school_head_name|default:"" }}</div>
+                <div class="role">School Head</div>
+            </div>
+        </div>
+        {% elif sections %}
+        <div class="empty-state">Select a section to view its class summary.</div>
+        {% else %}
+        <div class="empty-state">Class Summary is available to section advisers. You are not assigned as an adviser for the selected school year.</div>
+        {% endif %}
+    </div>
+</body>
+</html>

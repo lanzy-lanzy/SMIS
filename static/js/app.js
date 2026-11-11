@@ -122,6 +122,30 @@ function modal() {
     };
 }
 
+// Alpine.js section-list selection: row checkboxes bind to `selected`, the
+// header checkbox selects every row on the current page, and the bulk bar opens
+// the server-rendered confirmation modal for the chosen ids.
+function sectionSelection() {
+    return {
+        selected: [],
+        get pageIds() {
+            return Array.from(this.$root.querySelectorAll('input[name="section_ids"]')).map(input => input.value);
+        },
+        get allSelected() {
+            const ids = this.pageIds;
+            return ids.length > 0 && ids.every(id => this.selected.includes(id));
+        },
+        toggleAll(checked) {
+            this.selected = checked ? this.pageIds.slice() : [];
+        },
+        confirmDelete() {
+            if (!this.selected.length) return;
+            const url = this.$root.dataset.bulkDeleteUrl + '?ids=' + this.selected.join(',');
+            window.dispatchEvent(new CustomEvent('open-modal', { detail: { url } }));
+        },
+    };
+}
+
 // Transmutation of the initial (weighted) grade into the official term grade,
 // mirroring grades/models.py. Bounds are integer hundredths so the comparison is
 // exact at the 2-decimal precision the initial grade is stored with.
@@ -155,15 +179,35 @@ function gradeDescriptor(term) {
     return 'Emerging';
 }
 
+// Domain shares of each category's weight, mirroring grades/models.py: Written
+// Work splits 50/50 across Cognitive/Affective, Performance Tasks 20/20/60
+// across Cognitive/Affective/Behavioral. A domain with no scores and no configured
+// highest is unused; its share redistributes proportionally to the active ones.
+const WW_DOMAIN_SHARES = { cognitive: 0.5, affective: 0.5 };
+const PT_DOMAIN_SHARES = { cognitive: 0.2, affective: 0.2, behavioral: 0.6 };
+
+function splitDomainWeights(domains, categoryWeight) {
+    const out = {};
+    domains.forEach(d => { out[d.name] = 0; });
+    const weight = parseFloat(categoryWeight) || 0;
+    const active = domains.filter(d => d.total > 0 || d.max > 0);
+    if (!active.length || weight <= 0) return out;
+    const shareTotal = active.reduce((s, d) => s + d.share, 0);
+    active.forEach(d => { out[d.name] = weight * d.share / shareTotal; });
+    return out;
+}
+
 // Alpine.js grade-entry row component: dynamic item-count (scored/highest) badge,
 // live percentage & weighted score per category, the live initial (weighted)
 // grade, and the term grade it transmutes to with its descriptor. `init` is
-// { w: { v: [v1..v5] }, p: { v: [v1..v3] }, a: { v: [v1..v3] }, savedInitial } seeded
-// from the saved grade. The per-row numerator (raw total) is owned by the row; the
-// denominator ("highest possible score") and the category weights (ww/pt/qa and
-// wwMax/ptMax/qaMax, teacher-configured once on the <table> scope) resolve
-// through the Alpine prototype-chain scope, so every row's badge reflects the
-// class-wide maximum rather than a hardcoded 100.
+// { w: { v: [v1..v5] }, wa: { v: [v1..v5] }, p: { v: [v1..v3] }, pa: { v: [v1..v3] },
+// pb: { v: [v1..v3] }, a: { v: [v1..v3] }, savedInitial } seeded from the saved
+// grade (w/p/a are the cognitive domains and the assessment; wa/pa/pb are the
+// affective/behavioral domains). The per-row numerator (raw total) is owned by the
+// row; the denominator ("highest possible score") and the category weights (ww/pt/qa
+// and wwMax/waMax/ptMax/paMax/pbMax/qaMax, teacher-configured once on the <table>
+// scope) resolve through the Alpine prototype-chain scope, so every row's badge
+// reflects the class-wide maximum rather than a hardcoded 100.
 function gradeRow(init) {
     init = init || {};
     function cat(seed) {
@@ -184,19 +228,40 @@ function gradeRow(init) {
     }
     return {
         _w: cat(init.w),
+        _wa: cat(init.wa),
         _p: cat(init.p),
+        _pa: cat(init.pa),
+        _pb: cat(init.pb),
         _a: cat(init.a),
         _savedInitial: saved(init.savedInitial),
         fmt(n) {
             if (!isFinite(n)) return '0';
             return String(Math.round(n * 100) / 100);
         },
-        // ww/pt/qa (weights) and wwMax/ptMax/qaMax (class maxima) come from the
+        // ww/pt/qa (weights) and the *Max getters (class maxima) come from the
         // parent <table> Alpine scope (merged via the prototype chain); these
         // getters read them with safe DepEd defaults (20 / 50 / 30).
         get _ww() { return (this.ww !== undefined ? this.ww : 20) || 0; },
         get _pt() { return (this.pt !== undefined ? this.pt : 50) || 0; },
         get _qa() { return (this.qa !== undefined ? this.qa : 30) || 0; },
+        get _wwWeights() {
+            return splitDomainWeights([
+                { name: 'cognitive', total: this._w.total, max: parseFloat(this.wwMax) || 0, share: WW_DOMAIN_SHARES.cognitive },
+                { name: 'affective', total: this._wa.total, max: parseFloat(this.waMax) || 0, share: WW_DOMAIN_SHARES.affective },
+            ], this._ww);
+        },
+        get _ptWeights() {
+            return splitDomainWeights([
+                { name: 'cognitive', total: this._p.total, max: parseFloat(this.ptMax) || 0, share: PT_DOMAIN_SHARES.cognitive },
+                { name: 'affective', total: this._pa.total, max: parseFloat(this.paMax) || 0, share: PT_DOMAIN_SHARES.affective },
+                { name: 'behavioral', total: this._pb.total, max: parseFloat(this.pbMax) || 0, share: PT_DOMAIN_SHARES.behavioral },
+            ], this._pt);
+        },
+        get wwCogW() { return this._wwWeights.cognitive; },
+        get wwAffW() { return this._wwWeights.affective; },
+        get ptCogW() { return this._ptWeights.cognitive; },
+        get ptAffW() { return this._ptWeights.affective; },
+        get ptBehW() { return this._ptWeights.behavioral; },
         // Percentage score: raw total as a % of the class maximum (falls back to
         // treating the total as an already-percentage score when no max is set).
         ps(c, max) {
@@ -207,15 +272,20 @@ function gradeRow(init) {
         get liveQG() {
             const w = this._ww + this._pt + this._qa;
             if (w <= 0) return 0;
-            return (this.ps(this._w, this.wwMax) * this._ww
-                  + this.ps(this._p, this.ptMax) * this._pt
+            const ww = this._wwWeights, pt = this._ptWeights;
+            return (this.ps(this._w, this.wwMax) * ww.cognitive
+                  + this.ps(this._wa, this.waMax) * ww.affective
+                  + this.ps(this._p, this.ptMax) * pt.cognitive
+                  + this.ps(this._pa, this.paMax) * pt.affective
+                  + this.ps(this._pb, this.pbMax) * pt.behavioral
                   + this.ps(this._a, this.qaMax) * this._qa) / w;
         },
         // Initial grade: the weighted total at the 2-decimal precision it is stored
         // with, so the preview transmutes exactly like the server. Rows with nothing
         // entered fall back to their saved initial grade.
         get initialGrade() {
-            const entered = (this._w.total + this._p.total + this._a.total) > 0;
+            const entered = [this._w, this._wa, this._p, this._pa, this._pb, this._a]
+                .some(c => c.v.some(value => value !== '' && value !== null && value !== undefined));
             return entered ? Math.round(this.liveQG * 100) / 100 : this._savedInitial;
         },
         // Term grade: the initial grade run through the transmutation table.
@@ -224,6 +294,30 @@ function gradeRow(init) {
         },
         get description() {
             return this.termGrade === null ? '-' : gradeDescriptor(this.termGrade);
+        },
+        scoresMissing(c, maxItems, fallbackMax) {
+            const required = (maxItems || []).map((m, i) => parseFloat(m) > 0 ? i : -1).filter(i => i >= 0);
+            if (required.length) {
+                return required.some(i => c.v[i] === '' || c.v[i] === null || c.v[i] === undefined);
+            }
+            if ((parseFloat(fallbackMax) || 0) > 0) {
+                return c.v.every(x => x === '' || x === null || x === undefined) && c.total <= 0;
+            }
+            return false;
+        },
+        get hasMissingScores() {
+            return this.scoresMissing(this._w, this.wwMaxItems, this.wwMax)
+                || this.scoresMissing(this._p, this.ptMaxItems, this.ptMax)
+                || this.scoresMissing(this._a, this.qaMaxItems, this.qaMax)
+                || (this.esp && (
+                    this.scoresMissing(this._wa, this.waMaxItems, this.waMax)
+                    || this.scoresMissing(this._pa, this.paMaxItems, this.paMax)
+                    || this.scoresMissing(this._pb, this.pbMaxItems, this.pbMax)
+                ));
+        },
+        get remark() {
+            if (this.hasMissingScores) return 'Incomplete';
+            return this.termGrade === null ? '' : (this.termGrade >= 75 ? 'Passed' : 'Failed');
         },
     };
 }

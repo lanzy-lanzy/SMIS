@@ -17,6 +17,15 @@ WW_WEIGHT = Decimal('20')
 PT_WEIGHT = Decimal('50')
 AS_WEIGHT = Decimal('30')
 
+# Domain shares of each category's weight (class-record format): Written Work
+# splits evenly between the Cognitive and Affective domains; Performance Tasks
+# split 20/20/60 across Cognitive/Affective/Behavioral. Shares renormalize over
+# the domains actually in use (see split_domain_weights), so a class that only
+# encodes the cognitive items computes exactly as it did before domains existed.
+WW_DOMAIN_SHARES = {'cognitive': Decimal('0.5'), 'affective': Decimal('0.5')}
+PT_DOMAIN_SHARES = {'cognitive': Decimal('0.2'), 'affective': Decimal('0.2'),
+                    'behavioral': Decimal('0.6')}
+
 
 # Transmutation table: the weighted total of the three categories is the
 # INITIAL grade; the school's official TERM grade is the value this table maps
@@ -109,28 +118,77 @@ def category_ps(score, highest):
     Falls back to treating the raw value as an already-percentage score when no
     highest is given (legacy grades stored 0-100 with no maximum).
     """
-    score = Decimal(score or 0)
-    highest = Decimal(highest or 0)
+    score = Decimal(str(score or 0))
+    highest = Decimal(str(highest or 0))
     if highest > 0:
         return score / highest * Decimal('100')
     return score
 
 
-def weighted_quarter_grade(written, written_max, performance, performance_max,
-                           assessment, assessment_max,
-                           ww_weight=WW_WEIGHT, pt_weight=PT_WEIGHT, as_weight=AS_WEIGHT):
-    """Sum of the three categories' weighted scores.
+def split_domain_weights(domains, category_weight):
+    """Effective per-domain weights for a category.
 
-    Weights are percentages that should total 100 (default WW 20 + PT 50 + QA 30);
-    they are normalised so the aggregate always reflects the student's share of
-    the configured weight total.
+    ``domains`` is an iterable of ``(name, total, highest, share)``. A domain is
+    in use when it has any score or a configured highest possible score; unused
+    domains' shares redistribute proportionally across the active ones so an
+    unused domain never dilutes the weighted grade.
     """
-    total_weight = Decimal(ww_weight or 0) + Decimal(pt_weight or 0) + Decimal(as_weight or 0)
+    entries = [(name, Decimal(str(total or 0)), Decimal(str(highest or 0)), Decimal(str(share)))
+               for name, total, highest, share in domains]
+    weights = {name: Decimal('0') for name, _total, _highest, _share in entries}
+    active = [e for e in entries if e[1] > 0 or e[2] > 0]
+    weight = Decimal(str(category_weight or 0))
+    if not active or weight <= 0:
+        return weights
+    share_total = sum((e[3] for e in active), Decimal('0'))
+    for name, _total, _highest, share in active:
+        weights[name] = weight * share / share_total
+    return weights
+
+
+def weighted_initial_grade(ww_domains, pt_domains, assessment, assessment_max,
+                           ww_weight=WW_WEIGHT, pt_weight=PT_WEIGHT, as_weight=AS_WEIGHT):
+    """Sum of the domains' weighted scores, normalised by the category weight total.
+
+    ``ww_domains``/``pt_domains`` are iterables of ``(name, total, highest, share)``
+    (see split_domain_weights).
+    """
+    total_weight = (Decimal(str(ww_weight or 0)) + Decimal(str(pt_weight or 0))
+                    + Decimal(str(as_weight or 0)))
     if total_weight <= 0:
         return Decimal('0')
-    return (category_ps(written, written_max) * Decimal(ww_weight)
-            + category_ps(performance, performance_max) * Decimal(pt_weight)
-            + category_ps(assessment, assessment_max) * Decimal(as_weight)) / total_weight
+    ww_weights = split_domain_weights(ww_domains, ww_weight)
+    pt_weights = split_domain_weights(pt_domains, pt_weight)
+    score = Decimal('0')
+    for name, total, highest, _share in ww_domains:
+        score += category_ps(total, highest) * ww_weights[name]
+    for name, total, highest, _share in pt_domains:
+        score += category_ps(total, highest) * pt_weights[name]
+    score += category_ps(assessment, assessment_max) * Decimal(str(as_weight or 0))
+    return score / total_weight
+
+
+def scores_missing(scores, highest_items, total, highest):
+    """Whether a category has a blank score for any configured item.
+
+    Items with a zero/blank maximum are optional. Legacy rows without item
+    maxima are complete when they contain any item score or a non-zero total.
+    """
+    required = [
+        index for index, value in enumerate(highest_items)
+        if value is not None and Decimal(str(value or 0)) > 0
+    ]
+    if required:
+        return any(scores[index] is None for index in required)
+    if Decimal(str(highest or 0)) > 0:
+        return not any(value is not None for value in scores) and Decimal(str(total or 0)) <= 0
+    return False
+
+
+def grade_remarks(term_grade, missing=False):
+    if missing:
+        return 'Incomplete'
+    return 'Passed' if Decimal(str(term_grade or 0)) >= 75 else 'Failed'
 
 
 class Grade(models.Model):
@@ -181,8 +239,42 @@ class Grade(models.Model):
     assessment_3_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     assessment = models.DecimalField(max_digits=6, decimal_places=2, default=0)
     assessment_highest = models.DecimalField(max_digits=6, decimal_places=2, default=100)
+
+    # Domain split (class-record format): the written_work_N items above are the
+    # Cognitive domain; these are the Affective domain of Written Work, and the
+    # Affective/Behavioral domains of Performance Tasks (performance_task_N above
+    # is its Cognitive domain). A domain with no scores and no configured maximum
+    # is unused and its weight share redistributes to the active domains.
+    written_work_affective_1 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_affective_2 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_affective_3 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_affective_4 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_affective_5 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_affective_1_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_affective_2_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_affective_3_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_affective_4_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_affective_5_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    written_work_affective = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    written_work_affective_highest = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    performance_task_affective_1 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    performance_task_affective_2 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    performance_task_affective_3 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    performance_task_affective_1_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    performance_task_affective_2_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    performance_task_affective_3_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    performance_task_affective = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    performance_task_affective_highest = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    performance_task_behavioral_1 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    performance_task_behavioral_2 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    performance_task_behavioral_3 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    performance_task_behavioral_1_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    performance_task_behavioral_2_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    performance_task_behavioral_3_highest = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    performance_task_behavioral = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    performance_task_behavioral_highest = models.DecimalField(max_digits=6, decimal_places=2, default=0)
     
-    # Configurable category weights (percent, teacher-set; default WW 20 / PT 20 / QA 50).
+    # Configurable category weights (percent, teacher-set; default WW 20 / PT 50 / QA 30).
     written_work_weight = models.DecimalField(max_digits=5, decimal_places=2, default=WW_WEIGHT)
     performance_task_weight = models.DecimalField(max_digits=5, decimal_places=2, default=PT_WEIGHT)
     assessment_weight = models.DecimalField(max_digits=5, decimal_places=2, default=AS_WEIGHT)
@@ -222,16 +314,109 @@ class Grade(models.Model):
         return category_ps(self.assessment, self.assessment_highest)
 
     @property
+    def ww_domains(self):
+        return (
+            ('cognitive', self.written_work, self.written_work_highest, WW_DOMAIN_SHARES['cognitive']),
+            ('affective', self.written_work_affective, self.written_work_affective_highest, WW_DOMAIN_SHARES['affective']),
+        )
+
+    @property
+    def pt_domains(self):
+        return (
+            ('cognitive', self.performance_task, self.performance_task_highest, PT_DOMAIN_SHARES['cognitive']),
+            ('affective', self.performance_task_affective, self.performance_task_affective_highest, PT_DOMAIN_SHARES['affective']),
+            ('behavioral', self.performance_task_behavioral, self.performance_task_behavioral_highest, PT_DOMAIN_SHARES['behavioral']),
+        )
+
+    @property
+    def ww_domain_weights(self):
+        return split_domain_weights(self.ww_domains, self.written_work_weight)
+
+    @property
+    def pt_domain_weights(self):
+        return split_domain_weights(self.pt_domains, self.performance_task_weight)
+
+    @property
+    def written_work_cognitive_ws(self):
+        return self.written_work_ps * self.ww_domain_weights['cognitive'] / 100
+
+    @property
+    def written_work_affective_ps(self):
+        return category_ps(self.written_work_affective, self.written_work_affective_highest)
+
+    @property
+    def written_work_affective_ws(self):
+        return self.written_work_affective_ps * self.ww_domain_weights['affective'] / 100
+
+    @property
+    def performance_task_cognitive_ws(self):
+        return self.performance_task_ps * self.pt_domain_weights['cognitive'] / 100
+
+    @property
+    def performance_task_affective_ps(self):
+        return category_ps(self.performance_task_affective, self.performance_task_affective_highest)
+
+    @property
+    def performance_task_affective_ws(self):
+        return self.performance_task_affective_ps * self.pt_domain_weights['affective'] / 100
+
+    @property
+    def performance_task_behavioral_ps(self):
+        return category_ps(self.performance_task_behavioral, self.performance_task_behavioral_highest)
+
+    @property
+    def performance_task_behavioral_ws(self):
+        return self.performance_task_behavioral_ps * self.pt_domain_weights['behavioral'] / 100
+
+    @property
     def written_work_ws(self):
-        return self.written_work_ps * self.written_work_weight / 100
+        return self.written_work_cognitive_ws + self.written_work_affective_ws
 
     @property
     def performance_task_ws(self):
-        return self.performance_task_ps * self.performance_task_weight / 100
+        return (self.performance_task_cognitive_ws + self.performance_task_affective_ws
+                + self.performance_task_behavioral_ws)
 
     @property
     def assessment_ws(self):
         return self.assessment_ps * self.assessment_weight / 100
+
+    @property
+    def has_missing_scores(self):
+        groups = [
+            ([self.written_work_1, self.written_work_2, self.written_work_3,
+              self.written_work_4, self.written_work_5],
+             [self.written_work_1_highest, self.written_work_2_highest,
+              self.written_work_3_highest, self.written_work_4_highest,
+              self.written_work_5_highest], self.written_work, self.written_work_highest),
+            ([self.performance_task_1, self.performance_task_2, self.performance_task_3],
+             [self.performance_task_1_highest, self.performance_task_2_highest,
+              self.performance_task_3_highest], self.performance_task, self.performance_task_highest),
+            ([self.assessment_1, self.assessment_2, self.assessment_3],
+             [self.assessment_1_highest, self.assessment_2_highest, self.assessment_3_highest],
+             self.assessment, self.assessment_highest),
+        ]
+        if self.subject.is_esp:
+            groups.extend([
+                ([self.written_work_affective_1, self.written_work_affective_2,
+                  self.written_work_affective_3, self.written_work_affective_4,
+                  self.written_work_affective_5],
+                 [self.written_work_affective_1_highest, self.written_work_affective_2_highest,
+                  self.written_work_affective_3_highest, self.written_work_affective_4_highest,
+                  self.written_work_affective_5_highest],
+                 self.written_work_affective, self.written_work_affective_highest),
+                ([self.performance_task_affective_1, self.performance_task_affective_2,
+                  self.performance_task_affective_3],
+                 [self.performance_task_affective_1_highest, self.performance_task_affective_2_highest,
+                  self.performance_task_affective_3_highest],
+                 self.performance_task_affective, self.performance_task_affective_highest),
+                ([self.performance_task_behavioral_1, self.performance_task_behavioral_2,
+                  self.performance_task_behavioral_3],
+                 [self.performance_task_behavioral_1_highest, self.performance_task_behavioral_2_highest,
+                  self.performance_task_behavioral_3_highest],
+                 self.performance_task_behavioral, self.performance_task_behavioral_highest),
+            ])
+        return any(scores_missing(*group) for group in groups)
 
     @property
     def term_grade(self):
@@ -244,9 +429,8 @@ class Grade(models.Model):
         return grade_descriptor(self.quarter_grade)
 
     def compute_initial_grade(self):
-        self.initial_grade = weighted_quarter_grade(
-            self.written_work, self.written_work_highest,
-            self.performance_task, self.performance_task_highest,
+        self.initial_grade = weighted_initial_grade(
+            self.ww_domains, self.pt_domains,
             self.assessment, self.assessment_highest,
             self.written_work_weight, self.performance_task_weight, self.assessment_weight,
         )
@@ -259,12 +443,7 @@ class Grade(models.Model):
         self.save()
 
     def compute_remarks(self):
-        if self.quarter_grade >= 75:
-            self.remarks = 'Passed'
-        elif self.quarter_grade >= 60:
-            self.remarks = 'Incomplete'
-        else:
-            self.remarks = 'Failed'
+        self.remarks = grade_remarks(self.quarter_grade, self.has_missing_scores)
 
 
 class GradeSubmission(models.Model):

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Delete sections{% endblock %}
+{% block page_title %}Delete sections{% endblock %}
+{% block content %}
+<div class="max-w-md">
+    <div class="glass-card p-6">
+        <div class="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </div>
+        <h3 class="text-lg font-semibold mb-2 text-center">Delete {{ sections|length }} section{{ sections|length|pluralize }}</h3>
+        <p class="text-gray-500 mb-3 text-center">These sections will be permanently deleted. This action cannot be undone.</p>
+        <ul class="list-disc max-h-[19rem] overflow-y-auto mb-4 pl-8 text-sm text-gray-700 dark:text-gray-200">
+            {% for section in sections %}
+            <li>{{ section }}</li>
+            {% endfor %}
+        </ul>
+        {% if learner_count or assignment_count %}
+        <p class="rounded-lg bg-amber-50 dark:bg-amber-900/10 px-3 py-2 mb-4 text-sm text-amber-700 dark:text-amber-300">
+            {{ learner_count }} learner{{ learner_count|pluralize }} will lose their section assignment and
+            {{ assignment_count }} teaching assignment{{ assignment_count|pluralize }} will be removed.
+        </p>
+        {% endif %}
+        <div class="flex gap-3 justify-center">
+            <form method="post">
+                {% csrf_token %}
+                {% for section in sections %}
+                <input type="hidden" name="section_ids" value="{{ section.pk }}">
+                {% endfor %}
+                <button type="submit" class="btn btn-danger">Delete {{ sections|length }} section{{ sections|length|pluralize }}</button>
+            </form>
+            <a href="{% url 'academics:section_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

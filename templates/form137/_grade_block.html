@@ -1,0 +1,102 @@
+<section class="grade-block">
+    <div class="block-meta">
+        School:
+        <strong>{% if block.is_blank %}<span class="inline-value long">&nbsp;</span>{% else %}PAQUITO S. YU MEMORIAL NHS{% endif %}</strong>
+        &nbsp; School ID:
+        <strong>{% if block.is_blank %}<span class="inline-value">&nbsp;</span>{% else %}314235{% endif %}</strong>
+        &nbsp; District:
+        <strong>{% if block.is_blank %}<span class="inline-value medium">&nbsp;</span>{% else %}DUMINGAG-1{% endif %}</strong>
+        &nbsp; Division:
+        <strong>{% if block.is_blank %}<span class="inline-value long">&nbsp;</span>{% else %}ZAMBOANGA DEL SUR{% endif %}</strong>
+        &nbsp; Region:
+        <strong>{% if block.is_blank %}<span class="inline-value short">&nbsp;</span>{% else %}IX{% endif %}</strong>
+    </div>
+
+    <div class="block-meta line-2">
+        Classified as Grade:
+        <strong>{{ block.display_grade }}</strong>
+        &nbsp; Section:
+        <strong>{% if block.section_name %}{{ block.section_name }}{% else %}<span class="inline-value short">&nbsp;</span>{% endif %}</strong>
+        &nbsp; School Year:
+        <strong>{% if block.school_year %}{{ block.school_year.name }}{% else %}<span class="inline-value medium">&nbsp;</span>{% endif %}</strong>
+        &nbsp; Name of Adviser/Teacher:
+        <strong>{% if block.adviser_name %}{{ block.adviser_name }}{% else %}<span class="inline-value long">&nbsp;</span>{% endif %}</strong>
+        &nbsp; Signature:
+        <span class="inline-value">&nbsp;</span>
+    </div>
+
+    <table class="grades-table">
+        <thead>
+            <tr>
+                <th rowspan="2" class="learning">LEARNING AREAS</th>
+                <th colspan="4">QUARTERLY RATING</th>
+                <th rowspan="2" class="final">FINAL<br>RATING</th>
+                <th rowspan="2" class="remarks">REMARKS</th>
+            </tr>
+            <tr>
+                <th class="quarter">1</th>
+                <th class="quarter">2</th>
+                <th class="quarter">3</th>
+                <th class="quarter">4</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in block.subject_rows %}
+            <tr{% if row.is_mapeh_sub %} class="mapeh-sub"{% endif %}>
+                <td class="learning-area">{{ row.display_name|default:row.subject_name }}</td>
+                <td>{% if row.q1 is not None %}{{ row.q1|floatformat:0 }}{% endif %}</td>
+                <td>{% if row.q2 is not None %}{{ row.q2|floatformat:0 }}{% endif %}</td>
+                <td>{% if row.q3 is not None %}{{ row.q3|floatformat:0 }}{% endif %}</td>
+                <td>{% if row.q4 is not None %}{{ row.q4|floatformat:0 }}{% endif %}</td>
+                <td class="final-rating">{% if row.final_grade is not None %}{{ row.final_grade|floatformat:0 }}{% endif %}</td>
+                <td class="remarks-cell">{{ row.remarks }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="spacer-row">
+                <td>&nbsp;</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr class="general-average">
+                <td></td>
+                <td colspan="4">General Average</td>
+                <td class="final-rating">{% if block.general_average is not None %}{{ block.general_average|floatformat:0 }}{% endif %}</td>
+                <td class="remarks-cell">{% if block.general_average is not None %}{% if block.general_average >= 75 %}PROMOTED{% else %}RETAINED{% endif %}{% endif %}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="remedial-table">
+        <tr>
+            <th class="remedial-title">Remedial Classes</th>
+            <th colspan="4" class="conducted">
+                Conducted from (mm/dd/yyyy) ____________________ to (mm/dd/yyyy) _______________
+            </th>
+        </tr>
+        <tr>
+            <th>Learning Areas</th>
+            <th style="width: 13.5%;">Final Rating</th>
+            <th style="width: 20.5%;">Remedial Class Mark</th>
+            <th style="width: 13.8%;">Recomputed Final Grade</th>
+            <th>Remarks</th>
+        </tr>
+        <tr>
+            <td>&nbsp;</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>&nbsp;</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+    </table>
+</section>

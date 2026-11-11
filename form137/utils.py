@@ -8,8 +8,10 @@ independently of the HTTP request/response cycle.
 """
 
 from decimal import Decimal
+from types import SimpleNamespace
 
 from grades.models import Grade
+from grades.mapeh import mapeh_component, mapeh_component_label, merge_mapeh_grades
 
 
 # ---------------------------------------------------------------------------
@@ -147,7 +149,7 @@ def build_printable_subject_rows(subject_rows: list) -> list:
 
     for row in subject_rows:
         printable_row = row.copy()
-        printable_row["display_name"] = FORM137_SUBJECT_LABELS.get(
+        printable_row["display_name"] = mapeh_component_label(row["subject_name"]) or FORM137_SUBJECT_LABELS.get(
             row["subject_name"],
             row["subject_name"],
         )
@@ -156,45 +158,97 @@ def build_printable_subject_rows(subject_rows: list) -> list:
         else:
             extras.append(printable_row)
 
+    mapeh_extras = sorted(
+        (row for row in extras if mapeh_component(row["subject_name"])),
+        key=lambda row: (mapeh_component(row["subject_name"]), row["subject_name"].lower()),
+    )
+    other_extras = [row for row in extras if not mapeh_component(row["subject_name"])]
+
     printable_rows = []
     for blank_row in build_blank_subject_rows():
         printable_rows.append(rows_by_display_name.get(
             blank_row["display_name"],
             blank_row,
         ))
+        if blank_row["subject_name"] == "MAPEH":
+            printable_rows.extend(mapeh_extras)
 
-    printable_rows.extend(extras)
+    printable_rows.extend(other_extras)
     return printable_rows
 
 
-def build_printable_grade_blocks(grade_blocks: list, minimum_blocks: int = 3) -> list:
-    """
-    Return grade blocks shaped for the compact SF 10-JHS print template.
+FRONT_PAGE_LEVELS = (7, 8)
+BACK_PAGE_LEVELS = (9, 10)
 
-    The attached reference keeps at least one blank future-year block after the
-    populated records. Padding to three blocks reproduces that structure for
-    typical Grade 9/10 records while preserving longer histories.
-    """
-    printable_blocks = []
 
+def _printable_block(block: dict, display_grade: int) -> dict:
+    printable_block = block.copy()
+    printable_block["subject_rows"] = build_printable_subject_rows(block["subject_rows"])
+    printable_block["is_blank"] = False
+    printable_block["display_grade"] = display_grade
+    return printable_block
+
+
+def _blank_block(display_grade: int) -> dict:
+    return {
+        "grade_level": None,
+        "display_grade": display_grade,
+        "school_year": None,
+        "section_name": "",
+        "adviser_name": "",
+        "subject_rows": build_blank_subject_rows(),
+        "general_average": None,
+        "is_blank": True,
+    }
+
+
+def build_page_blocks(grade_blocks: list, levels: tuple) -> list:
+    """
+    Fit *grade_blocks* into the fixed grade slots of one SF 10-JHS page.
+
+    Each slot is always rendered so the printed form keeps its official
+    structure; slots without validated grades become blank fill-in blocks.
+    """
+    by_level = {}
     for block in grade_blocks:
-        printable_block = block.copy()
-        printable_block["subject_rows"] = build_printable_subject_rows(block["subject_rows"])
-        printable_block["is_blank"] = False
-        printable_blocks.append(printable_block)
+        level = block["grade_level"].level
+        if level in levels:
+            by_level[level] = block
 
-    while len(printable_blocks) < minimum_blocks:
-        printable_blocks.append({
-            "grade_level": None,
-            "school_year": None,
-            "section_name": "",
-            "adviser_name": "",
-            "subject_rows": build_blank_subject_rows(),
-            "general_average": None,
-            "is_blank": True,
-        })
+    return [
+        _printable_block(by_level[level], level) if level in by_level else _blank_block(level)
+        for level in levels
+    ]
 
-    return printable_blocks
+
+def admission_grade(level: int):
+    """Return the grade a learner may be admitted to after finishing *level*."""
+    if level >= 10:
+        return "11 (Senior High School)"
+    return level + 1
+
+
+def build_form137_pages(grade_blocks: list) -> dict:
+    """
+    Split the scholarly record across the two SF 10-JHS pages.
+
+    Page 1 (front) carries the learner information plus Grades 7-8 and the
+    certification; page 2 (back) carries Grades 9-10. SHS grades are not part
+    of the JHS permanent record and are intentionally left off this form.
+    """
+    front_blocks = build_page_blocks(grade_blocks, FRONT_PAGE_LEVELS)
+    back_blocks = build_page_blocks(grade_blocks, BACK_PAGE_LEVELS)
+
+    jhs_blocks = [block for block in grade_blocks if block["grade_level"].level <= 10]
+    last_block = jhs_blocks[-1] if jhs_blocks else None
+
+    return {
+        "front_blocks": front_blocks,
+        "back_blocks": back_blocks,
+        "certification_grade": admission_grade(last_block["grade_level"].level) if last_block else "",
+        "certification_school_year": last_block["school_year"] if last_block else None,
+        "has_jhs_records": bool(jhs_blocks),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -327,6 +381,28 @@ def build_grade_blocks(student) -> list:
         # --------------------------------------------------------------
         present_subjects: dict = rb["subjects"]   # subject_name -> {order: Grade}
 
+        # Music and Arts / PE and Health are encoded separately but report as
+        # one MAPEH grade; synthesize the parent row when no MAPEH subject
+        # exists so the components fold into a single final rating.
+        component_names = sorted(
+            (name for name in present_subjects if mapeh_component(name)),
+            key=lambda name: (mapeh_component(name), name.lower()),
+        )
+        if component_names and "MAPEH" not in present_subjects:
+            parent_map = {}
+            orders = {order for name in component_names for order in present_subjects[name]}
+            for order in sorted(orders):
+                merged = merge_mapeh_grades(
+                    present_subjects[name][order].quarter_grade
+                    for name in component_names if order in present_subjects[name]
+                )
+                if merged is not None:
+                    parent_map[order] = SimpleNamespace(
+                        quarter_grade=Decimal(merged),
+                        final_grade=Decimal(merged),
+                    )
+            present_subjects["MAPEH"] = parent_map
+
         # Bucket the names.
         canonical_names = [
             name for name in JHS_SUBJECT_ORDER
@@ -334,7 +410,7 @@ def build_grade_blocks(student) -> list:
         ]
         unknown_names = sorted(
             name for name in present_subjects
-            if name not in set(JHS_SUBJECT_ORDER)
+            if name not in set(JHS_SUBJECT_ORDER) and name not in component_names
         )
 
         # Determine whether a MAPEH composite subject (named "MAPEH") exists.
@@ -405,6 +481,10 @@ def build_grade_blocks(student) -> list:
                         subject_rows.append(
                             _build_row(sub_name, is_mapeh=True, is_mapeh_sub=True)
                         )
+                for sub_name in component_names:
+                    subject_rows.append(
+                        _build_row(sub_name, is_mapeh=True, is_mapeh_sub=True)
+                    )
                 continue
 
             if name in MAPEH_SUBS:

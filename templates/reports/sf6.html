@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Form 6 (SF6){% if selected_sy %} - {{ selected_sy.name }}{% endif %}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #e5e7eb;
+            color: #000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 8pt;
+            line-height: 1.15;
+            padding: 18px;
+        }
+
+        .actions {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end;
+            margin: 0 auto 10px;
+            max-width: 11.69in;
+        }
+
+        .btn {
+            align-items: center;
+            background: #1b2a5b;
+            border: 0;
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            display: inline-flex;
+            font: 600 13px Arial, Helvetica, sans-serif;
+            gap: 6px;
+            padding: 9px 14px;
+            text-decoration: none;
+        }
+
+        .btn-secondary { background: #4b5563; }
+
+        .filters {
+            align-items: center;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 0 auto 14px;
+            max-width: 11.69in;
+            padding: 12px 14px;
+        }
+
+        .filters label {
+            align-items: center;
+            color: #334155;
+            display: inline-flex;
+            font: 600 12px Arial, Helvetica, sans-serif;
+            gap: 6px;
+        }
+
+        .filters select {
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font: 500 12px Arial, Helvetica, sans-serif;
+            max-width: 230px;
+            padding: 6px 8px;
+        }
+
+        .page {
+            background: #fff;
+            box-shadow: 0 4px 22px rgba(0, 0, 0, 0.22);
+            margin: 0 auto;
+            min-height: 8.27in;
+            padding: 0.3in 0.38in;
+            width: 11.69in;
+        }
+
+        .form-title {
+            border: 2px solid #000;
+            padding: 6px 8px 5px;
+            text-align: center;
+        }
+
+        .form-title .name {
+            font-size: 12.5pt;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+        }
+
+        .form-title .subtitle {
+            font-size: 9.5pt;
+            font-weight: 700;
+            margin-top: 1px;
+        }
+
+        .meta-grid {
+            border: 2px solid #000;
+            border-top: 0;
+            display: grid;
+            grid-template-columns: 1.1fr 1.5fr 1.4fr;
+        }
+
+        .meta-cell {
+            border-bottom: 1px solid #000;
+            font-size: 8pt;
+            padding: 3px 5px;
+        }
+
+        .meta-cell:nth-child(3n+2),
+        .meta-cell:nth-child(3n) {
+            border-left: 1px solid #000;
+        }
+
+        .meta-cell:nth-last-child(-n+3) {
+            border-bottom: 0;
+        }
+
+        .meta-cell .label {
+            font-weight: 700;
+        }
+
+        .meta-cell .value {
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        table {
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            font-size: 7.6pt;
+            padding: 3px 2px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        thead th {
+            font-weight: 700;
+            line-height: 1.08;
+        }
+
+        thead tr.group-head th {
+            font-size: 9pt;
+        }
+
+        thead tr.column-head th {
+            font-size: 7.4pt;
+            font-weight: 600;
+        }
+
+        .row-label {
+            font-size: 7.8pt;
+            font-weight: 600;
+            text-align: left;
+            width: 2.5in;
+        }
+
+        .row-label.is-status {
+            font-weight: 800;
+        }
+
+        tr.group-row th {
+            background: #f1f5f9;
+            font-size: 7.4pt;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        tr.group-row th.section-label {
+            text-align: left;
+        }
+
+        tbody td {
+            font-weight: 600;
+            height: 26px;
+        }
+
+        tr.total-row th,
+        tr.total-row td {
+            font-weight: 800;
+        }
+
+        .footnote {
+            font-size: 7.4pt;
+            font-style: italic;
+            margin-top: 5px;
+        }
+
+        .signatures {
+            margin-top: 30px;
+        }
+
+        .prepared-label {
+            font-size: 8pt;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+
+        .signature-grid {
+            display: grid;
+            gap: 0.35in;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .signature-slot { text-align: center; }
+
+        .signature-name {
+            border-bottom: 1px solid #000;
+            font-size: 8pt;
+            font-weight: 800;
+            min-height: 16px;
+            padding-bottom: 1px;
+            text-transform: uppercase;
+        }
+
+        .signature-role {
+            font-size: 7.2pt;
+            margin-top: 2px;
+        }
+
+        .signature-note {
+            font-size: 7.2pt;
+            font-style: italic;
+            margin-top: 10px;
+        }
+
+        @media print {
+            @page { margin: 0.22in; size: A4 landscape; }
+            body { background: #fff; padding: 0; }
+            .actions, .filters { display: none !important; }
+            .page { box-shadow: none; margin: 0; min-height: 0; padding: 0; width: auto; }
+            .signatures { margin-top: 22px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="actions">
+        <a href="{% url 'reports:index' %}" class="btn btn-secondary">Back</a>
+        <button type="button" class="btn" onclick="window.print()">Print</button>
+    </div>
+
+    <form method="get" class="filters">
+        <label>School Year
+            <select name="sy" onchange="this.form.submit()">
+                {% for sy in school_years %}
+                <option value="{{ sy.pk }}" {% if selected_sy and sy.pk == selected_sy.pk %}selected{% endif %}>{{ sy.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    </form>
+
+    <div class="page">
+        <div class="form-title">
+            <div class="name">School Form 6 (SF6)</div>
+            <div class="subtitle">Summarized Report on Promotion and Learning Progress &amp; Achievement</div>
+        </div>
+
+        <div class="meta-grid">
+            <div class="meta-cell"><span class="label">School ID:</span> <span class="value">{{ school_id }}</span></div>
+            <div class="meta-cell"><span class="label">Region:</span> <span class="value">{{ school_region }}</span></div>
+            <div class="meta-cell"><span class="label">Division:</span> <span class="value">{{ school_division }}</span></div>
+            <div class="meta-cell"><span class="label">School Name:</span> <span class="value">{{ school_name }}</span></div>
+            <div class="meta-cell"><span class="label">District:</span> <span class="value">{{ school_district }}</span></div>
+            <div class="meta-cell"><span class="label">School Year:</span> <span class="value">{% if selected_sy %}{{ selected_sy.name }}{% endif %}</span></div>
+        </div>
+
+        <table>
+            <thead>
+                <tr class="group-head">
+                    <th rowspan="2" class="row-label">SUMMARY TABLE</th>
+                    {% for level in sf6.levels %}
+                    <th colspan="3">{{ level.label }}</th>
+                    {% endfor %}
+                    <th colspan="3">TOTAL</th>
+                </tr>
+                <tr class="column-head">
+                    {% for level in sf6.levels %}
+                    <th>Male</th>
+                    <th>Female</th>
+                    <th>Total</th>
+                    {% endfor %}
+                    <th>Male</th>
+                    <th>Female</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in sf6.rows %}
+                    {% if row.kind == 'section' %}
+                    <tr class="group-row">
+                        <th class="row-label section-label">{{ row.label }}</th>
+                        {% for level in sf6.levels %}
+                        <th>Male</th>
+                        <th>Female</th>
+                        <th>Total</th>
+                        {% endfor %}
+                        <th>Male</th>
+                        <th>Female</th>
+                        <th>Total</th>
+                    </tr>
+                    {% elif row.kind == 'total' %}
+                    <tr class="total-row">
+                        <th class="row-label">{{ row.label }}</th>
+                        {% for cell in row.cells %}
+                        <td>{{ cell.male }}</td>
+                        <td>{{ cell.female }}</td>
+                        <td>{{ cell.total }}</td>
+                        {% endfor %}
+                        <td>{{ row.total.male }}</td>
+                        <td>{{ row.total.female }}</td>
+                        <td>{{ row.total.total }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <th class="row-label is-status">{{ row.label }}</th>
+                        {% for cell in row.cells %}
+                        <td>{{ cell.male }}</td>
+                        <td>{{ cell.female }}</td>
+                        <td>{{ cell.total }}</td>
+                        {% endfor %}
+                        <td>{{ row.total.male }}</td>
+                        <td>{{ row.total.female }}</td>
+                        <td>{{ row.total.total }}</td>
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if sf6.ungraded_total %}
+        <p class="footnote">{{ sf6.ungraded_total }} enrolled learner{{ sf6.ungraded_total|pluralize }} without finalized grades. These are excluded from the promotion and achievement rows; TOTAL reflects enrollment.</p>
+        {% endif %}
+
+        <div class="signatures">
+            <div class="prepared-label">Prepared and Submitted by:</div>
+            <div class="signature-grid">
+                <div class="signature-slot">
+                    <div class="signature-name">{{ school_head_name }}</div>
+                    <div class="signature-role">(Signature of School Head/SCC Chair)</div>
+                </div>
+                <div class="signature-slot">
+                    <div class="signature-name">&nbsp;</div>
+                    <div class="signature-role">SCC-Vice Chair (Curriculum)</div>
+                </div>
+                <div class="signature-slot">
+                    <div class="signature-name">&nbsp;</div>
+                    <div class="signature-role">SCC Member</div>
+                </div>
+                <div class="signature-slot">
+                    <div class="signature-name">&nbsp;</div>
+                    <div class="signature-role">SCC-Vice Chair (Generated thru LIS)</div>
+                </div>
+            </div>
+            <p class="signature-note">(Additional slots may be added for SCC members.)</p>
+        </div>
+    </div>
+</body>
+</html>

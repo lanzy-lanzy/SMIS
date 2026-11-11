@@ -7,7 +7,7 @@ from django.db.models import Q, Count
 from django.utils import timezone
 from datetime import timedelta
 from .models import Form137Record
-from .utils import build_grade_blocks, build_printable_grade_blocks
+from .utils import build_form137_pages, build_grade_blocks
 from students.models import Student
 from grades.models import Grade
 from academics.models import SchoolYear, GradeLevel, GradingPeriod, Subject
@@ -16,13 +16,12 @@ from accounts.decorators import role_required
 
 
 def _form137_print_context(student, school_year, record):
-    grade_blocks = build_grade_blocks(student)
+    pages = build_form137_pages(build_grade_blocks(student))
     return {
         'student': student,
         'school_year': school_year,
         'record': record,
-        'grade_blocks': grade_blocks,
-        'print_blocks': build_printable_grade_blocks(grade_blocks),
+        **pages,
     }
 
 

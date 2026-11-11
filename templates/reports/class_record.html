@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Record - {% if section %}{{ section.grade_level.name }} {{ section.name }}{% endif %}{% if subject %} - {{ subject.name }}{% endif %}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #e5e7eb;
+            color: #000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 9pt;
+            line-height: 1.2;
+            padding: 18px;
+        }
+
+        .actions {
+            align-items: center;
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin: 0 auto 8px;
+            max-width: 8.27in;
+        }
+
+        .btn {
+            align-items: center;
+            background: #1b2a5b;
+            border: 0;
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            display: inline-flex;
+            font: 600 13px Arial, Helvetica, sans-serif;
+            gap: 6px;
+            padding: 9px 14px;
+            text-decoration: none;
+        }
+        .btn-secondary { background: #4b5563; }
+
+        .filters {
+            align-items: center;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 0 auto 14px;
+            max-width: 8.27in;
+            padding: 12px 14px;
+        }
+        .filters label {
+            color: #334155;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font: 600 12px Arial, Helvetica, sans-serif;
+        }
+        .filters select {
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font: 500 12px Arial, Helvetica, sans-serif;
+            max-width: 230px;
+            padding: 6px 8px;
+        }
+
+        .page {
+            background: #fff;
+            box-shadow: 0 4px 22px rgba(0, 0, 0, 0.22);
+            margin: 0 auto;
+            min-height: 11.69in;
+            padding: 0.45in 0.5in 0.4in;
+            width: 8.27in;
+        }
+
+        .topline {
+            display: flex;
+            justify-content: space-between;
+            font-size: 8.5pt;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .school-name {
+            font-size: 12pt;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .school-meta {
+            font-size: 8.5pt;
+            margin-top: 1px;
+            text-align: center;
+        }
+
+        .title {
+            border-bottom: 2px solid #000;
+            border-top: 2px solid #000;
+            font-size: 12pt;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            margin: 10px 0 8px;
+            padding: 4px 0;
+            text-align: center;
+        }
+
+        .meta {
+            display: grid;
+            font-size: 9pt;
+            gap: 2px 18px;
+            grid-template-columns: 1fr 1fr;
+            margin-bottom: 8px;
+        }
+        .meta span { white-space: nowrap; }
+        .meta strong { font-weight: 700; }
+
+        table {
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #000;
+            font-size: 8.5pt;
+            padding: 3px 4px;
+            vertical-align: middle;
+        }
+        thead th {
+            background: #e5e7eb;
+            font-size: 7.8pt;
+            font-weight: 700;
+            line-height: 1.1;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .col-no { width: 0.35in; text-align: center; }
+        .col-name { text-align: left; }
+        .col-term { width: 0.72in; text-align: center; }
+        .col-final { width: 0.78in; text-align: center; }
+        .col-descriptor { width: 0.92in; text-align: center; }
+        .col-remark { width: 0.78in; text-align: center; }
+
+        tr.group-row td {
+            background: #f1f5f9;
+            font-size: 8.5pt;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            padding: 4px;
+            text-align: left;
+        }
+        .empty-row td {
+            color: #64748b;
+            font-style: italic;
+            padding: 10px;
+            text-align: center;
+        }
+        .note {
+            color: #475569;
+            font-size: 7.5pt;
+            margin-top: 7px;
+        }
+
+        .exam-analysis {
+            break-inside: avoid;
+            margin-top: 20px;
+            page-break-inside: avoid;
+        }
+        .exam-analysis h2 {
+            border-bottom: 1.5px solid #000;
+            border-top: 1.5px solid #000;
+            font-size: 10pt;
+            letter-spacing: 0.06em;
+            padding: 4px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .analysis-term {
+            font-size: 8.5pt;
+            font-weight: 700;
+            margin: 5px 0;
+            text-align: center;
+        }
+        .analysis-metric { width: 46%; }
+        .analysis-value { width: 18%; text-align: center; }
+        .analysis-label { text-align: left; }
+        .analysis-group td {
+            background: #f1f5f9;
+            font-size: 8pt;
+            font-weight: 700;
+            text-align: left;
+        }
+        .analysis-mps td {
+            background: #f8fafc;
+            font-weight: 700;
+        }
+
+        .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+        }
+        .signature { text-align: center; width: 45%; }
+        .signature .line {
+            border-bottom: 1px solid #000;
+            height: 18px;
+            margin-bottom: 3px;
+        }
+        .signature .role { font-size: 8pt; font-weight: 600; }
+        .signature .name { font-size: 8pt; text-transform: uppercase; }
+
+        .empty-state {
+            border: 1px dashed #94a3b8;
+            border-radius: 8px;
+            color: #475569;
+            padding: 28px;
+            text-align: center;
+        }
+
+        @media print {
+            @page { margin: 0.35in; size: A4 portrait; }
+            body { background: #fff; padding: 0; }
+            .actions, .filters { display: none !important; }
+            .page { box-shadow: none; margin: 0; min-height: 0; padding: 0; width: auto; }
+            .signatures { margin-top: 30px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="actions">
+        <a href="{% url 'grades:grade_list' %}" class="btn btn-secondary">Back</a>
+        <button type="button" class="btn" onclick="window.print()">Print</button>
+    </div>
+
+    <form method="get" class="filters">
+        <label>School Year
+            <select name="sy" onchange="this.form.submit()">
+                {% for sy in school_years %}
+                <option value="{{ sy.pk }}" {% if selected_sy and sy.pk == selected_sy.pk %}selected{% endif %}>{{ sy.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Section
+            <select name="section" onchange="this.form.submit()">
+                {% for sec in sections %}
+                <option value="{{ sec.pk }}" {% if section and sec.pk == section.pk %}selected{% endif %}>{{ sec.grade_level.name }} &ndash; {{ sec.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Subject
+            <select name="subject" onchange="this.form.submit()">
+                {% for subj in subjects %}
+                <option value="{{ subj.pk }}" {% if subject and subj.pk == subject.pk %}selected{% endif %}>{{ subj.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    </form>
+
+    <div class="page">
+        <div class="topline">
+            <span>{{ school_region }}</span>
+            <span>Division of {{ school_division }}</span>
+        </div>
+        <div class="school-name">{{ school_name }}</div>
+        <div class="school-meta">School ID: {{ school_id }}{% if selected_sy %} &nbsp;|&nbsp; School Year: {{ selected_sy.name }}{% endif %}</div>
+
+        <div class="title">CLASS RECORD - FINAL GRADES</div>
+
+        {% if section and subject %}
+        <div class="meta">
+            <span><strong>Grade Level:</strong> {{ section.grade_level.level }}</span>
+            <span><strong>Section:</strong> {{ section.name }}</span>
+            <span><strong>Subject:</strong> {{ subject.name }}</span>
+            <span><strong>Teacher:</strong> {{ teacher_name|default:"—" }}</span>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-no">No.</th>
+                    <th class="col-name">Learner's Name</th>
+                    {% for period in terms %}
+                    <th class="col-term">{{ period.name }}</th>
+                    {% endfor %}
+                    <th class="col-final">Final Grade</th>
+                    <th class="col-descriptor">Descriptor</th>
+                    <th class="col-remark">Remark</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="group-row"><td colspan="{{ terms|length|add:5 }}">MALE</td></tr>
+                {% for row in male_rows %}
+                <tr>
+                    <td class="col-no">{{ row.no }}</td>
+                    <td class="col-name">{{ row.student.last_name|upper }}, {{ row.student.first_name|upper }}{% if row.student.middle_name %}, {{ row.student.middle_name|upper }}{% endif %}</td>
+                    {% for cell in row.term_cells %}
+                    <td class="col-term">{% if cell is not None %}{{ cell|floatformat:"0" }}{% endif %}</td>
+                    {% endfor %}
+                    <td class="col-final">{% if row.final_grade is not None %}{{ row.final_grade }}{% endif %}</td>
+                    <td class="col-descriptor">{{ row.descriptor }}</td>
+                    <td class="col-remark">{{ row.remark }}</td>
+                </tr>
+                {% empty %}
+                <tr class="empty-row"><td colspan="{{ terms|length|add:5 }}">No male learners recorded for this class.</td></tr>
+                {% endfor %}
+
+                <tr class="group-row"><td colspan="{{ terms|length|add:5 }}">FEMALE</td></tr>
+                {% for row in female_rows %}
+                <tr>
+                    <td class="col-no">{{ row.no }}</td>
+                    <td class="col-name">{{ row.student.last_name|upper }}, {{ row.student.first_name|upper }}{% if row.student.middle_name %}, {{ row.student.middle_name|upper }}{% endif %}</td>
+                    {% for cell in row.term_cells %}
+                    <td class="col-term">{% if cell is not None %}{{ cell|floatformat:"0" }}{% endif %}</td>
+                    {% endfor %}
+                    <td class="col-final">{% if row.final_grade is not None %}{{ row.final_grade }}{% endif %}</td>
+                    <td class="col-descriptor">{{ row.descriptor }}</td>
+                    <td class="col-remark">{{ row.remark }}</td>
+                </tr>
+                {% empty %}
+                <tr class="empty-row"><td colspan="{{ terms|length|add:5 }}">No female learners recorded for this class.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p class="note">Only validated and locked term grades are reflected in this record. The final grade is the average of the available term grades, rounded to the nearest whole number.</p>
+
+        {% for analysis in exam_analysis %}
+        <div class="exam-analysis">
+            <h2>Test/Exam Results Analysis</h2>
+            <div class="analysis-term">{{ analysis.term.name }} &middot; {{ subject.name }}</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="analysis-metric">Metric</th>
+                        {% for item in analysis.items %}
+                        <th class="analysis-value">{{ item.label }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in analysis.rows %}
+                    {% if row.group %}
+                    <tr class="analysis-group"><td colspan="4">{{ row.group }}</td></tr>
+                    {% else %}
+                    <tr{% if row.class %} class="{{ row.class }}"{% endif %}>
+                        <td class="analysis-label">{{ row.label }}</td>
+                        {% for cell in row.cells %}
+                        <td class="analysis-value">{% if cell is not None %}{{ cell|floatformat:row.format }}{% else %}&mdash;{% endif %}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endfor %}
+
+        <div class="signatures">
+            <div class="signature">
+                <div class="line"></div>
+                <div class="name">{{ teacher_name|default:"—" }}</div>
+                <div class="role">Subject Teacher</div>
+            </div>
+            <div class="signature">
+                <div class="line"></div>
+                <div class="name">{{ school_head_name|default:"" }}</div>
+                <div class="role">School Head</div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            {% if not sections %}
+            No classes are assigned to you for the selected school year. Please contact the registrar.
+            {% else %}
+            Select a section and subject to view its class record.
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

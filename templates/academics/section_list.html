@@ -1,15 +1,174 @@
 {% extends 'base.html' %}
 {% block title %}Sections{% endblock %}
 {% block page_title %}Sections{% endblock %}
+{% block extra_css %}
+<style>
+    .sections-page { display: grid; gap: 1.15rem; }
+    .sections-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.25rem; }
+    .sections-heading-copy { min-width: 0; }
+    .sections-eyebrow { margin-bottom: .35rem; color: #64748b; font-size: .68rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    .sections-title { color: var(--ink); font-size: 1.65rem; font-weight: 740; line-height: 1.15; }
+    .sections-description { margin-top: .45rem; color: var(--ink-muted); font-size: .875rem; }
+    .sections-add { flex: 0 0 auto; }
+    .sections-filters { display: grid; grid-template-columns: minmax(14rem, 1.6fr) repeat(2, minmax(10rem, 1fr)) auto auto; align-items: end; gap: .75rem; padding: 1rem 0; border-top: 1px solid rgba(148, 163, 184, .24); border-bottom: 1px solid rgba(148, 163, 184, .24); }
+    .sections-filter-field { display: grid; min-width: 0; gap: .38rem; }
+    .sections-filter-label { color: var(--ink-muted); font-size: .72rem; font-weight: 700; }
+    .sections-filter-control { display: flex; min-width: 0; min-height: 2.65rem; align-items: center; gap: .55rem; border: 1px solid var(--field-border); border-radius: .7rem; background: var(--field-bg); padding: 0 .75rem; color: var(--ink); }
+    .sections-filter-control:focus-within { border-color: #2f6fe0; box-shadow: 0 0 0 3px rgba(47, 111, 224, .13); }
+    .sections-filter-control svg { width: 1rem; height: 1rem; flex: 0 0 auto; color: var(--ink-soft); }
+    .sections-filter-control input, .sections-filter-control select { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: .84rem; }
+    .sections-filter-control input::placeholder { color: var(--ink-soft); }
+    .sections-filter-control select { cursor: pointer; }
+    .sections-filter-submit { min-height: 2.65rem; }
+    .sections-clear { display: inline-flex; min-height: 2.65rem; align-items: center; justify-content: center; padding: 0 .35rem; color: var(--ink-muted); font-size: .8rem; font-weight: 650; white-space: nowrap; }
+    .sections-clear:hover { color: var(--smis-blue); }
+    .sections-results { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem 1rem; color: var(--ink-muted); font-size: .8rem; }
+    .sections-results strong { color: var(--ink); font-weight: 700; }
+    .sections-table-shell { overflow: hidden; border: 1px solid rgba(148, 163, 184, .22); border-radius: .85rem; background: var(--glass-bg); box-shadow: var(--shadow-glass); }
+    .sections-table { table-layout: fixed; }
+    .sections-table th:nth-child(1) { width: 4%; }
+    .sections-table th:nth-child(2) { width: 20%; }
+    .sections-table th:nth-child(3) { width: 7%; }
+    .sections-table th:nth-child(4) { width: 10%; }
+    .sections-table th:nth-child(5) { width: 19%; }
+    .sections-table th:nth-child(6) { width: 16%; }
+    .sections-table th:nth-child(7) { width: 15%; }
+    .sections-table th:nth-child(8) { width: 9%; }
+    .sections-select-col { text-align: center; }
+    .sections-selection { display: grid; gap: .75rem; }
+    .sections-bulk-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem 1rem; border: 1px solid rgba(220, 38, 38, .28); border-radius: .7rem; background: rgba(220, 38, 38, .06); padding: .6rem .9rem; }
+    :root.dark .sections-bulk-bar { border-color: rgba(248, 113, 113, .32); background: rgba(248, 113, 113, .09); }
+    .sections-bulk-count { color: var(--ink); font-size: .82rem; }
+    .sections-bulk-count strong { font-weight: 750; }
+    .sections-bulk-actions { display: flex; align-items: center; gap: .85rem; }
+    .sections-table .section-name { display: block; color: var(--ink); font-weight: 720; }
+    .sections-table .section-mobile-meta { display: none; }
+    .sections-grade-tag { display: inline-flex; min-width: 1.8rem; align-items: center; justify-content: center; border-radius: .4rem; background: rgba(47, 111, 224, .08); padding: .25rem .4rem; color: #2456a6; font-size: .76rem; font-weight: 680; }
+    :root.dark .sections-grade-tag { background: rgba(96, 165, 250, .13); color: #bfdbfe; }
+    .sections-person { display: flex; min-width: 0; align-items: center; gap: .55rem; }
+    .sections-avatar { display: inline-flex; width: 1.85rem; height: 1.85rem; flex: 0 0 auto; align-items: center; justify-content: center; border-radius: 50%; background: #dce8f8; color: #24356e; font-size: .65rem; font-weight: 750; }
+    :root.dark .sections-avatar { background: #293d62; color: #dbeafe; }
+    .sections-person-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sections-count { display: flex; align-items: baseline; gap: .35rem; white-space: nowrap; }
+    .sections-count strong { color: var(--ink); font-size: 1rem; font-weight: 730; }
+    .sections-count span, .sections-staffing-sub { color: var(--ink-muted); font-size: .76rem; }
+    .sections-staffing { color: var(--ink); font-size: .82rem; font-weight: 680; }
+    .sections-staffing-sub { display: block; margin-top: .2rem; }
+    .sections-muted { color: var(--ink-muted); font-size: .8rem; }
+    .sections-empty { padding: 2.6rem 1rem; text-align: center; }
+    .sections-empty strong { display: block; color: var(--ink); font-size: .95rem; }
+    .sections-empty p { margin-top: .35rem; color: var(--ink-muted); font-size: .82rem; }
+    .sections-empty a { display: inline-flex; margin-top: .85rem; color: var(--smis-blue); font-size: .82rem; font-weight: 700; }
+    .sections-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; border-top: 1px solid rgba(148, 163, 184, .18); padding: .75rem 1rem; }
+    .sections-pagination-links { display: flex; flex-wrap: wrap; gap: .3rem; }
+    @media (max-width: 920px) {
+        .sections-filters { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto auto; }
+        .sections-search-field { grid-column: 1 / -1; }
+        .sections-table th:nth-child(1) { width: 4%; }
+        .sections-table th:nth-child(2) { width: 21%; }
+        .sections-table th:nth-child(3) { width: 7%; }
+        .sections-table th:nth-child(4) { width: 10%; }
+        .sections-table th:nth-child(5) { width: 19%; }
+        .sections-table th:nth-child(6) { width: 16%; }
+        .sections-table th:nth-child(7) { width: 14%; }
+        .sections-table th:nth-child(8) { width: 9%; }
+    }
+    @media (max-width: 640px) {
+        .sections-page { gap: .9rem; }
+        .sections-heading { align-items: flex-start; }
+        .sections-title { font-size: 1.4rem; }
+        .sections-description { max-width: 22rem; font-size: .8rem; }
+        .sections-add { min-height: 2.5rem; padding-inline: .8rem; font-size: .8rem; }
+        .sections-filters { grid-template-columns: minmax(0, 1fr); gap: .65rem; }
+        .sections-search-field { grid-column: auto; }
+        .sections-filter-submit { width: 100%; }
+        .sections-clear { min-height: 2rem; }
+        .sections-table th:nth-child(3), .sections-table td:nth-child(3),
+        .sections-table th:nth-child(5), .sections-table td:nth-child(5),
+        .sections-table th:nth-child(6), .sections-table td:nth-child(6),
+        .sections-table th:nth-child(7), .sections-table td:nth-child(7) { display: none; }
+        .sections-table th:nth-child(1) { width: 8%; }
+        .sections-table th:nth-child(2) { width: 50%; }
+        .sections-table th:nth-child(4) { width: 20%; }
+        .sections-table th:nth-child(8) { width: 22%; }
+        .sections-table .section-mobile-meta { display: block; margin-top: .25rem; color: var(--ink-muted); font-size: .72rem; line-height: 1.45; }
+        .sections-table .section-mobile-meta span { display: block; }
+        .sections-table td { vertical-align: middle; }
+        .sections-results { font-size: .75rem; }
+        .sections-pagination { padding-inline: .75rem; }
+    }
+</style>
+{% endblock %}
 {% block content %}
-<div class="space-y-6">
-    <div class="page-head flex-col items-stretch sm:flex-row sm:items-center sm:justify-between">
-            <h1 class="page-head-title">Sections</h1>
-        <button onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:section_create' %}' } }))" class="btn btn-primary">Add Section</button>
+<div class="sections-page">
+    <header class="sections-heading">
+        <div class="sections-heading-copy">
+            <p class="sections-eyebrow">Academic structure</p>
+            <h1 class="sections-title">Sections</h1>
+            <p class="sections-description">Review each class group, its adviser, and teaching coverage.</p>
+            </div>
+        <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:section_create' %}' } }))" class="btn btn-primary sections-add">
+            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="17" height="17"><path d="M10 3.5v13M3.5 10h13" stroke-linecap="round"/></svg>
+            <span>Add section</span>
+        </button>
+    </header>
+
+    <form class="sections-filters" method="get" role="search" aria-label="Filter sections">
+        <label class="sections-filter-field sections-search-field">
+            <span class="sections-filter-label">Find a section or adviser</span>
+            <span class="sections-filter-control">
+                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8.7" cy="8.7" r="5.6"/><path d="m13 13 4 4" stroke-linecap="round"/></svg>
+                <input type="search" name="q" value="{{ search_query }}" placeholder="Search by section, grade, or adviser">
+            </span>
+        </label>
+        <label class="sections-filter-field">
+            <span class="sections-filter-label">School year</span>
+            <span class="sections-filter-control">
+                <select name="school_year" aria-label="School year">
+                    <option value="all" {% if school_year_filter == 'all' %}selected{% endif %}>All school years</option>
+                    {% for school_year in school_years %}
+                    <option value="{{ school_year.pk }}" {% if school_year_filter == school_year.pk|stringformat:'s' %}selected{% endif %}>{{ school_year.name }}{% if school_year.is_current %} (current){% endif %}</option>
+                    {% endfor %}
+                </select>
+            </span>
+        </label>
+        <label class="sections-filter-field">
+            <span class="sections-filter-label">Grade level</span>
+            <span class="sections-filter-control">
+                <select name="grade_level" aria-label="Grade level">
+                    <option value="">All grades</option>
+                    {% for grade_level in grade_levels %}
+                    <option value="{{ grade_level.pk }}" {% if grade_filter == grade_level.pk|stringformat:'s' %}selected{% endif %}>{{ grade_level.name }}</option>
+                    {% endfor %}
+                </select>
+            </span>
+        </label>
+        <button type="submit" class="btn btn-primary sections-filter-submit">
+            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M3 5h14M5.5 10h9M8 15h4" stroke-linecap="round"/></svg>
+            <span>Apply</span>
+        </button>
+        {% if filters_active %}<a class="sections-clear" href="{% url 'academics:section_list' %}">Clear filters</a>{% endif %}
+    </form>
+
+    <div class="sections-results" aria-live="polite">
+        <p><strong>{{ sections_with_teachers.paginator.count }}</strong> section{{ sections_with_teachers.paginator.count|pluralize }}
+            {% if selected_school_year %}<span>in {{ selected_school_year.name }}{% if selected_school_year.is_current %} (current){% endif %}</span>{% else %}<span>across all school years</span>{% endif %}
+        </p>
+        {% if sections_with_teachers.paginator.count %}<p>Showing {{ sections_with_teachers.start_index }}-{{ sections_with_teachers.end_index }} of {{ sections_with_teachers.paginator.count }}</p>{% endif %}
     </div>
-    <div class="glass-card">
-        <div class="overflow-x-auto">
-            {% include 'academics/partials/section_table.html' %}
+
+    <div class="sections-selection" x-data="sectionSelection()" x-on:refresh="selected = []" data-bulk-delete-url="{% url 'academics:section_bulk_delete' %}">
+        <div class="sections-bulk-bar" x-show="selected.length" x-cloak>
+            <p class="sections-bulk-count"><strong x-text="selected.length"></strong> <span x-text="selected.length === 1 ? 'section selected' : 'sections selected'"></span></p>
+            <div class="sections-bulk-actions">
+                <button type="button" class="btn btn-danger" @click="confirmDelete()">Delete selected</button>
+                <button type="button" class="sections-clear" @click="selected = []">Clear</button>
+            </div>
+        </div>
+        <div class="sections-table-shell">
+            <div class="overflow-x-auto">
+                {% include 'academics/partials/section_table.html' %}
+            </div>
         </div>
     </div>
 </div>

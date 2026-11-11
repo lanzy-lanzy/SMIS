@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import HttpResponse
 from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import Count, Q
 from .models import (
     SchoolYear,
     GradeLevel,
@@ -20,6 +22,7 @@ from .forms import (
 )
 from accounts.models import AuditLog
 from accounts.decorators import admin_required, registrar_or_admin_required
+from students.models import Student
 
 
 @admin_required
@@ -267,17 +270,81 @@ def grade_level_delete(request, pk):
 
 @admin_required
 def section_list(request):
+    school_years = list(SchoolYear.objects.all())
+    grade_levels = list(GradeLevel.objects.filter(level__gte=7, level__lte=12))
+    valid_year_ids = {str(school_year.pk) for school_year in school_years}
+    valid_grade_ids = {str(grade_level.pk) for grade_level in grade_levels}
+
+    requested_year = request.GET.get("school_year", "")
+    current_year = next((year for year in school_years if year.is_current), None)
+    if requested_year == "all":
+        school_year_filter = "all"
+    elif requested_year in valid_year_ids:
+        school_year_filter = requested_year
+    else:
+        school_year_filter = str(current_year.pk) if current_year else "all"
+
+    grade_filter = request.GET.get("grade_level", "")
+    if grade_filter not in valid_grade_ids:
+        grade_filter = ""
+
+    search_query = request.GET.get("q", "").strip()
+    selected_school_year = next(
+        (year for year in school_years if str(year.pk) == school_year_filter), None
+    )
     sections_with_teachers = Section.objects.select_related(
         "grade_level", "school_year", "adviser"
-    ).all()
-    paginator = Paginator(sections_with_teachers, 15)
+    ).annotate(
+        student_count=Count("student", distinct=True),
+        teacher_count=Count("assignments__teacher", distinct=True),
+        subject_count=Count("assignments__subject", distinct=True),
+    )
+
+    if school_year_filter != "all":
+        sections_with_teachers = sections_with_teachers.filter(
+            school_year_id=school_year_filter
+        )
+    if grade_filter:
+        sections_with_teachers = sections_with_teachers.filter(
+            grade_level_id=grade_filter
+        )
+    if search_query:
+        sections_with_teachers = sections_with_teachers.filter(
+            Q(name__icontains=search_query)
+            | Q(grade_level__name__icontains=search_query)
+            | Q(adviser__first_name__icontains=search_query)
+            | Q(adviser__last_name__icontains=search_query)
+        )
+
+    sections_with_teachers = sections_with_teachers.order_by(
+        "-school_year__is_current", "-school_year__name", "grade_level__level", "name"
+    )
+    paginator = Paginator(sections_with_teachers, 20)
     page = request.GET.get("page", 1)
     sections_page = paginator.get_page(page)
+    pagination_params = request.GET.copy()
+    pagination_params.pop("page", None)
+    context = {
+        "sections_with_teachers": sections_page,
+        "section_selection": True,
+        "school_years": school_years,
+        "grade_levels": grade_levels,
+        "school_year_filter": school_year_filter,
+        "grade_filter": grade_filter,
+        "search_query": search_query,
+        "selected_school_year": selected_school_year,
+        "filters_active": bool(
+            search_query
+            or grade_filter
+            or (current_year and school_year_filter != str(current_year.pk))
+        ),
+        "pagination_query": pagination_params.urlencode(),
+    }
     if request.headers.get("HX-Request"):
         return render(
-            request, "academics/partials/section_table.html", {"sections_with_teachers": sections_page}
+            request, "academics/partials/section_table.html", context
         )
-    return render(request, "academics/section_list.html", {"sections_with_teachers": sections_page})
+    return render(request, "academics/section_list.html", context)
 
 
 @admin_required
@@ -378,6 +445,67 @@ def section_delete(request, pk):
         "academics/confirm_delete.html",
         {"object": section, "title": "Section"},
     )
+
+
+@admin_required
+def section_bulk_delete(request):
+    if request.method == "POST":
+        raw_ids = request.POST.getlist("section_ids")
+    else:
+        raw_ids = request.GET.get("ids", "").split(",")
+    ids = []
+    for raw in raw_ids:
+        try:
+            ids.append(int(raw))
+        except (TypeError, ValueError):
+            continue
+    sections = list(
+        Section.objects.select_related("grade_level", "school_year").filter(pk__in=ids)
+    )
+    if not sections:
+        messages.error(request, "No sections selected.")
+        if request.headers.get("HX-Request"):
+            return HttpResponse(
+                "<script>closeModal();</script>",
+                headers={"HX-Trigger": "closeModal"},
+            )
+        return redirect("academics:section_list")
+
+    if request.method == "POST":
+        deleted = []
+        with transaction.atomic():
+            for section in sections:
+                pk, name = section.pk, str(section)
+                section.delete()
+                deleted.append(name)
+                AuditLog.objects.create(
+                    user=request.user,
+                    action="delete",
+                    model_name="Section",
+                    object_id=str(pk),
+                    description=f"Deleted section {name} (bulk delete)",
+                )
+        count = len(deleted)
+        messages.success(request, f"{count} section{'s' if count != 1 else ''} deleted.")
+        if request.headers.get("HX-Request"):
+            return HttpResponse(
+                '<script>closeModal(); htmx.trigger("#section-table", "refresh");</script>',
+                headers={"HX-Trigger": "closeModal,refreshTable"},
+            )
+        return redirect("academics:section_list")
+
+    context = {
+        "sections": sections,
+        "learner_count": Student.objects.filter(section__in=sections).count(),
+        "assignment_count": TeacherAssignment.objects.filter(
+            section__in=sections
+        ).count(),
+    }
+    if request.headers.get("HX-Request"):
+        return render(
+            request, "academics/partials/section_bulk_confirm_delete.html", context
+        )
+    return render(request, "academics/section_bulk_confirm_delete.html", context)
 
 
 @admin_required

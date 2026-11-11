@@ -52,20 +52,26 @@
         <tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No grading periods found</td></tr>
         {% endfor %}
     </tbody>
-</table>
 {% if periods.has_other_pages %}
-<div class="px-4 py-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
-    <p class="text-sm text-gray-500">Showing {{ periods.start_index }}-{{ periods.end_index }} of {{ periods.paginator.count }}</p>
-    <div class="flex gap-1">
-        {% if periods.has_previous %}
-        <a href="?page={{ periods.previous_page_number }}" class="page-link">&laquo;</a>
-        {% endif %}
-        {% for num in periods.paginator.page_range %}
-        <a href="?page={{ num }}" class="page-link {% if periods.number == num %}is-active{% endif %}">{{ num }}</a>
-        {% endfor %}
-        {% if periods.has_next %}
-        <a href="?page={{ periods.next_page_number }}" class="page-link">&raquo;</a>
-        {% endif %}
-    </div>
-</div>
+<tfoot>
+    <tr>
+        <td colspan="7">
+            <div class="px-4 py-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                <p class="text-sm text-gray-500">Showing {{ periods.start_index }}-{{ periods.end_index }} of {{ periods.paginator.count }}</p>
+                <div class="flex gap-1">
+                    {% if periods.has_previous %}
+                    <a href="?page={{ periods.previous_page_number }}" class="page-link">&laquo;</a>
+                    {% endif %}
+                    {% for num in periods.paginator.page_range %}
+                    <a href="?page={{ num }}" class="page-link {% if periods.number == num %}is-active{% endif %}">{{ num }}</a>
+                    {% endfor %}
+                    {% if periods.has_next %}
+                    <a href="?page={{ periods.next_page_number }}" class="page-link">&raquo;</a>
+                    {% endif %}
+                </div>
+            </div>
+        </td>
+    </tr>
+</tfoot>
 {% endif %}
+</table>

@@ -58,20 +58,26 @@
         </tr>
         {% endfor %}
     </tbody>
-</table>
 {% if assignments.has_other_pages %}
-<div class="px-4 py-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
-    <p class="text-sm text-gray-500">Showing {{ assignments.start_index }}-{{ assignments.end_index }} of {{ assignments.paginator.count }}</p>
-    <div class="flex gap-1">
-        {% if assignments.has_previous %}
-        <a href="?page={{ assignments.previous_page_number }}" class="page-link">&laquo;</a>
-        {% endif %}
-        {% for num in assignments.paginator.page_range %}
-        <a href="?page={{ num }}" class="page-link {% if assignments.number == num %}is-active{% endif %}">{{ num }}</a>
-        {% endfor %}
-        {% if assignments.has_next %}
-        <a href="?page={{ assignments.next_page_number }}" class="page-link">&raquo;</a>
-        {% endif %}
-    </div>
-</div>
+<tfoot>
+    <tr>
+        <td colspan="7">
+            <div class="px-4 py-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                <p class="text-sm text-gray-500">Showing {{ assignments.start_index }}-{{ assignments.end_index }} of {{ assignments.paginator.count }}</p>
+                <div class="flex gap-1">
+                    {% if assignments.has_previous %}
+                    <a href="?page={{ assignments.previous_page_number }}" class="page-link">&laquo;</a>
+                    {% endif %}
+                    {% for num in assignments.paginator.page_range %}
+                    <a href="?page={{ num }}" class="page-link {% if assignments.number == num %}is-active{% endif %}">{{ num }}</a>
+                    {% endfor %}
+                    {% if assignments.has_next %}
+                    <a href="?page={{ assignments.next_page_number }}" class="page-link">&raquo;</a>
+                    {% endif %}
+                </div>
+            </div>
+        </td>
+    </tr>
+</tfoot>
 {% endif %}
+</table>

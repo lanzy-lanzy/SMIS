@@ -6,9 +6,9 @@ from django.views.decorators.cache import never_cache
 from django.db.models import Q, Avg, Count, Subquery, OuterRef, Case, When, Value, IntegerField, DecimalField
 from django.utils import timezone
 from .models import (
-    Grade, GradeSubmission, GradeValidation, weighted_quarter_grade, transmute_grade,
-    TRANSMUTATION_BANDS, DESCRIPTOR_BANDS,
-    WW_WEIGHT, PT_WEIGHT, AS_WEIGHT,
+    Grade, GradeSubmission, GradeValidation, weighted_initial_grade, transmute_grade,
+    TRANSMUTATION_BANDS, DESCRIPTOR_BANDS, grade_remarks, scores_missing,
+    WW_WEIGHT, PT_WEIGHT, AS_WEIGHT, WW_DOMAIN_SHARES, PT_DOMAIN_SHARES,
 )
 from academics.models import TeacherAssignment, GradingPeriod, SchoolYear, Section, Subject
 from students.models import Student, ENROLLED_STATUSES
@@ -158,7 +158,7 @@ def _parse_weights(post_data, prefix=''):
     return {'ww': ww, 'pt': pt, 'as': as_}, None
 
 
-def _parse_maxes(post_data, prefix='', fallback=None):
+def _parse_maxes(post_data, prefix='', fallback=None, is_esp=True):
     """Read the class-wide per-item 'highest possible score' from POST data.
 
     Each item column has its own maximum (the same test for every learner); the
@@ -167,7 +167,10 @@ def _parse_maxes(post_data, prefix='', fallback=None):
     (``ww_items`` etc., ``None`` where nothing was entered) and the summed totals
     (``ww`` etc.). A category with no item values posted falls back to ``fallback``
     (the currently stored maximum) or 100, so a save that omits a category never
-    silently resets it.
+    silently resets it. The optional affective/behavioral domains (``wa``/``pa``/
+    ``pb``) instead fall back to 0: posted-but-blank inputs mark a domain unused.
+    Only ESP (Values Education) uses these domains; for every other subject they
+    are forced to 0/unused regardless of what is posted.
     """
     fallback = fallback or {}
 
@@ -188,7 +191,15 @@ def _parse_maxes(post_data, prefix='', fallback=None):
     ww_items, ww_any = items('written', 5)
     pt_items, pt_any = items('performance', 3)
     as_items, as_any = items('assessment', 3)
-    for vals in (ww_items, pt_items, as_items):
+    if is_esp:
+        wa_items, wa_any = items('written_affective', 5)
+        pa_items, pa_any = items('performance_affective', 3)
+        pb_items, pb_any = items('performance_behavioral', 3)
+    else:
+        wa_items, wa_any = [0] * 5, False
+        pa_items, pa_any = [0] * 3, False
+        pb_items, pb_any = [0] * 3, False
+    for vals in (ww_items, pt_items, as_items, wa_items, pa_items, pb_items):
         if vals == 'negative':
             return None, 'Highest possible scores must be greater than 0.'
         if vals is None:
@@ -200,6 +211,24 @@ def _parse_maxes(post_data, prefix='', fallback=None):
             return float(fallback.get(key) or 100)
         return s
 
+    def domain_vals(vals, any_entered, key, cat, n):
+        """(total, items) for an optional domain. Posted-but-blank inputs mean the
+        class does not use the domain (total 0); absent inputs (a disabled table)
+        keep the stored configuration."""
+        if any_entered:
+            return sum(vals), vals
+        if f'{prefix}{cat}_highest_1' in post_data:
+            return 0.0, [None] * n
+        return float(fallback.get(key) or 0), list(fallback.get(f'{key}_items') or [None] * n)
+
+    wa_total, wa_items = domain_vals(wa_items, wa_any, 'wa', 'written_affective', 5)
+    pa_total, pa_items = domain_vals(pa_items, pa_any, 'pa', 'performance_affective', 3)
+    pb_total, pb_items = domain_vals(pb_items, pb_any, 'pb', 'performance_behavioral', 3)
+    if not is_esp:
+        wa_total, wa_items = 0.0, [None] * 5
+        pa_total, pa_items = 0.0, [None] * 3
+        pb_total, pb_items = 0.0, [None] * 3
+
     return {
         'ww': total(ww_items, ww_any, 'ww'),
         'pt': total(pt_items, pt_any, 'pt'),
@@ -207,6 +236,8 @@ def _parse_maxes(post_data, prefix='', fallback=None):
         'ww_items': ww_items if ww_any else [None] * 5,
         'pt_items': pt_items if pt_any else [None] * 3,
         'as_items': as_items if as_any else [None] * 3,
+        'wa': wa_total, 'pa': pa_total, 'pb': pb_total,
+        'wa_items': wa_items, 'pa_items': pa_items, 'pb_items': pb_items,
     }, None
 
 
@@ -218,14 +249,19 @@ def _weights_from_grades(grades):
     """
     first = next((g for g in grades if g is not None), None)
     if first is None:
-        return {
-            'ww': float(WW_WEIGHT), 'pt': float(PT_WEIGHT), 'as': float(AS_WEIGHT),
-            'total': 100.0,
-        }
-    ww = float(first.written_work_weight)
-    pt = float(first.performance_task_weight)
-    as_ = float(first.assessment_weight)
-    return {'ww': ww, 'pt': pt, 'as': as_, 'total': round(ww + pt + as_, 2)}
+        ww, pt, as_ = float(WW_WEIGHT), float(PT_WEIGHT), float(AS_WEIGHT)
+    else:
+        ww = float(first.written_work_weight)
+        pt = float(first.performance_task_weight)
+        as_ = float(first.assessment_weight)
+    return {
+        'ww': ww, 'pt': pt, 'as': as_, 'total': round(ww + pt + as_, 2),
+        'ww_cognitive': ww * float(WW_DOMAIN_SHARES['cognitive']),
+        'ww_affective': ww * float(WW_DOMAIN_SHARES['affective']),
+        'pt_cognitive': pt * float(PT_DOMAIN_SHARES['cognitive']),
+        'pt_affective': pt * float(PT_DOMAIN_SHARES['affective']),
+        'pt_behavioral': pt * float(PT_DOMAIN_SHARES['behavioral']),
+    }
 
 
 def _maxes_from_grades(grades):
@@ -236,8 +272,9 @@ def _maxes_from_grades(grades):
     per-item lists (``ww_items`` etc.) plus the summed category totals (``ww``
     etc.). Falls back to 100 (with empty item lists) when nothing is encoded yet.
     """
-    empty = {'ww': 100.0, 'pt': 100.0, 'qa': 100.0,
-             'ww_items': [None] * 5, 'pt_items': [None] * 3, 'as_items': [None] * 3}
+    empty = {'ww': 100.0, 'pt': 100.0, 'qa': 100.0, 'wa': 0.0, 'pa': 0.0, 'pb': 0.0,
+             'ww_items': [None] * 5, 'pt_items': [None] * 3, 'as_items': [None] * 3,
+             'wa_items': [None] * 5, 'pa_items': [None] * 3, 'pb_items': [None] * 3}
     first = next((g for g in grades if g is not None), None)
     if first is None:
         return empty
@@ -257,6 +294,12 @@ def _maxes_from_grades(grades):
                           'performance_task_3_highest']),
         'as_items': pick(['assessment_1_highest', 'assessment_2_highest',
                           'assessment_3_highest']),
+        'wa': float(first.written_work_affective_highest or 0),
+        'pa': float(first.performance_task_affective_highest or 0),
+        'pb': float(first.performance_task_behavioral_highest or 0),
+        'wa_items': pick([f'written_work_affective_{i}_highest' for i in range(1, 6)]),
+        'pa_items': pick([f'performance_task_affective_{i}_highest' for i in range(1, 4)]),
+        'pb_items': pick([f'performance_task_behavioral_{i}_highest' for i in range(1, 4)]),
     }
 
 
@@ -523,7 +566,7 @@ def grade_save(request, assignment_pk):
         subject=assignment.subject, section=assignment.section,
         school_year=assignment.school_year, grading_period=grading_period,
     ))
-    maxes, max_error = _parse_maxes(request.POST, fallback=existing_maxes)
+    maxes, max_error = _parse_maxes(request.POST, fallback=existing_maxes, is_esp=assignment.subject.is_esp)
     if max_error:
         messages.error(request, max_error)
         return redirect(f'{reverse("grades:grade_encode", args=[assignment.pk])}?period={grading_period.pk}')
@@ -536,15 +579,16 @@ def grade_save(request, assignment_pk):
 
     student_ids_with_data = []
     locked_skipped = 0
+    is_esp = assignment.subject.is_esp
 
     for student in students:
         prefix = f'student_{student.id}'
         ww_items = [request.POST.get(f'{prefix}_written_{i}', '') for i in (1, 2, 3, 4, 5)]
         pt_items = [request.POST.get(f'{prefix}_performance_{i}', '') for i in (1, 2, 3)]
         as_items = [request.POST.get(f'{prefix}_assessment_{i}', '') for i in (1, 2, 3)]
-
-        if not any(v.strip() for v in ww_items + pt_items + as_items):
-            continue
+        wa_items = [request.POST.get(f'{prefix}_written_affective_{i}', '') for i in (1, 2, 3, 4, 5)] if is_esp else [''] * 5
+        pa_items = [request.POST.get(f'{prefix}_performance_affective_{i}', '') for i in (1, 2, 3)] if is_esp else [''] * 3
+        pb_items = [request.POST.get(f'{prefix}_performance_behavioral_{i}', '') for i in (1, 2, 3)] if is_esp else [''] * 3
 
         existing_grade = Grade.objects.filter(
             student=student,
@@ -552,6 +596,9 @@ def grade_save(request, assignment_pk):
             grading_period=grading_period,
             school_year=assignment.school_year,
         ).first()
+
+        if not existing_grade and not any(v.strip() for v in ww_items + pt_items + as_items + wa_items + pa_items + pb_items):
+            continue
 
         # Backend enforcement of sequential locking: validated/locked grades are
         # immutable to teachers even while the current period's submissions remain
@@ -561,9 +608,12 @@ def grade_save(request, assignment_pk):
             continue
 
         try:
-            ww_vals = [float(v) if v.strip() else 0 for v in ww_items]
-            pt_vals = [float(v) if v.strip() else 0 for v in pt_items]
-            as_vals = [float(v) if v.strip() else 0 for v in as_items]
+            ww_vals = [float(v) if v.strip() else None for v in ww_items]
+            pt_vals = [float(v) if v.strip() else None for v in pt_items]
+            as_vals = [float(v) if v.strip() else None for v in as_items]
+            wa_vals = [float(v) if v.strip() else None for v in wa_items]
+            pa_vals = [float(v) if v.strip() else None for v in pa_items]
+            pb_vals = [float(v) if v.strip() else None for v in pb_items]
         except (ValueError, TypeError):
             messages.error(request, f'Invalid grade values for {student.full_name}.')
             continue
@@ -572,12 +622,18 @@ def grade_save(request, assignment_pk):
         written_highest = maxes['ww']
         performance_highest = maxes['pt']
         assessment_highest = maxes['qa']
+        written_affective_highest = maxes['wa']
+        performance_affective_highest = maxes['pa']
+        performance_behavioral_highest = maxes['pb']
 
-        written = sum(ww_vals)
-        performance = sum(pt_vals)
-        assessment = sum(as_vals)
+        written = sum(v or 0 for v in ww_vals)
+        performance = sum(v or 0 for v in pt_vals)
+        assessment = sum(v or 0 for v in as_vals)
+        written_affective = sum(v or 0 for v in wa_vals)
+        performance_affective = sum(v or 0 for v in pa_vals)
+        performance_behavioral = sum(v or 0 for v in pb_vals)
 
-        if any(v < 0 for v in ww_vals + pt_vals + as_vals):
+        if any(v is not None and v < 0 for v in ww_vals + pt_vals + as_vals + wa_vals + pa_vals + pb_vals):
             messages.error(request, f'Item scores for {student.full_name} cannot be negative.')
             continue
 
@@ -585,18 +641,38 @@ def grade_save(request, assignment_pk):
             messages.error(request, f'Total scores for {student.full_name} cannot exceed their highest possible score.')
             continue
 
+        # Optional domains are only bounded when a maximum is configured (0 means
+        # the domain is unused or scored in raw percentage mode).
+        if any(h > 0 and t > h for t, h in (
+                (written_affective, written_affective_highest),
+                (performance_affective, performance_affective_highest),
+                (performance_behavioral, performance_behavioral_highest))):
+            messages.error(request, f'Domain total scores for {student.full_name} cannot exceed their highest possible score.')
+            continue
+
         student_ids_with_data.append(student.id)
 
-        initial_grade = weighted_quarter_grade(
-            written, written_highest,
-            performance, performance_highest,
+        initial_grade = weighted_initial_grade(
+            (('cognitive', written, written_highest, WW_DOMAIN_SHARES['cognitive']),
+             ('affective', written_affective, written_affective_highest, WW_DOMAIN_SHARES['affective'])),
+            (('cognitive', performance, performance_highest, PT_DOMAIN_SHARES['cognitive']),
+             ('affective', performance_affective, performance_affective_highest, PT_DOMAIN_SHARES['affective']),
+             ('behavioral', performance_behavioral, performance_behavioral_highest, PT_DOMAIN_SHARES['behavioral'])),
             assessment, assessment_highest,
             weights['ww'], weights['pt'], weights['as'],
         )
         # The weighted total is the initial grade; the official term grade is that
         # value run through the transmutation table. Remarks follow the term grade.
         term_grade = transmute_grade(initial_grade)
-        remarks = 'Passed' if term_grade >= 75 else ('Incomplete' if term_grade >= 60 else 'Failed')
+        missing = any((
+            scores_missing(ww_vals, maxes['ww_items'], written, written_highest),
+            scores_missing(pt_vals, maxes['pt_items'], performance, performance_highest),
+            scores_missing(as_vals, maxes['as_items'], assessment, assessment_highest),
+            is_esp and scores_missing(wa_vals, maxes['wa_items'], written_affective, written_affective_highest),
+            is_esp and scores_missing(pa_vals, maxes['pa_items'], performance_affective, performance_affective_highest),
+            is_esp and scores_missing(pb_vals, maxes['pb_items'], performance_behavioral, performance_behavioral_highest),
+        ))
+        remarks = grade_remarks(term_grade, missing)
         
         status = 'submitted' if action == 'submit' else 'draft'
 
@@ -624,6 +700,26 @@ def grade_save(request, assignment_pk):
                 'assessment_3_highest': maxes['as_items'][2],
                 'assessment': assessment,
                 'assessment_highest': assessment_highest,
+                'written_work_affective_1': wa_vals[0], 'written_work_affective_2': wa_vals[1],
+                'written_work_affective_3': wa_vals[2], 'written_work_affective_4': wa_vals[3],
+                'written_work_affective_5': wa_vals[4],
+                'written_work_affective_1_highest': maxes['wa_items'][0], 'written_work_affective_2_highest': maxes['wa_items'][1],
+                'written_work_affective_3_highest': maxes['wa_items'][2], 'written_work_affective_4_highest': maxes['wa_items'][3],
+                'written_work_affective_5_highest': maxes['wa_items'][4],
+                'written_work_affective': written_affective,
+                'written_work_affective_highest': written_affective_highest,
+                'performance_task_affective_1': pa_vals[0], 'performance_task_affective_2': pa_vals[1],
+                'performance_task_affective_3': pa_vals[2],
+                'performance_task_affective_1_highest': maxes['pa_items'][0], 'performance_task_affective_2_highest': maxes['pa_items'][1],
+                'performance_task_affective_3_highest': maxes['pa_items'][2],
+                'performance_task_affective': performance_affective,
+                'performance_task_affective_highest': performance_affective_highest,
+                'performance_task_behavioral_1': pb_vals[0], 'performance_task_behavioral_2': pb_vals[1],
+                'performance_task_behavioral_3': pb_vals[2],
+                'performance_task_behavioral_1_highest': maxes['pb_items'][0], 'performance_task_behavioral_2_highest': maxes['pb_items'][1],
+                'performance_task_behavioral_3_highest': maxes['pb_items'][2],
+                'performance_task_behavioral': performance_behavioral,
+                'performance_task_behavioral_highest': performance_behavioral_highest,
                 'written_work_weight': weights['ww'],
                 'performance_task_weight': weights['pt'],
                 'assessment_weight': weights['as'],
@@ -1231,6 +1327,7 @@ def grade_encode_all(request):
         current_state = access.get(grading_period.pk, 'blocked')
         assignment_data.append({
             'assignment': assignment,
+            'field_prefix': f'assignment_{assignment.pk}_',
             'student_grades': student_grades,
             'weights': weights,
             'maxes': maxes,
@@ -1343,11 +1440,12 @@ def grade_save_all(request):
 
         # Class-wide 'highest possible score' per category, posted once per
         # assignment's table and applied to every learner (mirrors grade_save).
+        is_esp = assignment.subject.is_esp
         existing_maxes = _maxes_from_grades(Grade.objects.filter(
             subject=assignment.subject, section=assignment.section,
             school_year=assignment.school_year, grading_period=grading_period,
         ))
-        maxes, max_error = _parse_maxes(request.POST, prefix=f'assignment_{assignment.pk}_', fallback=existing_maxes)
+        maxes, max_error = _parse_maxes(request.POST, prefix=f'assignment_{assignment.pk}_', fallback=existing_maxes, is_esp=is_esp)
         if max_error:
             messages.error(request, f'{assignment.subject} — {assignment.section}: {max_error}')
             continue
@@ -1363,17 +1461,20 @@ def grade_save_all(request):
             ww_items = [request.POST.get(f'{prefix}_written_{i}', '') for i in (1, 2, 3, 4, 5)]
             pt_items = [request.POST.get(f'{prefix}_performance_{i}', '') for i in (1, 2, 3)]
             as_items = [request.POST.get(f'{prefix}_assessment_{i}', '') for i in (1, 2, 3)]
-            
-            if not any(v.strip() for v in ww_items + pt_items + as_items):
-                continue
-            
+            wa_items = [request.POST.get(f'{prefix}_written_affective_{i}', '') for i in (1, 2, 3, 4, 5)] if is_esp else [''] * 5
+            pa_items = [request.POST.get(f'{prefix}_performance_affective_{i}', '') for i in (1, 2, 3)] if is_esp else [''] * 3
+            pb_items = [request.POST.get(f'{prefix}_performance_behavioral_{i}', '') for i in (1, 2, 3)] if is_esp else [''] * 3
+
             existing_grade = Grade.objects.filter(
                 student=student,
                 subject=assignment.subject,
                 grading_period=grading_period,
                 school_year=assignment.school_year,
             ).first()
-            
+
+            if not existing_grade and not any(v.strip() for v in ww_items + pt_items + as_items + wa_items + pa_items + pb_items):
+                continue
+
             # Backend enforcement of sequential locking: validated/locked grades
             # stay immutable to teachers even while submissions are open.
             if existing_grade and existing_grade.status in IMMUTABLE_GRADE_STATUSES:
@@ -1381,37 +1482,62 @@ def grade_save_all(request):
                 continue
             
             try:
-                ww_vals = [float(v) if v.strip() else 0 for v in ww_items]
-                pt_vals = [float(v) if v.strip() else 0 for v in pt_items]
-                as_vals = [float(v) if v.strip() else 0 for v in as_items]
+                ww_vals = [float(v) if v.strip() else None for v in ww_items]
+                pt_vals = [float(v) if v.strip() else None for v in pt_items]
+                as_vals = [float(v) if v.strip() else None for v in as_items]
+                wa_vals = [float(v) if v.strip() else None for v in wa_items]
+                pa_vals = [float(v) if v.strip() else None for v in pa_items]
+                pb_vals = [float(v) if v.strip() else None for v in pb_items]
             except (ValueError, TypeError):
                 messages.error(request, f'Invalid grade values for {student.full_name} in {assignment.subject}.')
                 continue
-            
-            written = sum(ww_vals)
-            performance = sum(pt_vals)
-            assessment = sum(as_vals)
-            
-            if any(v < 0 for v in ww_vals + pt_vals + as_vals):
+
+            written = sum(v or 0 for v in ww_vals)
+            performance = sum(v or 0 for v in pt_vals)
+            assessment = sum(v or 0 for v in as_vals)
+            written_affective = sum(v or 0 for v in wa_vals)
+            performance_affective = sum(v or 0 for v in pa_vals)
+            performance_behavioral = sum(v or 0 for v in pb_vals)
+
+            if any(v is not None and v < 0 for v in ww_vals + pt_vals + as_vals + wa_vals + pa_vals + pb_vals):
                 messages.error(request, f'Item scores for {student.full_name} in {assignment.subject} cannot be negative.')
                 continue
-            
+
             if not (written <= written_highest and performance <= performance_highest and assessment <= assessment_highest):
                 messages.error(request, f'Total scores for {student.full_name} in {assignment.subject} cannot exceed their highest possible score.')
                 continue
-            
+
+            # Optional domains are only bounded when a maximum is configured.
+            if any(h > 0 and t > h for t, h in (
+                    (written_affective, maxes['wa']),
+                    (performance_affective, maxes['pa']),
+                    (performance_behavioral, maxes['pb']))):
+                messages.error(request, f'Domain total scores for {student.full_name} in {assignment.subject} cannot exceed their highest possible score.')
+                continue
+
             student_ids_with_data.append(student.id)
             has_data = True
-            
-            initial_grade = weighted_quarter_grade(
-                written, written_highest,
-                performance, performance_highest,
+
+            initial_grade = weighted_initial_grade(
+                (('cognitive', written, written_highest, WW_DOMAIN_SHARES['cognitive']),
+                 ('affective', written_affective, maxes['wa'], WW_DOMAIN_SHARES['affective'])),
+                (('cognitive', performance, performance_highest, PT_DOMAIN_SHARES['cognitive']),
+                 ('affective', performance_affective, maxes['pa'], PT_DOMAIN_SHARES['affective']),
+                 ('behavioral', performance_behavioral, maxes['pb'], PT_DOMAIN_SHARES['behavioral'])),
                 assessment, assessment_highest,
                 weights['ww'], weights['pt'], weights['as'],
             )
             # Weighted total = initial grade; the stored term grade is transmuted.
             term_grade = transmute_grade(initial_grade)
-            remarks = 'Passed' if term_grade >= 75 else ('Incomplete' if term_grade >= 60 else 'Failed')
+            missing = any((
+                scores_missing(ww_vals, maxes['ww_items'], written, written_highest),
+                scores_missing(pt_vals, maxes['pt_items'], performance, performance_highest),
+                scores_missing(as_vals, maxes['as_items'], assessment, assessment_highest),
+                is_esp and scores_missing(wa_vals, maxes['wa_items'], written_affective, maxes['wa']),
+                is_esp and scores_missing(pa_vals, maxes['pa_items'], performance_affective, maxes['pa']),
+                is_esp and scores_missing(pb_vals, maxes['pb_items'], performance_behavioral, maxes['pb']),
+            ))
+            remarks = grade_remarks(term_grade, missing)
             status = 'submitted' if action == 'submit' else 'draft'
             
             grade, created = Grade.objects.update_or_create(
@@ -1438,6 +1564,26 @@ def grade_save_all(request):
                     'assessment_3_highest': maxes['as_items'][2],
                     'assessment': assessment,
                     'assessment_highest': assessment_highest,
+                    'written_work_affective_1': wa_vals[0], 'written_work_affective_2': wa_vals[1],
+                    'written_work_affective_3': wa_vals[2], 'written_work_affective_4': wa_vals[3],
+                    'written_work_affective_5': wa_vals[4],
+                    'written_work_affective_1_highest': maxes['wa_items'][0], 'written_work_affective_2_highest': maxes['wa_items'][1],
+                    'written_work_affective_3_highest': maxes['wa_items'][2], 'written_work_affective_4_highest': maxes['wa_items'][3],
+                    'written_work_affective_5_highest': maxes['wa_items'][4],
+                    'written_work_affective': written_affective,
+                    'written_work_affective_highest': maxes['wa'],
+                    'performance_task_affective_1': pa_vals[0], 'performance_task_affective_2': pa_vals[1],
+                    'performance_task_affective_3': pa_vals[2],
+                    'performance_task_affective_1_highest': maxes['pa_items'][0], 'performance_task_affective_2_highest': maxes['pa_items'][1],
+                    'performance_task_affective_3_highest': maxes['pa_items'][2],
+                    'performance_task_affective': performance_affective,
+                    'performance_task_affective_highest': maxes['pa'],
+                    'performance_task_behavioral_1': pb_vals[0], 'performance_task_behavioral_2': pb_vals[1],
+                    'performance_task_behavioral_3': pb_vals[2],
+                    'performance_task_behavioral_1_highest': maxes['pb_items'][0], 'performance_task_behavioral_2_highest': maxes['pb_items'][1],
+                    'performance_task_behavioral_3_highest': maxes['pb_items'][2],
+                    'performance_task_behavioral': performance_behavioral,
+                    'performance_task_behavioral_highest': maxes['pb'],
                     'written_work_weight': weights['ww'],
                     'performance_task_weight': weights['pt'],
                     'assessment_weight': weights['as'],

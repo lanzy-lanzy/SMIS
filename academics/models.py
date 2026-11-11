@@ -56,8 +56,22 @@ class Subject(models.Model):
     class Meta:
         ordering = ['grade_level', 'name']
 
+    # Name/code aliases for Edukasyon sa Pagpapakatao (Values Education), the
+    # only learning area that uses the Cognitive/Affective/Behavioral domains.
+    ESP_NAME_ALIASES = {
+        'edukasyon sa pagpapakatao', 'gmrc', 'gmrc / values education',
+        'values education', 'esp',
+    }
+    ESP_CODE_ALIASES = {'esp', 'gmrc', 've'}
+
     def __str__(self):
         return f"{self.code} - {self.name}"
+
+    @property
+    def is_esp(self):
+        name = ' '.join((self.name or '').lower().split())
+        code = (self.code or '').strip().lower()
+        return name in self.ESP_NAME_ALIASES or code in self.ESP_CODE_ALIASES
 
 
 class TeacherAssignment(models.Model):
