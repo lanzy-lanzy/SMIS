@@ -157,8 +157,88 @@ class MapehReportViewTests(Python314ContextCopyMixin, TestCase):
             ['Filipino', 'Music and Arts', 'PE and Health', 'MAPEH'],
         )
         row = response.context['male_rows'][0]
-        self.assertEqual(row['subject_grades'], [80, 88, 90, 89])
+        self.assertEqual(
+            [cell['value'] for cell in row['subject_grades']],
+            [80, 88, 90, 89],
+        )
+        # Legacy two-subject MAPEH stays a single merged column per learning area.
+        self.assertFalse(any(cell['is_mapeh'] for cell in row['subject_grades']))
         self.assertEqual(row['final_grade'], 85)
+
+
+class MapehComponentColumnTests(TestCase):
+    """Single-subject MAPEH exposes Music & Arts / PE & Health columns in reports."""
+
+    def setUp(self):
+        self.sy = SchoolYear.objects.create(name='2025-2026', is_current=True)
+        self.level = GradeLevel.objects.create(name='Grade 7', level=7)
+        self.section = Section.objects.create(
+            name='7-A', grade_level=self.level, school_year=self.sy
+        )
+        self.admin = User.objects.create_user(username='admin', password='x', role='admin')
+        self.term1 = GradingPeriod.objects.create(
+            name='Term 1', order=1, school_year=self.sy, is_current=True
+        )
+        GradingPeriod.objects.create(name='Term 2', order=2, school_year=self.sy)
+        GradingPeriod.objects.create(name='Term 3', order=3, school_year=self.sy)
+        self.filipino = Subject.objects.create(name='Filipino', code='FIL7', grade_level=self.level)
+        self.mapeh = Subject.objects.create(name='MAPEH', code='MAPEH7', grade_level=self.level)
+        self.student = Student.objects.create(
+            lrn='100000000002', first_name='Ana', last_name='Reyes', sex='F',
+            birthdate=datetime.date(2012, 1, 1), status='active',
+            grade_level=self.level, section=self.section, school_year=self.sy,
+        )
+        self._grade(self.filipino, self.term1, '', '80')
+        self._grade(self.mapeh, self.term1, 'ma', '88')
+        self._grade(self.mapeh, self.term1, 'peh', '90')
+
+    def _grade(self, subject, term, component, value):
+        return Grade.objects.create(
+            student=self.student, subject=subject, grading_period=term,
+            school_year=self.sy, section=self.section, status='validated',
+            quarter_grade=Decimal(value), final_grade=Decimal(value),
+            component=component,
+        )
+
+    def test_class_summary_splits_mapeh_into_component_columns(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(
+            reverse('reports:class_summary'),
+            {'section': self.section.pk, 'term': self.term1.pk},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['has_mapeh'])
+        self.assertEqual(response.context['header_rows'], 3)
+        # Filipino (1 column) + MAPEH (M A / P E H / Term Grade)
+        self.assertEqual(response.context['learning_area_span'], 4)
+
+        cells = response.context['female_rows'][0]['subject_grades']
+        mapeh_cell = next(cell for cell in cells if cell['is_mapeh'])
+        self.assertEqual(mapeh_cell['ma'], Decimal('88'))
+        self.assertEqual(mapeh_cell['peh'], Decimal('90'))
+        self.assertEqual(mapeh_cell['term'], 89)
+        # Only the merged term grade feeds the final grade: (80 + 89) / 2 = 84.5 -> 85
+        self.assertEqual(response.context['female_rows'][0]['final_grade'], 85)
+
+    def test_class_record_splits_each_term_into_component_columns(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(
+            reverse('reports:class_record'),
+            {'sy': self.sy.pk, 'section': self.section.pk, 'subject': self.mapeh.pk},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['is_mapeh'])
+        self.assertEqual(response.context['term_colspan'], 9)
+        self.assertEqual(response.context['body_colspan'], 14)
+
+        row = response.context['female_rows'][0]
+        self.assertEqual(
+            row['term_cells'][0],
+            {'ma': Decimal('88'), 'peh': Decimal('90'), 'term': 89},
+        )
+        self.assertEqual(row['final_grade'], 89)
 
 
 class Sf6MapehMergeTests(TestCase):

@@ -145,6 +145,7 @@
         .col-final { text-align: center; width: 0.55in; }
         .col-rank { text-align: center; width: 0.4in; }
         .col-subject { text-align: center; }
+        .col-comp { text-align: center; width: 0.42in; }
 
         tr.group-row td {
             background: #f1f5f9;
@@ -248,21 +249,39 @@
         <table>
             <thead>
                 <tr>
-                    <th class="col-no">No.</th>
-                    <th class="col-name">Learners' Names</th>
-                    <th class="col-lrn">LRN</th>
-                    <th class="col-dob">Date of Birth</th>
-                    <th class="col-age">Age</th>
-                    <th class="col-sex">Sex</th>
-                    {% for subject in subjects %}
-                    <th class="col-subject">{{ subject.label }}</th>
-                    {% endfor %}
-                    <th class="col-final">Final Grade</th>
-                    <th class="col-rank">Rank</th>
+                    <th class="col-no" rowspan="{{ header_rows }}">No.</th>
+                    <th class="col-name" rowspan="{{ header_rows }}">Learners' Names</th>
+                    <th class="col-lrn" rowspan="{{ header_rows }}">LRN</th>
+                    <th class="col-dob" rowspan="{{ header_rows }}">Date of Birth</th>
+                    <th class="col-age" rowspan="{{ header_rows }}">Age</th>
+                    <th class="col-sex" rowspan="{{ header_rows }}">Sex</th>
+                    <th colspan="{{ learning_area_span }}">Learning Areas</th>
+                    <th class="col-final" rowspan="{{ header_rows }}">Final Grade</th>
+                    <th class="col-rank" rowspan="{{ header_rows }}">Rank</th>
                 </tr>
+                <tr>
+                    {% for subject in subjects %}
+                    {% if subject.is_mapeh %}
+                    <th colspan="3">MAPEH</th>
+                    {% else %}
+                    <th class="col-subject" rowspan="{{ header_rows|add:'-1' }}">{{ subject.label }}</th>
+                    {% endif %}
+                    {% endfor %}
+                </tr>
+                {% if has_mapeh %}
+                <tr>
+                    {% for subject in subjects %}
+                    {% if subject.is_mapeh %}
+                    <th class="col-comp">M A</th>
+                    <th class="col-comp">P E H</th>
+                    <th class="col-subject">Term Grade</th>
+                    {% endif %}
+                    {% endfor %}
+                </tr>
+                {% endif %}
             </thead>
             <tbody>
-                <tr class="group-row"><td colspan="{{ subjects|length|add:8 }}">MALE</td></tr>
+                <tr class="group-row"><td colspan="{{ body_colspan }}">MALE</td></tr>
                 {% for row in male_rows %}
                 <tr>
                     <td class="col-no">{{ forloop.counter }}</td>
@@ -272,16 +291,22 @@
                     <td class="col-age">{{ row.age }}</td>
                     <td class="col-sex">{{ row.student.sex }}</td>
                     {% for cell in row.subject_grades %}
-                    <td class="col-subject">{% if cell is not None %}{{ cell|floatformat:"0" }}{% endif %}</td>
+                    {% if cell.is_mapeh %}
+                    <td class="col-comp">{% if cell.ma is not None %}{{ cell.ma|floatformat:"0" }}{% endif %}</td>
+                    <td class="col-comp">{% if cell.peh is not None %}{{ cell.peh|floatformat:"0" }}{% endif %}</td>
+                    <td class="col-subject">{% if cell.term is not None %}{{ cell.term|floatformat:"0" }}{% endif %}</td>
+                    {% else %}
+                    <td class="col-subject">{% if cell.value is not None %}{{ cell.value|floatformat:"0" }}{% endif %}</td>
+                    {% endif %}
                     {% endfor %}
                     <td class="col-final">{% if row.final_grade is not None %}{{ row.final_grade }}{% endif %}</td>
                     <td class="col-rank">{% if row.rank is not None %}{{ row.rank }}{% endif %}</td>
                 </tr>
                 {% empty %}
-                <tr class="empty-row"><td colspan="{{ subjects|length|add:8 }}">No male learners recorded for this section.</td></tr>
+                <tr class="empty-row"><td colspan="{{ body_colspan }}">No male learners recorded for this section.</td></tr>
                 {% endfor %}
 
-                <tr class="group-row"><td colspan="{{ subjects|length|add:8 }}">FEMALE</td></tr>
+                <tr class="group-row"><td colspan="{{ body_colspan }}">FEMALE</td></tr>
                 {% for row in female_rows %}
                 <tr>
                     <td class="col-no">{{ forloop.counter }}</td>
@@ -291,18 +316,24 @@
                     <td class="col-age">{{ row.age }}</td>
                     <td class="col-sex">{{ row.student.sex }}</td>
                     {% for cell in row.subject_grades %}
-                    <td class="col-subject">{% if cell is not None %}{{ cell|floatformat:"0" }}{% endif %}</td>
+                    {% if cell.is_mapeh %}
+                    <td class="col-comp">{% if cell.ma is not None %}{{ cell.ma|floatformat:"0" }}{% endif %}</td>
+                    <td class="col-comp">{% if cell.peh is not None %}{{ cell.peh|floatformat:"0" }}{% endif %}</td>
+                    <td class="col-subject">{% if cell.term is not None %}{{ cell.term|floatformat:"0" }}{% endif %}</td>
+                    {% else %}
+                    <td class="col-subject">{% if cell.value is not None %}{{ cell.value|floatformat:"0" }}{% endif %}</td>
+                    {% endif %}
                     {% endfor %}
                     <td class="col-final">{% if row.final_grade is not None %}{{ row.final_grade }}{% endif %}</td>
                     <td class="col-rank">{% if row.rank is not None %}{{ row.rank }}{% endif %}</td>
                 </tr>
                 {% empty %}
-                <tr class="empty-row"><td colspan="{{ subjects|length|add:8 }}">No female learners recorded for this section.</td></tr>
+                <tr class="empty-row"><td colspan="{{ body_colspan }}">No female learners recorded for this section.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
 
-        <p class="note">Term grades are shown for the selected quarter. Only validated and locked grades are reflected; the final grade is the average of the subject term grades for the quarter, and rank is computed across the whole section.</p>
+        <p class="note">Term grades are shown for the selected quarter. Only validated and locked grades are reflected; the final grade is the average of the subject term grades for the quarter, and rank is computed across the whole section.{% if has_mapeh %} MAPEH lists its Music &amp; Arts and PE &amp; Health component grades beside the merged MAPEH term grade; only the term grade counts toward the final grade.{% endif %}</p>
 
         <div class="signatures">
             <div class="signature">

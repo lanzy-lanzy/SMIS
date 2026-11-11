@@ -932,7 +932,11 @@ def class_summary(request):
         term = next((p for p in periods if p.is_current), periods[0] if periods else None)
 
     subjects = [
-        {'model': subject, 'label': _class_summary_label(subject)}
+        {
+            'model': subject,
+            'label': _class_summary_label(subject),
+            'is_mapeh': is_mapeh_subject(subject.name),
+        }
         for subject in _ordered_subjects(
             Subject.objects.filter(grade_level=section.grade_level, is_active=True)
         )
@@ -944,10 +948,15 @@ def class_summary(request):
         mapeh_entry = {
             'model': None,
             'label': 'MAPEH',
+            'is_mapeh': False,
             'component_ids': [entry['model'].id for entry in component_entries],
         }
         insert_at = max(subjects.index(entry) for entry in component_entries) + 1
         subjects.insert(insert_at, mapeh_entry)
+
+    # MAPEH occupies 3 columns (Music & Arts / PE & Health / Term Grade) when it
+    # is stored as a single subject with component rows.
+    learning_area_span = sum(3 if entry['is_mapeh'] else 1 for entry in subjects)
 
     male_rows, female_rows = [], []
     if section:
@@ -967,11 +976,12 @@ def class_summary(request):
         )
         grades_map = {}
         mapeh_summary = {}
+        mapeh_component_cells = {}
         for grade in grades:
             if is_mapeh_subject(grade.subject.name) and grade.component:
-                mapeh_summary.setdefault(
-                    (grade.student_id, grade.subject_id, grade.grading_period.order), []
-                ).append(grade.quarter_grade)
+                key = (grade.student_id, grade.subject_id, grade.grading_period.order)
+                mapeh_summary.setdefault(key, []).append(grade.quarter_grade)
+                mapeh_component_cells.setdefault(key, {})[grade.component] = grade.quarter_grade
                 continue
             grades_map.setdefault(grade.student_id, {}).setdefault(
                 grade.subject_id, {}
@@ -990,20 +1000,36 @@ def class_summary(request):
                         student_grades.get(component_id, {}).get(term.order) if term else None
                         for component_id in subject['component_ids']
                     ]
-                    subject_grades.append(merge_mapeh_grades(values))
-                else:
-                    subject_grades.append(
-                        student_grades.get(subject['model'].id, {}).get(term.order)
-                        if term else None
+                    subject_grades.append({
+                        'is_mapeh': False,
+                        'value': merge_mapeh_grades(values),
+                    })
+                elif subject['is_mapeh'] and term:
+                    components = mapeh_component_cells.get(
+                        (student.id, subject['model'].id, term.order), {}
                     )
+                    subject_grades.append({
+                        'is_mapeh': True,
+                        'ma': components.get('ma'),
+                        'peh': components.get('peh'),
+                        'term': student_grades.get(subject['model'].id, {}).get(term.order),
+                    })
+                else:
+                    subject_grades.append({
+                        'is_mapeh': False,
+                        'value': student_grades.get(subject['model'].id, {}).get(term.order)
+                        if term else None,
+                    })
+            average_values = [
+                cell['term'] if cell['is_mapeh'] else cell['value']
+                for cell in subject_grades
+            ]
             if mapeh_entry is not None:
                 component_ids = set(mapeh_entry['component_ids'])
                 average_values = [
-                    value for subject, value in zip(subjects, subject_grades)
+                    value for subject, value in zip(subjects, average_values)
                     if subject['model'] is None or subject['model'].id not in component_ids
                 ]
-            else:
-                average_values = subject_grades
             final_grade = _average_grade(average_values)
             row = {
                 'student': student,
@@ -1031,5 +1057,9 @@ def class_summary(request):
         'female_rows': female_rows,
         'adviser_name': section.adviser.get_full_name().upper() if section and section.adviser else '',
         'selected_sy': school_year,
+        'learning_area_span': learning_area_span,
+        'body_colspan': learning_area_span + 8,
+        'has_mapeh': any(entry['is_mapeh'] for entry in subjects),
+        'header_rows': 3 if any(entry['is_mapeh'] for entry in subjects) else 2,
     }
     return render(request, 'reports/class_summary.html', context)
