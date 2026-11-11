@@ -7,9 +7,10 @@ validated/locked grades only, so the form always reflects finalized records.
 """
 
 from decimal import Decimal, ROUND_HALF_UP
+from types import SimpleNamespace
 
 from grades.models import Grade
-from grades.mapeh import mapeh_component, merge_mapeh_grades
+from grades.mapeh import is_mapeh_subject, mapeh_component, merge_mapeh_grades
 from students.models import ENROLLED_STATUSES, Student
 
 
@@ -118,11 +119,28 @@ def _student_finals(students, school_year):
     )
 
     latest = {}
+    mapeh_components = {}
     for grade in grades:
         level_id = student_levels.get(grade.student_id)
         if level_id and grade.subject.grade_level_id != level_id:
             continue
+        # MAPEH is one Subject but two Grade rows per learner/term (component
+        # 'ma' / 'peh'); roll them up per period so the latest MAPEH final is
+        # the average of the two components, matching the report-card layout.
+        if is_mapeh_subject(grade.subject.name) and grade.component:
+            mapeh_components.setdefault((grade.student_id, grade.grading_period.order), []).append(grade)
+            continue
         latest[(grade.student_id, grade.subject.name)] = grade
+
+    if mapeh_components:
+        by_student = {}
+        for (student_id, order), component_grades in mapeh_components.items():
+            avg = merge_mapeh_grades(g.final_grade for g in component_grades)
+            if avg is not None:
+                by_student.setdefault(student_id, {})[order] = avg
+        for student_id, period_avgs in by_student.items():
+            latest_order = max(period_avgs)
+            latest[(student_id, 'MAPEH')] = SimpleNamespace(final_grade=Decimal(period_avgs[latest_order]))
 
     finals = {}
     for (student_id, subject_name), grade in latest.items():

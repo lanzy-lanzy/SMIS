@@ -12,7 +12,7 @@ from django.db.models import Avg, Count, Q
 from django.utils.text import slugify
 from students.models import Student, ENROLLED_STATUSES
 from grades.models import Grade, GradeSubmission, grade_descriptor
-from grades.mapeh import mapeh_component, merge_mapeh_grades, merge_mapeh_periods
+from grades.mapeh import is_mapeh_subject, mapeh_component, merge_mapeh_grades, merge_mapeh_periods
 from academics.models import (
     SchoolYear, GradeLevel, Section, Subject, GradingPeriod, TeacherAssignment,
 )
@@ -573,8 +573,22 @@ def _report_card_context(request, student):
     ) if school_year else Grade.objects.none()
 
     subjects_map = {}
+    mapeh_component_rows = {}
     for grade in grades:
+        # MAPEH is one Subject but two Grade rows per learner/term (component
+        # 'ma' / 'peh'); roll them up into one MAPEH parent row so the report
+        # card matches the DepEd layout. Legacy combined rows (component='')
+        # pass through unchanged.
+        if is_mapeh_subject(grade.subject.name) and grade.component:
+            mapeh_component_rows.setdefault(grade.grading_period.order, []).append(grade)
+            continue
         subjects_map.setdefault(grade.subject.name, {})[grade.grading_period.order] = grade
+    if mapeh_component_rows:
+        parent_map = subjects_map.setdefault('MAPEH', {})
+        for order, component_grades in mapeh_component_rows.items():
+            avg = merge_mapeh_grades(g.quarter_grade for g in component_grades)
+            if avg is not None:
+                parent_map[order] = SimpleNamespace(quarter_grade=Decimal(avg))
 
     rows = _build_grade_rows(subjects_map, terms, completed)
 
@@ -735,8 +749,16 @@ def class_record(request):
             .select_related('student', 'grading_period')
         )
         grades_map = {}
+        mapeh_trends = {}
         for grade in grades:
+            if is_mapeh_subject(grade.subject.name) and grade.component:
+                mapeh_trends.setdefault((grade.student_id, grade.grading_period.order), []).append(grade.quarter_grade)
+                continue
             grades_map.setdefault(grade.student_id, {})[grade.grading_period.order] = grade.quarter_grade
+        for (student_id, order), values in mapeh_trends.items():
+            avg = merge_mapeh_grades(values)
+            if avg is not None:
+                grades_map.setdefault(student_id, {})[order] = Decimal(avg)
 
         for student in students:
             if student.sex not in rows_by_sex:
@@ -923,10 +945,20 @@ def class_summary(request):
             .select_related('student', 'subject', 'grading_period')
         )
         grades_map = {}
+        mapeh_summary = {}
         for grade in grades:
+            if is_mapeh_subject(grade.subject.name) and grade.component:
+                mapeh_summary.setdefault(
+                    (grade.student_id, grade.subject_id, grade.grading_period.order), []
+                ).append(grade.quarter_grade)
+                continue
             grades_map.setdefault(grade.student_id, {}).setdefault(
                 grade.subject_id, {}
             )[grade.grading_period.order] = grade.quarter_grade
+        for (student_id, subject_id, order), values in mapeh_summary.items():
+            avg = merge_mapeh_grades(values)
+            if avg is not None:
+                grades_map.setdefault(student_id, {}).setdefault(subject_id, {})[order] = Decimal(avg)
 
         for student in students:
             student_grades = grades_map.get(student.id, {})

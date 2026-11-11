@@ -1,8 +1,15 @@
-"""Shared helpers for merging MAPEH component grades.
+"""Shared helpers for MAPEH grading.
 
-Music and Arts (MA) and Physical Education and Health (PEH) are encoded as
-separate subjects but report as a single MAPEH grade: the whole-number
-average of the component term grades.
+MAPEH is one learning area but is encoded as two components (Music and Arts,
+Physical Education and Health) per learner per term. In this system MAPEH is a
+single ``Subject`` and the two components are distinguished by the
+``Grade.component`` field ('ma' / 'peh'); reports roll the two component grades
+up to a whole-number average for the MAPEH parent row.
+
+The legacy two-subject layout (separate 'Music and Arts' and 'Physical
+Education and Health' Subjects) is still recognised by ``mapeh_component`` so
+older data keeps rendering; new encoding uses ``is_mapeh_subject`` on the
+combined 'MAPEH' subject name.
 """
 
 from decimal import Decimal, ROUND_HALF_UP
@@ -13,13 +20,26 @@ MAPEH_COMPONENTS = (
     ('peh', 'Physical Education and Health', {'physical education and health', 'pe and health', 'peah'}),
 )
 
+# Subject names that identify the combined MAPEH learning area (one Subject,
+# two Grade.component rows per learner/term).
+MAPEH_SUBJECT_ALIASES = {'mapeh'}
+
 
 def _key(name):
     return ' '.join((name or '').lower().split())
 
 
+def is_mapeh_subject(name):
+    """True when *name* is the combined MAPEH subject (not a component)."""
+    return _key(name) in MAPEH_SUBJECT_ALIASES
+
+
 def mapeh_component(name):
-    """Return 'ma' / 'peh' when *name* is a MAPEH component subject, else None."""
+    """Return 'ma' / 'peh' when *name* is a MAPEH component subject, else None.
+
+    Only the legacy two-subject layout matches here; the combined 'MAPEH'
+    subject returns ``None`` because it is the parent, not a component.
+    """
     key = _key(name)
     for component, _label, aliases in MAPEH_COMPONENTS:
         if key in aliases:

@@ -11,6 +11,7 @@ from .models import (
     WW_WEIGHT, PT_WEIGHT, AS_WEIGHT, WW_DOMAIN_SHARES, PT_DOMAIN_SHARES,
 )
 from academics.models import TeacherAssignment, GradingPeriod, SchoolYear, Section, Subject
+from .mapeh import MAPEH_COMPONENTS, is_mapeh_subject, mapeh_component
 from students.models import Student, ENROLLED_STATUSES
 from accounts.models import AuditLog
 from accounts.decorators import (
@@ -82,7 +83,7 @@ def grade_list(request):
     for assignment in assignments:
         key = (assignment.teacher_id, assignment.subject_id, assignment.section_id)
         submission_status_by_pk[assignment.pk] = submissions_status.get(key)
-    
+
     total_assignments = assignments.count()
     pending_submissions = GradeSubmission.objects.filter(
         status='pending', school_year=current_sy, grading_period=selected_period
@@ -432,6 +433,54 @@ def _sequential_save_block(assignment, grading_period):
     return None
 
 
+# Display metadata for the MAPEH component tabs; the ordering mirrors
+# MAPEH_COMPONENTS so the encode page always shows MA -> PEH left-to-right.
+MAPEH_TAB_META = {
+    'ma': ('Music & Arts', 'MA'),
+    'peh': ('Physical Education & Health', 'PEH'),
+}
+
+
+def _mapeh_component_tabs(assignment, grading_period, current_component):
+    """Inline tabs that swap between MA and PEH for the same MAPEH class/term.
+
+    MAPEH is one Subject/TeacherAssignment but is encoded as two components per
+    learner per term (Music & Arts, Physical Education & Health) distinguished
+    by ``Grade.component``. The tabs switch the ``?component=`` query param on
+    the same encode URL so the teacher flips between the two Grade sets without
+    leaving the MAPEH screen. Returns ``None`` for non-MAPEH subjects.
+    """
+    if not is_mapeh_subject(assignment.subject.name):
+        return None
+    base = reverse('grades:grade_encode', args=[assignment.pk])
+    tabs = []
+    for component, _label, _aliases in MAPEH_COMPONENTS:
+        display, code = MAPEH_TAB_META[component]
+        tabs.append({
+            'component': component,
+            'display': display,
+            'code': code,
+            'is_current': component == current_component,
+            'available': True,
+            'url': f"{base}?period={grading_period.pk}&component={component}",
+        })
+    return tabs
+
+
+def _resolve_mapeh_component(assignment, raw):
+    """Normalize the ``?component=`` value for a MAPEH assignment.
+
+    Non-MAPEH subjects always return ``''`` (single combined row). MAPEH
+    subjects default to ``'ma'`` when the param is missing or invalid so the
+    encode page always shows one of the two components rather than an empty
+    combined view.
+    """
+    if not is_mapeh_subject(assignment.subject.name):
+        return ''
+    value = (raw or '').strip().lower()
+    return value if value in MAPEH_TAB_META else 'ma'
+
+
 @never_cache
 @teacher_or_admin_required
 def grade_encode(request, assignment_pk):
@@ -456,14 +505,24 @@ def grade_encode(request, assignment_pk):
         section=assignment.section,
         status__in=ENROLLED_STATUSES
     )
-    
+
+    # MAPEH is one Subject but two Grade rows per learner/term (component='ma'
+    # / 'peh'); the toggle switches the ?component= param and we scope every
+    # Grade lookup to the active component. Non-MAPEH subjects use component=''
+    # so the extra filter is a no-op there.
+    mapeh_component_value = _resolve_mapeh_component(assignment, request.GET.get('component'))
+
+    grade_filter = {
+        'subject': assignment.subject,
+        'section': assignment.section,
+        'school_year': assignment.school_year,
+        'grading_period': grading_period,
+    }
+    if mapeh_component_value:
+        grade_filter['component'] = mapeh_component_value
+
     existing_grades = {}
-    for grade in Grade.objects.filter(
-        subject=assignment.subject,
-        section=assignment.section,
-        school_year=assignment.school_year,
-        grading_period=grading_period
-    ).select_related('student'):
+    for grade in Grade.objects.filter(**grade_filter).select_related('student'):
         existing_grades[grade.student_id] = grade
     
     grade_data = []
@@ -496,6 +555,9 @@ def grade_encode(request, assignment_pk):
         grading_period=grading_period
     ).first()
     context['can_submit'] = _can_submit(context['submission'])
+
+    context['mapeh_component'] = mapeh_component_value
+    context['mapeh_tabs'] = _mapeh_component_tabs(assignment, grading_period, mapeh_component_value)
 
     return render(request, 'grades/grade_encode.html', context)
 
@@ -557,19 +619,34 @@ def grade_save(request, assignment_pk):
 
     action = request.POST.get('action', 'draft')
 
+    # MAPEH component scope: the encode form posts the active component so the
+    # save writes to the correct Grade row (MA vs PEH). Non-MAPEH subjects get
+    # '' and behave exactly as before.
+    mapeh_component_value = _resolve_mapeh_component(assignment, request.POST.get('component'))
+    encode_url = (
+        f'{reverse("grades:grade_encode", args=[assignment.pk])}'
+        f'?period={grading_period.pk}'
+        + (f'&component={mapeh_component_value}' if mapeh_component_value else '')
+    )
+
     weights, weight_error = _parse_weights(request.POST)
     if weight_error:
         messages.error(request, weight_error)
-        return redirect(f'{reverse("grades:grade_encode", args=[assignment.pk])}?period={grading_period.pk}')
+        return redirect(encode_url)
 
-    existing_maxes = _maxes_from_grades(Grade.objects.filter(
-        subject=assignment.subject, section=assignment.section,
-        school_year=assignment.school_year, grading_period=grading_period,
-    ))
+    existing_maxes_filter = {
+        'subject': assignment.subject,
+        'section': assignment.section,
+        'school_year': assignment.school_year,
+        'grading_period': grading_period,
+    }
+    if mapeh_component_value:
+        existing_maxes_filter['component'] = mapeh_component_value
+    existing_maxes = _maxes_from_grades(Grade.objects.filter(**existing_maxes_filter))
     maxes, max_error = _parse_maxes(request.POST, fallback=existing_maxes, is_esp=assignment.subject.is_esp)
     if max_error:
         messages.error(request, max_error)
-        return redirect(f'{reverse("grades:grade_encode", args=[assignment.pk])}?period={grading_period.pk}')
+        return redirect(encode_url)
 
     students = Student.objects.filter(
         grade_level=assignment.section.grade_level,
@@ -590,12 +667,15 @@ def grade_save(request, assignment_pk):
         pa_items = [request.POST.get(f'{prefix}_performance_affective_{i}', '') for i in (1, 2, 3)] if is_esp else [''] * 3
         pb_items = [request.POST.get(f'{prefix}_performance_behavioral_{i}', '') for i in (1, 2, 3)] if is_esp else [''] * 3
 
-        existing_grade = Grade.objects.filter(
-            student=student,
-            subject=assignment.subject,
-            grading_period=grading_period,
-            school_year=assignment.school_year,
-        ).first()
+        existing_grade_filter = {
+            'student': student,
+            'subject': assignment.subject,
+            'grading_period': grading_period,
+            'school_year': assignment.school_year,
+        }
+        if mapeh_component_value:
+            existing_grade_filter['component'] = mapeh_component_value
+        existing_grade = Grade.objects.filter(**existing_grade_filter).first()
 
         if not existing_grade and not any(v.strip() for v in ww_items + pt_items + as_items + wa_items + pa_items + pb_items):
             continue
@@ -676,11 +756,16 @@ def grade_save(request, assignment_pk):
         
         status = 'submitted' if action == 'submit' else 'draft'
 
+        grade_kwargs = {
+            'student': student,
+            'subject': assignment.subject,
+            'grading_period': grading_period,
+            'school_year': assignment.school_year,
+        }
+        if mapeh_component_value:
+            grade_kwargs['component'] = mapeh_component_value
         grade, created = Grade.objects.update_or_create(
-            student=student,
-            subject=assignment.subject,
-            grading_period=grading_period,
-            school_year=assignment.school_year,
+            **grade_kwargs,
             defaults={
                 'section': assignment.section,
                 'written_work_1': ww_vals[0], 'written_work_2': ww_vals[1], 'written_work_3': ww_vals[2],
@@ -771,6 +856,7 @@ def grade_save(request, assignment_pk):
             section=assignment.section,
             school_year=assignment.school_year,
             grading_period=grading_period,
+            **({'component': mapeh_component_value} if mapeh_component_value else {}),
             status='draft'
         ).update(status='submitted')
         

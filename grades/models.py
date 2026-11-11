@@ -199,12 +199,22 @@ class Grade(models.Model):
         ('returned', 'Returned'),
         ('locked', 'Locked'),
     )
+    # MAPEH is one Subject but is encoded as two components (Music & Arts and
+    # Physical Education & Health) per learner per term. The ``component`` field
+    # distinguishes the two Grade rows; every other subject keeps a single row
+    # with ``component=''``. Legacy MAPEH rows (pre-component) also keep ``''``.
+    COMPONENT_CHOICES = (
+        ('', 'Not a component / combined'),
+        ('ma', 'Music and Arts'),
+        ('peh', 'Physical Education and Health'),
+    )
 
     student = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='grades')
     subject = models.ForeignKey('academics.Subject', on_delete=models.CASCADE, related_name='grades')
     grading_period = models.ForeignKey('academics.GradingPeriod', on_delete=models.CASCADE, related_name='grades')
     school_year = models.ForeignKey('academics.SchoolYear', on_delete=models.CASCADE, related_name='grades')
     section = models.ForeignKey('academics.Section', on_delete=models.CASCADE, related_name='grades')
+    component = models.CharField(max_length=4, choices=COMPONENT_CHOICES, blank=True, default='', db_index=True)
     
     # Written Work (20%): five component scores summed into written_work (total).
     # Each item also has a class-wide "highest possible score"; the category max
@@ -296,7 +306,7 @@ class Grade(models.Model):
 
     class Meta:
         ordering = ['student__last_name', 'subject__name']
-        unique_together = ('student', 'subject', 'grading_period', 'school_year')
+        unique_together = ('student', 'subject', 'grading_period', 'school_year', 'component')
 
     def __str__(self):
         return f"{self.student} - {self.subject} - {self.quarter_grade}"

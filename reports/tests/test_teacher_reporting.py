@@ -144,7 +144,7 @@ class TeacherReportingTests(Python314ContextCopyMixin, TestCase):
         self.assertEqual(row['final_grade'], 88)
         self.assertEqual(row['remark'], 'Passed')
 
-    def test_class_record_includes_validated_exam_analysis_and_mps(self):
+    def test_exam_analysis_includes_validated_items_and_mps(self):
         for student, scores in ((self.boy, (8, 9, 10)), (self.girl, (6, 7, 8))):
             grade = self._grade(student, self.filipino, 1, 90)
             for number, score in enumerate(scores, start=1):
@@ -161,7 +161,7 @@ class TeacherReportingTests(Python314ContextCopyMixin, TestCase):
 
         self.client.force_login(self.adviser)
         response = self.client.get(
-            reverse('reports:class_record'), {'subject': self.filipino.pk}
+            reverse('reports:exam_analysis'), {'subject': self.filipino.pk}
         )
 
         self.assertEqual(response.status_code, 200)
@@ -252,7 +252,7 @@ class TeacherReportingTests(Python314ContextCopyMixin, TestCase):
         response = self.client.get(reverse('dashboard:index'))
 
         self.assertContains(response, reverse('reports:report_templates'))
-        self.assertContains(response, '<span>Templates</span>', html=True)
+        self.assertContains(response, '<span>Reports</span>', html=True)
         self.assertNotContains(response, '<span>Class Record</span>', html=True)
         self.assertNotContains(response, '<span>Report Cards</span>', html=True)
 
