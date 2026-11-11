@@ -16,5 +16,6 @@ urlpatterns = [
     path('report-card/<int:student_pk>/pdf/', views.report_card_pdf, name='report_card_pdf'),
     path('templates/', views.report_templates, name='report_templates'),
     path('class-record/', views.class_record, name='class_record'),
+    path('exam-analysis/', views.exam_analysis, name='exam_analysis'),
     path('class-summary/', views.class_summary, name='class_summary'),
 ]

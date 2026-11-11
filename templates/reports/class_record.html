@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Class Record - {% if section %}{{ section.grade_level.name }} {{ section.name }}{% endif %}{% if subject %} - {{ subject.name }}{% endif %}</title>
+    <title>Final Grade - {% if section %}{{ section.grade_level.name }} {{ section.name }}{% endif %}{% if subject %} - {{ subject.name }}{% endif %}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -165,40 +165,6 @@
             margin-top: 7px;
         }
 
-        .exam-analysis {
-            break-inside: avoid;
-            margin-top: 20px;
-            page-break-inside: avoid;
-        }
-        .exam-analysis h2 {
-            border-bottom: 1.5px solid #000;
-            border-top: 1.5px solid #000;
-            font-size: 10pt;
-            letter-spacing: 0.06em;
-            padding: 4px;
-            text-align: center;
-            text-transform: uppercase;
-        }
-        .analysis-term {
-            font-size: 8.5pt;
-            font-weight: 700;
-            margin: 5px 0;
-            text-align: center;
-        }
-        .analysis-metric { width: 46%; }
-        .analysis-value { width: 18%; text-align: center; }
-        .analysis-label { text-align: left; }
-        .analysis-group td {
-            background: #f1f5f9;
-            font-size: 8pt;
-            font-weight: 700;
-            text-align: left;
-        }
-        .analysis-mps td {
-            background: #f8fafc;
-            font-weight: 700;
-        }
-
         .signatures {
             display: flex;
             justify-content: space-between;
@@ -232,7 +198,7 @@
 </head>
 <body>
     <div class="actions">
-        <a href="{% url 'grades:grade_list' %}" class="btn btn-secondary">Back</a>
+        <a href="{% url 'reports:report_templates' %}" class="btn btn-secondary">Back</a>
         <button type="button" class="btn" onclick="window.print()">Print</button>
     </div>
 
@@ -268,7 +234,7 @@
         <div class="school-name">{{ school_name }}</div>
         <div class="school-meta">School ID: {{ school_id }}{% if selected_sy %} &nbsp;|&nbsp; School Year: {{ selected_sy.name }}{% endif %}</div>
 
-        <div class="title">CLASS RECORD - FINAL GRADES</div>
+        <div class="title">FINAL GRADE</div>
 
         {% if section and subject %}
         <div class="meta">
@@ -327,37 +293,6 @@
         </table>
 
         <p class="note">Only validated and locked term grades are reflected in this record. The final grade is the average of the available term grades, rounded to the nearest whole number.</p>
-
-        {% for analysis in exam_analysis %}
-        <div class="exam-analysis">
-            <h2>Test/Exam Results Analysis</h2>
-            <div class="analysis-term">{{ analysis.term.name }} &middot; {{ subject.name }}</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th class="analysis-metric">Metric</th>
-                        {% for item in analysis.items %}
-                        <th class="analysis-value">{{ item.label }}</th>
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in analysis.rows %}
-                    {% if row.group %}
-                    <tr class="analysis-group"><td colspan="4">{{ row.group }}</td></tr>
-                    {% else %}
-                    <tr{% if row.class %} class="{{ row.class }}"{% endif %}>
-                        <td class="analysis-label">{{ row.label }}</td>
-                        {% for cell in row.cells %}
-                        <td class="analysis-value">{% if cell is not None %}{{ cell|floatformat:row.format }}{% else %}&mdash;{% endif %}</td>
-                        {% endfor %}
-                    </tr>
-                    {% endif %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% endfor %}
 
         <div class="signatures">
             <div class="signature">

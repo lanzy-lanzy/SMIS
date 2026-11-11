@@ -162,9 +162,9 @@
                         <span>Transmutation Table</span>
                     </a>
                     {% if user.is_teacher %}
-                    <a href="{% url 'reports:report_templates' %}" class="app-nav-link {% if request.resolver_match.url_name == 'report_templates' or request.resolver_match.url_name == 'class_record' or request.resolver_match.url_name == 'class_summary' or request.resolver_match.url_name == 'report_card_select' or request.resolver_match.url_name == 'report_card' or request.resolver_match.url_name == 'report_card_pdf' %}is-active{% endif %}" @click="if (window.innerWidth < 1024) sidebarOpen = false">
+                    <a href="{% url 'reports:report_templates' %}" class="app-nav-link {% if request.resolver_match.url_name == 'report_templates' or request.resolver_match.url_name == 'class_record' or request.resolver_match.url_name == 'class_summary' or request.resolver_match.url_name == 'exam_analysis' or request.resolver_match.url_name == 'report_card_select' or request.resolver_match.url_name == 'report_card' or request.resolver_match.url_name == 'report_card_pdf' %}is-active{% endif %}" @click="if (window.innerWidth < 1024) sidebarOpen = false">
                         <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 6a2 2 0 012-2h4l2 2h8a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V6zM8 12h8m-8 4h5"/></svg>
-                        <span>Templates</span>
+                        <span>Reports</span>
                     </a>
                     {% endif %}
                     {% endif %}

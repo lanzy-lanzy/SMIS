@@ -718,7 +718,6 @@ def class_record(request):
     ) if school_year else []
 
     rows_by_sex = {'M': [], 'F': []}
-    exam_analysis = []
     if section and subject and terms:
         students = (
             Student.objects
@@ -761,7 +760,6 @@ def class_record(request):
             dict(row, no=number)
             for number, row in enumerate(rows_by_sex['F'], start=1)
         ]
-        exam_analysis = _exam_analysis(grades, terms)
 
     teacher_name = request.user.get_full_name().upper()
     if not request.user.is_teacher and subject and section and school_year:
@@ -783,11 +781,85 @@ def class_record(request):
         'subject': subject,
         'male_rows': rows_by_sex['M'],
         'female_rows': rows_by_sex['F'],
-        'exam_analysis': exam_analysis,
         'teacher_name': teacher_name,
         'selected_sy': school_year,
     }
     return render(request, 'reports/class_record.html', context)
+
+
+@role_required('admin', 'registrar', 'teacher')
+def exam_analysis(request):
+    """Test/Exam Results Analysis for one subject/section across terms.
+
+    Previously embedded at the foot of the Class Record; broken out into its
+    own printable report so the Class Record stays a pure final-grades sheet.
+    """
+    school_year = _selected_school_year(request)
+    school_years = SchoolYear.objects.all()
+
+    sections = (
+        Section.objects.filter(school_year=school_year)
+        .select_related('grade_level')
+        .order_by('grade_level__level', 'name')
+    ) if school_year else Section.objects.none()
+
+    if request.user.is_teacher:
+        sections = sections.filter(id__in=_teacher_section_ids(request.user, school_year))
+
+    section_id = request.GET.get('section', '').strip()
+    section = sections.filter(pk=section_id).first() if section_id else sections.first()
+
+    if section:
+        if request.user.is_teacher:
+            subjects = Subject.objects.filter(
+                is_active=True,
+                assignments__teacher=request.user,
+                assignments__section=section,
+                assignments__school_year=school_year,
+            ).distinct()
+        else:
+            subjects = Subject.objects.filter(
+                grade_level=section.grade_level, is_active=True
+            )
+        subjects = _ordered_subjects(subjects)
+    else:
+        subjects = []
+
+    subject_id = request.GET.get('subject', '').strip()
+    subject = next((s for s in subjects if str(s.pk) == subject_id), None)
+    if subject is None and subjects:
+        subject = subjects[0]
+
+    terms = list(
+        GradingPeriod.objects.filter(school_year=school_year).order_by('order')
+    ) if school_year else []
+
+    analyses = []
+    if section and subject and terms:
+        grades = (
+            Grade.objects
+            .filter(
+                section=section,
+                subject=subject,
+                school_year=school_year,
+                status__in=['validated', 'locked'],
+            )
+            .select_related('student', 'grading_period')
+        )
+        analyses = _exam_analysis(grades, terms)
+
+    context = {
+        **_school_header(school_year),
+        'school_years': school_years,
+        'sections': sections,
+        'subjects': subjects,
+        'terms': terms,
+        'section': section,
+        'subject': subject,
+        'exam_analysis': analyses,
+        'selected_sy': school_year,
+    }
+    return render(request, 'reports/exam_analysis.html', context)
 
 
 @role_required('admin', 'registrar', 'teacher')
