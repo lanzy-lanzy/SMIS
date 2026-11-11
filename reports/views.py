@@ -732,6 +732,7 @@ def class_record(request):
     ) if school_year else []
 
     rows_by_sex = {'M': [], 'F': []}
+    is_mapeh = bool(subject and is_mapeh_subject(subject.name))
     if section and subject and terms:
         students = (
             Student.objects
@@ -749,13 +750,18 @@ def class_record(request):
             .select_related('student', 'grading_period')
         )
         grades_map = {}
-        mapeh_trends = {}
+        # MAPEH keeps its Music & Arts / PE & Health rows so the record can show
+        # one column per component alongside the merged term grade.
+        mapeh_components = {}
+        mapeh_component_values = {}
         for grade in grades:
-            if is_mapeh_subject(grade.subject.name) and grade.component:
-                mapeh_trends.setdefault((grade.student_id, grade.grading_period.order), []).append(grade.quarter_grade)
+            if is_mapeh and grade.component:
+                key = (grade.student_id, grade.grading_period.order)
+                mapeh_components.setdefault(key, {})[grade.component] = grade.quarter_grade
+                mapeh_component_values.setdefault(key, []).append(grade.quarter_grade)
                 continue
             grades_map.setdefault(grade.student_id, {})[grade.grading_period.order] = grade.quarter_grade
-        for (student_id, order), values in mapeh_trends.items():
+        for (student_id, order), values in mapeh_component_values.items():
             avg = merge_mapeh_grades(values)
             if avg is not None:
                 grades_map.setdefault(student_id, {})[order] = Decimal(avg)
@@ -764,8 +770,19 @@ def class_record(request):
             if student.sex not in rows_by_sex:
                 continue
             period_grades = grades_map.get(student.id, {})
-            term_cells = [period_grades.get(period.order) for period in terms]
-            final_grade = _average_grade(term_cells)
+            term_values = [period_grades.get(period.order) for period in terms]
+            if is_mapeh:
+                term_cells = [
+                    {
+                        'ma': mapeh_components.get((student.id, period.order), {}).get('ma'),
+                        'peh': mapeh_components.get((student.id, period.order), {}).get('peh'),
+                        'term': period_grades.get(period.order),
+                    }
+                    for period in terms
+                ]
+            else:
+                term_cells = term_values
+            final_grade = _average_grade(term_values)
             rows_by_sex[student.sex].append({
                 'student': student,
                 'term_cells': term_cells,
@@ -805,6 +822,10 @@ def class_record(request):
         'female_rows': rows_by_sex['F'],
         'teacher_name': teacher_name,
         'selected_sy': school_year,
+        # MAPEH spreads every term across 3 columns (MA / PEH / Term Grade).
+        'is_mapeh': is_mapeh,
+        'term_colspan': len(terms) * 3 if is_mapeh else len(terms),
+        'body_colspan': (len(terms) * 3 if is_mapeh else len(terms)) + 5,
     }
     return render(request, 'reports/class_record.html', context)
 
