@@ -12,7 +12,10 @@ from django.db.models import Avg, Count, Q
 from django.utils.text import slugify
 from students.models import Student, ENROLLED_STATUSES
 from grades.models import Grade, GradeSubmission, grade_descriptor
-from grades.mapeh import is_mapeh_subject, mapeh_component, merge_mapeh_grades, merge_mapeh_periods
+from grades.mapeh import (
+    MAPEH_COMPONENTS, is_mapeh_subject, mapeh_component,
+    merge_mapeh_grades, merge_mapeh_periods,
+)
 from academics.models import (
     SchoolYear, GradeLevel, Section, Subject, GradingPeriod, TeacherAssignment,
 )
@@ -21,18 +24,22 @@ from accounts.decorators import registrar_or_admin_required, role_required
 from .sf6 import build_sf6_summary
 
 
-def _completed_period_orders(school_year):
+def _completed_period_orders(school_year, section=None):
     """Return the grading-period orders whose submissions are all approved.
 
     A term is treated as finished (exportable) when at least one grade
     submission exists for it in the school year and none are left pending or
     returned. This mirrors the completion gate used on the submissions page.
+    When *section* is given, only that section's submissions are considered,
+    so a returned submission in another section does not blank the card.
     """
     if not school_year:
         return set()
     completed = set()
     for period in GradingPeriod.objects.filter(school_year=school_year):
         subs = GradeSubmission.objects.filter(school_year=school_year, grading_period=period)
+        if section is not None:
+            subs = subs.filter(section=section)
         if subs.exists() and not subs.filter(status__in=['pending', 'returned']).exists():
             completed.add(period.order)
     return completed
@@ -92,6 +99,7 @@ MAPEH_COMPONENT_ROWS = [
     ('Music and Arts', {'music and arts', 'music', 'arts'}),
     ('Physical Education and Health', {'physical education and health', 'pe and health', 'peah'}),
 ]
+MAPEH_COMPONENT_LABELS = {key: label for key, label, _aliases in MAPEH_COMPONENTS}
 
 # Static Grading Scale / Descriptors / Remarks legend printed on the form.
 PERFORMANCE_DESCRIPTORS = [
@@ -202,13 +210,18 @@ def _teacher_section_ids(user, school_year):
 
 
 def _teacher_access_section_ids(user, school_year):
-    """Sections a teacher may view report cards for: taught or advised."""
+    """Sections whose report cards a teacher may view: advised sections only.
+
+    Report cards are advisory-class documents, so a teacher reaches them only
+    as a section adviser; subject teachers use the class record instead.
+    """
     if not school_year:
         return []
-    advised = Section.objects.filter(
-        adviser=user, school_year=school_year
-    ).values_list('id', flat=True)
-    return list(set(_teacher_section_ids(user, school_year)) | set(advised))
+    return list(
+        Section.objects.filter(
+            adviser=user, school_year=school_year
+        ).values_list('id', flat=True)
+    )
 
 
 def _teacher_can_access_student(user, student):
@@ -216,8 +229,6 @@ def _teacher_can_access_student(user, student):
         return True
     if not student.section_id:
         return False
-    if TeacherAssignment.objects.filter(teacher=user, section_id=student.section_id).exists():
-        return True
     return Section.objects.filter(pk=student.section_id, adviser=user).exists()
 
 
@@ -564,7 +575,7 @@ def _report_card_context(request, student):
     terms = list(
         GradingPeriod.objects.filter(school_year=school_year).order_by('order')
     ) if school_year else []
-    completed = _completed_period_orders(school_year)
+    completed = _completed_period_orders(school_year, student.section)
 
     grades = (
         Grade.objects
@@ -573,22 +584,17 @@ def _report_card_context(request, student):
     ) if school_year else Grade.objects.none()
 
     subjects_map = {}
-    mapeh_component_rows = {}
     for grade in grades:
         # MAPEH is one Subject but two Grade rows per learner/term (component
-        # 'ma' / 'peh'); roll them up into one MAPEH parent row so the report
-        # card matches the DepEd layout. Legacy combined rows (component='')
-        # pass through unchanged.
+        # 'ma' / 'peh'). File them under their component labels so they render
+        # as sub-rows; _build_grade_rows averages them into the MAPEH parent.
+        # Legacy combined rows (component='') pass through unchanged.
         if is_mapeh_subject(grade.subject.name) and grade.component:
-            mapeh_component_rows.setdefault(grade.grading_period.order, []).append(grade)
-            continue
+            label = MAPEH_COMPONENT_LABELS.get(grade.component)
+            if label:
+                subjects_map.setdefault(label, {})[grade.grading_period.order] = grade
+                continue
         subjects_map.setdefault(grade.subject.name, {})[grade.grading_period.order] = grade
-    if mapeh_component_rows:
-        parent_map = subjects_map.setdefault('MAPEH', {})
-        for order, component_grades in mapeh_component_rows.items():
-            avg = merge_mapeh_grades(g.quarter_grade for g in component_grades)
-            if avg is not None:
-                parent_map[order] = SimpleNamespace(quarter_grade=Decimal(avg))
 
     rows = _build_grade_rows(subjects_map, terms, completed)
 
@@ -647,7 +653,7 @@ def report_card(request, student_pk):
     """Per-learner Learner's Performance Report (report card) for HTML print."""
     student = get_object_or_404(Student, pk=student_pk)
     if not _teacher_can_access_student(request.user, student):
-        messages.error(request, 'Access denied. This learner is not in one of your classes.')
+        messages.error(request, 'Access denied. Report cards can only be viewed by the learner\'s section adviser.')
         return redirect('reports:report_card_select')
     return render(request, 'reports/report_card.html', _report_card_context(request, student))
 
@@ -659,7 +665,7 @@ def report_card_pdf(request, student_pk):
 
     student = get_object_or_404(Student, pk=student_pk)
     if not _teacher_can_access_student(request.user, student):
-        messages.error(request, 'Access denied. This learner is not in one of your classes.')
+        messages.error(request, 'Access denied. Report cards can only be viewed by the learner\'s section adviser.')
         return redirect('reports:report_card_select')
     context = _report_card_context(request, student)
 
