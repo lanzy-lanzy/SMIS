@@ -1,0 +1,5 @@
+                    <select id="student-section-filter" name="section" {% if oob %}hx-swap-oob="outerHTML"{% endif %} class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                            hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="change" hx-include="#student-filters" hx-sync="#student-filters:replace">
+                        <option value="">All sections</option>
+                        {% for sec in sections %}<option value="{{ sec.id }}" {% if section_filter == sec.id|stringformat:"d" %}selected{% endif %}>{{ sec.name }} ({{ sec.school_year.name }})</option>{% endfor %}
+                    </select>

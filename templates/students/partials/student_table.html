@@ -1,4 +1,6 @@
+<div class="overflow-x-auto">
 <table class="data-table">
+    <caption class="sr-only">Student records filtered by search, grade level, section, and status</caption>
     <thead class="data-table-head">
         <tr>
             <th class="px-4 py-3 text-left font-medium">Student</th>
@@ -30,7 +32,7 @@
                 <span class="px-2.5 py-1 text-xs rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium">{{ student.grade_level }}</span>
             </td>
             <td class="px-4 py-3">
-                <span class="px-2.5 py-1 text-xs rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium">{{ student.section }}</span>
+                <span class="px-2.5 py-1 text-xs rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium">{{ student.section.name|default:"—" }}</span>
             </td>
             <td class="px-4 py-3">
                 {% if not student.status %}
@@ -75,8 +77,8 @@
                 </span>
                 {% endif %}
             </td>
+            {% if user.is_admin or user.is_registrar %}
             <td class="px-4 py-3 text-right">
-                {% if user.is_admin or user.is_registrar %}
                 <div class="flex items-center justify-end gap-2 opacity-80 group-hover:opacity-100 transition">
                     <a href="{% url 'form137:form137_generate' student.pk student.school_year_id %}" target="_blank" class="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 text-xs font-medium">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -93,8 +95,8 @@
                     </button>
                     {% endif %}
                 </div>
-                {% endif %}
             </td>
+            {% endif %}
         </tr>
         {% empty %}
         <tr>
@@ -108,19 +110,20 @@
         {% endfor %}
     </tbody>
 </table>
-{% if students.has_other_pages %}
+</div>
 <div class="px-4 py-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
     <p class="text-sm text-gray-500">Showing {{ students.start_index }}-{{ students.end_index }} of {{ students.paginator.count }}</p>
-    <div class="flex gap-1">
+    <nav aria-label="Student pages" class="flex flex-wrap gap-1">
         {% if students.has_previous %}
-        <a href="?page={{ students.previous_page_number }}" class="page-link">&laquo;</a>
+        <a href="?{{ pagination_query }}&amp;page={{ students.previous_page_number }}" hx-get="?{{ pagination_query }}&amp;page={{ students.previous_page_number }}" hx-target="#student-table" hx-sync="#student-filters:replace" class="page-link">&laquo;</a>
         {% endif %}
         {% for num in students.paginator.page_range %}
-        <a href="?page={{ num }}" class="page-link {% if students.number == num %}is-active{% endif %}">{{ num }}</a>
+        <a href="?{{ pagination_query }}&amp;page={{ num }}" hx-get="?{{ pagination_query }}&amp;page={{ num }}" hx-target="#student-table" hx-sync="#student-filters:replace" class="page-link {% if students.number == num %}is-active{% endif %}">{{ num }}</a>
         {% endfor %}
         {% if students.has_next %}
-        <a href="?page={{ students.next_page_number }}" class="page-link">&raquo;</a>
+        <a href="?{{ pagination_query }}&amp;page={{ students.next_page_number }}" hx-get="?{{ pagination_query }}&amp;page={{ students.next_page_number }}" hx-target="#student-table" hx-sync="#student-filters:replace" class="page-link">&raquo;</a>
         {% endif %}
-    </div>
+    </nav>
 </div>
-{% endif %}
+
+{% if update_section_filter %}{% include "students/partials/section_filter.html" with oob=True %}{% endif %}

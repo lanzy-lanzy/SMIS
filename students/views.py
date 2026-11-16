@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse
 from django.core.paginator import Paginator
-from django.db.models import Q, Count
+from django.db.models import Q
 from itertools import groupby
 from .models import Student
 from .forms import StudentForm
@@ -45,7 +45,22 @@ def student_list(request):
     grade_filter = request.GET.get("grade", "")
     section_filter = request.GET.get("section", "")
     status_filter = request.GET.get("status", "")
-    view_type = request.GET.get("view", "sections")
+
+    from academics.models import GradeLevel, Section
+
+    sections = Section.objects.select_related("grade_level", "school_year")
+    if request.user.is_teacher:
+        sections = sections.filter(pk__in=_teacher_assigned_sections(request.user))
+        grade_levels = GradeLevel.objects.filter(
+            pk__in=sections.values("grade_level_id")
+        )
+    else:
+        grade_levels = GradeLevel.objects.all()
+    if grade_filter:
+        sections = sections.filter(grade_level_id=grade_filter)
+    # A grade change must not leave an incompatible section selected.
+    if section_filter and not sections.filter(pk=section_filter).exists():
+        section_filter = ""
 
     students = Student.objects.select_related(
         "grade_level", "section", "school_year"
@@ -69,40 +84,22 @@ def student_list(request):
     if status_filter:
         students = students.filter(status=status_filter)
 
-    # Stats (scoped by role)
-    all_students = _filter_students_by_role(Student.objects.all(), request.user)
-    
-    total_students = all_students.count()
-    transferred_in_students = all_students.filter(status='transferred_in').count()
-    transferred_out_students = all_students.filter(status='transferred_out').count()
-    balik_aral_students = all_students.filter(status='balik_aral').count()
-    repeater_students = all_students.filter(status='repeater').count()
-    dropped_students = all_students.filter(status='dropped').count()
-    
-    # Students by grade level
-    students_by_grade = all_students.values('grade_level__name', 'grade_level__id').annotate(count=Count('id')).order_by('grade_level__level')
-
-    from academics.models import GradeLevel, Section
-
-    grade_levels = GradeLevel.objects.all()
-    sections = Section.objects.all()
+    paginator = Paginator(students, 20)
+    students = paginator.get_page(request.GET.get("page", 1))
+    pagination_params = request.GET.copy()
+    pagination_params.pop("page", None)
+    pagination_params.pop("view", None)
+    pagination_params["section"] = section_filter
+    pagination_query = pagination_params.urlencode()
 
     if request.headers.get("HX-Request"):
-        if view_type == 'grid':
-            template = "students/partials/student_grid.html"
-        elif view_type == 'sections':
-            template = "students/partials/student_sections.html"
-        else:
-            template = "students/partials/student_table.html"
-        return render(
-            request, template, {"students": students}
-        )
-
-    # Only paginate for table/grid views; sections view shows grouped results
-    if view_type != 'sections':
-        paginator = Paginator(students, 20)
-        page = request.GET.get("page", 1)
-        students = paginator.get_page(page)
+        return render(request, "students/partials/student_table.html", {
+            "students": students,
+            "pagination_query": pagination_query,
+            "sections": sections,
+            "section_filter": section_filter,
+            "update_section_filter": True,
+        })
 
     return render(
         request,
@@ -116,13 +113,7 @@ def student_list(request):
             "grade_levels": grade_levels,
             "sections": sections,
             "status_choices": Student.STATUS_CHOICES,
-            "total_students": total_students,
-            "transferred_in_students": transferred_in_students,
-            "transferred_out_students": transferred_out_students,
-            "balik_aral_students": balik_aral_students,
-            "repeater_students": repeater_students,
-            "dropped_students": dropped_students,
-            "students_by_grade": students_by_grade,
+            "pagination_query": pagination_query,
         },
     )
 
