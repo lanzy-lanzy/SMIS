@@ -46,7 +46,9 @@ def student_list(request):
     section_filter = request.GET.get("section", "")
     status_filter = request.GET.get("status", "")
 
-    from academics.models import GradeLevel, Section
+    year_filter = request.GET.get("year", "")
+    sex_filter = request.GET.get("sex", "")
+    from academics.models import GradeLevel, Section, SchoolYear
 
     sections = Section.objects.select_related("grade_level", "school_year")
     if request.user.is_teacher:
@@ -56,6 +58,11 @@ def student_list(request):
         )
     else:
         grade_levels = GradeLevel.objects.all()
+    school_years = SchoolYear.objects.all()
+    if request.user.is_teacher:
+        school_years = school_years.filter(pk__in=sections.values("school_year_id"))
+    if year_filter:
+        sections = sections.filter(school_year_id=year_filter)
     if grade_filter:
         sections = sections.filter(grade_level_id=grade_filter)
     # A grade change must not leave an incompatible section selected.
@@ -66,6 +73,11 @@ def student_list(request):
         "grade_level", "section", "school_year"
     ).all()
     students = _filter_students_by_role(students, request.user)
+
+    if year_filter:
+        students = students.filter(school_year_id=year_filter)
+    if sex_filter in dict(Student.SEX_CHOICES):
+        students = students.filter(sex=sex_filter)
 
     if query:
         students = students.filter(
@@ -110,9 +122,13 @@ def student_list(request):
             "grade_filter": grade_filter,
             "section_filter": section_filter,
             "status_filter": status_filter,
+            "year_filter": year_filter,
+            "sex_filter": sex_filter,
+            "school_years": school_years,
+            "sex_choices": Student.SEX_CHOICES,
             "grade_levels": grade_levels,
             "sections": sections,
-            "status_choices": Student.STATUS_CHOICES,
+            "status_choices": Student.STATUS_CHOICES + Student.LEGACY_STATUS_CHOICES,
             "pagination_query": pagination_query,
         },
     )

@@ -1,3 +1,7 @@
+<div class="px-4 py-3 border-b border-gray-100 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+    <h2 class="font-semibold text-gray-900 dark:text-white">Student directory <span class="text-sm font-normal text-gray-500">({{ students.paginator.count }})</span></h2>
+    <span class="text-xs text-gray-500 dark:text-gray-400">{% if user.is_teacher %}Your assigned sections{% else %}All accessible student records{% endif %}</span>
+</div>
 <div class="overflow-x-auto">
 <table class="data-table">
     <caption class="sr-only">Student records filtered by search, grade level, section, and status</caption>
@@ -103,7 +107,9 @@
             <td colspan="{% if user.is_admin or user.is_registrar %}6{% else %}5{% endif %}" class="px-4 py-12 text-center text-gray-500">
                 <div class="flex flex-col items-center gap-2">
                     <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                    <p>No students found</p>
+                    <p class="font-medium">No students match your filters</p>
+                    <p class="text-sm">Try a different name or broaden the school year, grade, or status.</p>
+                    <a href="{% url 'students:student_list' %}" class="btn btn-secondary text-sm mt-2">Reset filters</a>
                 </div>
             </td>
         </tr>
