@@ -17,24 +17,15 @@
     <form method="post" class="surface-card overflow-hidden">
         {% csrf_token %}
         <div class="grid gap-6 p-5 sm:p-7">
+            {% include "academics/partials/assignment_errors.html" %}
             <div class="grid gap-5 sm:grid-cols-2">
                 <div>
                     <label for="id_teacher" class="mb-2 block text-sm font-semibold">Teacher <span class="text-red-500">*</span></label>
-                    <select id="id_teacher" name="teacher" required class="w-full rounded-lg border px-3 py-2">
-                        <option value="">Select a teacher</option>
-                        {% for teacher in teachers %}
-                        <option value="{{ teacher.id }}">{{ teacher.get_full_name|default:teacher.username }}</option>
-                        {% endfor %}
-                    </select>
+                    {{ form.teacher }}
                 </div>
                 <div>
                     <label for="id_school_year" class="mb-2 block text-sm font-semibold">School year <span class="text-red-500">*</span></label>
-                    <select id="id_school_year" name="school_year" required class="w-full rounded-lg border px-3 py-2">
-                        <option value="">Select a school year</option>
-                        {% for sy in school_years %}
-                        <option value="{{ sy.id }}" {% if sy.is_current %}selected{% endif %}>{{ sy.name }}{% if sy.is_current %} — Current{% endif %}</option>
-                        {% endfor %}
-                    </select>
+                    {{ form.school_year }}
                 </div>
             </div>
 
@@ -44,13 +35,7 @@
                         <label for="id_subjects" class="block text-sm font-semibold">Subjects <span class="text-red-500">*</span></label>
                         <span id="subject-count-label" class="text-xs font-medium text-slate-500">0 selected</span>
                     </div>
-                    <select id="id_subjects" name="subjects" required multiple size="9" class="w-full rounded-lg border px-3 py-2">
-                        {% for subject in subjects %}
-                        <option value="{{ subject.id }}">{{ subject.code }} — {{ subject.name }} ({{ subject.grade_level }})</option>
-                        {% empty %}
-                        <option disabled>No active subjects available</option>
-                        {% endfor %}
-                    </select>
+                    {{ form.subjects }}
                     <p class="mt-2 text-xs leading-5 text-slate-500">Hold Ctrl on Windows or Command on macOS to choose more than one subject.</p>
                 </div>
 
@@ -59,14 +44,8 @@
                         <label for="id_sections" class="block text-sm font-semibold">Sections <span class="text-red-500">*</span></label>
                         <span id="section-count-label" class="text-xs font-medium text-slate-500">0 selected</span>
                     </div>
-                    <select id="id_sections" name="sections" required multiple size="9" class="w-full rounded-lg border px-3 py-2">
-                        {% for section in sections %}
-                        <option value="{{ section.id }}">{{ section.name }} — {{ section.grade_level }}</option>
-                        {% empty %}
-                        <option disabled>No sections available for the current school year</option>
-                        {% endfor %}
-                    </select>
-                    <p class="mt-2 text-xs leading-5 text-slate-500">Only sections from the current school year are shown.</p>
+                    {{ form.sections }}
+                    <p class="mt-2 text-xs leading-5 text-slate-500">Choose sections that belong to the selected school year.</p>
                 </div>
             </div>
 
@@ -75,7 +54,7 @@
                 <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
                     This action will prepare up to <strong id="assignment-count" class="text-primary">0</strong> assignment combinations
                     from <span id="subject-count">0</span> subject(s) and <span id="section-count">0</span> section(s).
-                    Existing combinations will not be duplicated.
+                    All selected combinations must be available.
                 </p>
             </div>
         </div>

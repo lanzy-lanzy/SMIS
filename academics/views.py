@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import HttpResponse
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.utils.http import urlencode
 from .filters import select_school_year
@@ -20,6 +20,7 @@ from .forms import (
     SectionForm,
     SubjectForm,
     TeacherAssignmentForm,
+    BulkTeacherAssignmentForm,
     GradingPeriodForm,
 )
 from accounts.models import AuditLog
@@ -738,12 +739,24 @@ def assignment_list(request):
     return render(request, "academics/assignment_list.html", context)
 
 
+def _save_assignment(form):
+    if not form.is_valid():
+        return None
+    try:
+        with transaction.atomic():
+            return form.save()
+    except IntegrityError:
+        if not form.add_occupied_error():
+            raise
+        return None
+
+
 @admin_required
 def assignment_create(request):
     if request.method == "POST":
         form = TeacherAssignmentForm(request.POST)
-        if form.is_valid():
-            assignment = form.save()
+        assignment = _save_assignment(form)
+        if assignment:
             AuditLog.objects.create(
                 user=request.user,
                 action="create",
@@ -780,8 +793,8 @@ def assignment_edit(request, pk):
     assignment = get_object_or_404(TeacherAssignment, pk=pk)
     if request.method == "POST":
         form = TeacherAssignmentForm(request.POST, instance=assignment)
-        if form.is_valid():
-            assignment = form.save()
+        assignment = _save_assignment(form)
+        if assignment:
             AuditLog.objects.create(
                 user=request.user,
                 action="update",
@@ -815,60 +828,36 @@ def assignment_edit(request, pk):
 
 @admin_required
 def assignment_bulk_create(request):
-    from accounts.models import User
-    
-    if request.method == "POST":
-        teacher_id = request.POST.get("teacher")
-        subject_ids = request.POST.getlist("subjects")
-        section_ids = request.POST.getlist("sections")
-        school_year_id = request.POST.get("school_year")
-        
-        teacher = get_object_or_404(User, pk=teacher_id)
-        school_year = get_object_or_404(SchoolYear, pk=school_year_id)
-        
-        created_count = 0
-        for subject_id in subject_ids:
-            for section_id in section_ids:
-                _, created = TeacherAssignment.objects.get_or_create(
-                    teacher=teacher,
-                    subject_id=subject_id,
-                    section_id=section_id,
-                    school_year=school_year,
+    form = BulkTeacherAssignmentForm(request.POST if request.method == "POST" else None)
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
+        teacher = data["teacher"]
+        assignments = [
+            TeacherAssignment(teacher=teacher, subject=subject, section=section, school_year=data["school_year"])
+            for subject in data["subjects"]
+            for section in data["sections"]
+        ]
+        try:
+            with transaction.atomic():
+                TeacherAssignment.objects.bulk_create(assignments)
+                AuditLog.objects.create(
+                    user=request.user,
+                    action="create",
+                    model_name="TeacherAssignment",
+                    description=f"Bulk created {len(assignments)} assignments for {teacher.get_full_name()}",
                 )
-                if created:
-                    created_count += 1
-        
-        AuditLog.objects.create(
-            user=request.user,
-            action="create",
-            model_name="TeacherAssignment",
-            description=f"Bulk created {created_count} assignments for {teacher.get_full_name()}",
-        )
-        messages.success(request, f"{created_count} assignments created for {teacher.get_full_name()}.")
-        if request.headers.get("HX-Request"):
-            return HttpResponse(
-                '<script>closeModal(); htmx.trigger("#assignment-table", "refresh");</script>',
-                headers={"HX-Trigger": "closeModal,refreshTable"},
-            )
-        return redirect("academics:assignment_list")
-    
-    context = {
-        "teachers": User.objects.filter(role='teacher', is_active=True),
-        "subjects": Subject.objects.filter(is_active=True),
-        "sections": Section.objects.filter(school_year=SchoolYear.objects.filter(is_current=True).first()),
-        "school_years": SchoolYear.objects.all(),
-    }
-    if request.headers.get("HX-Request"):
-        return render(
-            request,
-            "academics/partials/assignment_bulk_form.html",
-            context,
-        )
-    return render(
-        request,
-        "academics/assignment_bulk_form.html",
-        context,
-    )
+        except IntegrityError:
+            if not form.add_occupied_errors():
+                raise
+        else:
+            messages.success(request, f"{len(assignments)} assignments created for {teacher.get_full_name() or teacher.username}.")
+            if request.headers.get("HX-Request"):
+                return HttpResponse(headers={"HX-Trigger": "close-modal,refreshTable"})
+            return redirect("academics:assignment_list")
+
+    template = ("academics/partials/assignment_bulk_form.html" if request.headers.get("HX-Request")
+                else "academics/assignment_bulk_form.html")
+    return render(request, template, {"form": form})
 
 
 @admin_required

@@ -9,48 +9,31 @@
     
     <form method="post" hx-post="{{ request.path }}" hx-target="#modal-content" hx-swap="innerHTML" class="space-y-4">
         {% csrf_token %}
+        {% include "academics/partials/assignment_errors.html" %}
         
         <!-- Teacher -->
         <div>
-            <label class="block text-sm font-medium mb-1">Teacher *</label>
-            <select name="teacher" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
-                <option value="">Select Teacher</option>
-                {% for teacher in teachers %}
-                <option value="{{ teacher.id }}">{{ teacher.get_full_name }}</option>
-                {% endfor %}
-            </select>
+            <label for="id_teacher" class="block text-sm font-medium mb-1">Teacher *</label>
+            {{ form.teacher }}
         </div>
         
         <!-- School Year -->
         <div>
-            <label class="block text-sm font-medium mb-1">School Year *</label>
-            <select name="school_year" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
-                <option value="">Select School Year</option>
-                {% for sy in school_years %}
-                <option value="{{ sy.id }}" {% if sy.is_current %}selected{% endif %}>{{ sy.name }}</option>
-                {% endfor %}
-            </select>
+            <label for="id_school_year" class="block text-sm font-medium mb-1">School Year *</label>
+            {{ form.school_year }}
         </div>
         
         <!-- Subjects (Multiple) -->
         <div>
-            <label class="block text-sm font-medium mb-1">Subjects * (Hold Ctrl/Cmd to select multiple)</label>
-            <select name="subjects" required multiple size="5" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
-                {% for subject in subjects %}
-                <option value="{{ subject.id }}">{{ subject.code }} - {{ subject.name }} ({{ subject.grade_level }})</option>
-                {% endfor %}
-            </select>
+            <label for="id_subjects" class="block text-sm font-medium mb-1">Subjects * (Hold Ctrl/Cmd to select multiple)</label>
+            {{ form.subjects }}
             <p class="text-xs text-gray-500 mt-1">Select one or more subjects</p>
         </div>
         
         <!-- Sections (Multiple) -->
         <div>
-            <label class="block text-sm font-medium mb-1">Sections * (Hold Ctrl/Cmd to select multiple)</label>
-            <select name="sections" required multiple size="5" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
-                {% for section in sections %}
-                <option value="{{ section.id }}">{{ section.name }} - {{ section.grade_level }}</option>
-                {% endfor %}
-            </select>
+            <label for="id_sections" class="block text-sm font-medium mb-1">Sections * (Hold Ctrl/Cmd to select multiple)</label>
+            {{ form.sections }}
             <p class="text-xs text-gray-500 mt-1">Select one or more sections</p>
         </div>
         
@@ -58,7 +41,7 @@
         <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4">
             <div class="text-sm font-medium mb-2">Assignment Preview</div>
             <p class="text-sm text-gray-600 dark:text-gray-400">
-                This will create <strong id="assignment-count">0</strong> new assignment(s):
+                Selected combinations: <strong id="assignment-count">0</strong> assignment(s).
                 <br>1 teacher x <span id="subject-count">0</span> subjects x <span id="section-count">0</span> sections
             </p>
         </div>
@@ -70,22 +53,24 @@
     </form>
     
     <script>
-        // Update preview count
-        const subjectSelect = document.querySelector('select[name="subjects"]');
-        const sectionSelect = document.querySelector('select[name="sections"]');
-        const subjectCount = document.getElementById('subject-count');
-        const sectionCount = document.getElementById('section-count');
-        const assignmentCount = document.getElementById('assignment-count');
+        (function () {
+            const subjectSelect = document.querySelector('select[name="subjects"]');
+            const sectionSelect = document.querySelector('select[name="sections"]');
+            const subjectCount = document.getElementById('subject-count');
+            const sectionCount = document.getElementById('section-count');
+            const assignmentCount = document.getElementById('assignment-count');
         
-        function updateCount() {
-            const subjects = subjectSelect.selectedOptions.length;
-            const sections = sectionSelect.selectedOptions.length;
-            subjectCount.textContent = subjects;
-            sectionCount.textContent = sections;
-            assignmentCount.textContent = subjects * sections;
-        }
+            function updateCount() {
+                const subjects = subjectSelect.selectedOptions.length;
+                const sections = sectionSelect.selectedOptions.length;
+                subjectCount.textContent = subjects;
+                sectionCount.textContent = sections;
+                assignmentCount.textContent = subjects * sections;
+            }
         
-        subjectSelect.addEventListener('change', updateCount);
-        sectionSelect.addEventListener('change', updateCount);
+            subjectSelect.addEventListener('change', updateCount);
+            sectionSelect.addEventListener('change', updateCount);
+            updateCount();
+        })();
     </script>
 </div>

@@ -1,4 +1,5 @@
 from django.contrib import admin
+from .forms import TeacherAssignmentForm
 from .models import SchoolYear, GradeLevel, Section, Subject, TeacherAssignment, GradingPeriod
 
 
@@ -26,6 +27,7 @@ class SubjectAdmin(admin.ModelAdmin):
 
 @admin.register(TeacherAssignment)
 class TeacherAssignmentAdmin(admin.ModelAdmin):
+    form = TeacherAssignmentForm
     list_display = ('teacher', 'subject', 'section', 'school_year')
 
 

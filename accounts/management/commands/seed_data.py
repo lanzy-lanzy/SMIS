@@ -288,10 +288,10 @@ class Command(BaseCommand):
                 for section in sections['2025-2026'][level][:2]:
                     teacher = teachers[teacher_idx % len(teachers)]
                     assignment, _ = TeacherAssignment.objects.get_or_create(
-                        teacher=teacher,
                         subject=subject,
                         section=section,
                         school_year=current_sy,
+                        defaults={'teacher': teacher},
                     )
                     assignments.append(assignment)
                     teacher_idx += 1

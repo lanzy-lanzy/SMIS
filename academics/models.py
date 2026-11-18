@@ -82,7 +82,13 @@ class TeacherAssignment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('teacher', 'subject', 'section', 'school_year')
+        constraints = [
+            models.UniqueConstraint(
+                fields=('subject', 'section', 'school_year'),
+                name='one_teacher_per_subject_section_year',
+                violation_error_message='This subject already has a teacher assigned for this section and school year.',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.teacher.get_full_name()} - {self.subject} - {self.section}"
