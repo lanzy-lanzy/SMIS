@@ -39,6 +39,33 @@ class TablePaginationSwapTests(Python314ContextCopyMixin, TestCase):
         self.assertEqual(response.content.count(b'Showing 1-15 of 16'), 1)
         self.assertEqual(response.content.count(b'<tfoot>'), 1)
 
+    def test_subject_filters_compose_and_survive_pagination_and_refresh(self):
+        Subject.objects.update(description='Core curriculum')
+        Subject.objects.create(
+            name='Inactive Subject', code='CORE7', grade_level=self.level, is_active=False,
+        )
+        other_level = GradeLevel.objects.create(name='Grade 8', level=8)
+        Subject.objects.create(
+            name='Other Subject', code='CORE8', grade_level=other_level,
+        )
+        filters = {'q': 'core sub', 'grade_level': self.level.pk, 'status': 'active', 'sort': 'code'}
+        url = reverse('academics:subject_list')
+        response = self.client.get(url, filters)
+        self.assertContains(response, '16 subjects')
+        self.assertNotContains(response, 'Inactive Subject')
+        self.assertNotContains(response, 'Other Subject')
+        self.assertContains(response, 'status=active&amp;sort=code&amp;page=2')
+
+        response = self.client.get(url, {**filters, 'page': 2}, HTTP_HX_REQUEST='true')
+        self.assertContains(response, 'Showing 16-16 of 16')
+        self.assertContains(response, 'SUB9')
+        self.assertContains(response, 'q=core+sub')
+        self.assertContains(response, 'status=active&amp;sort=code&amp;page=2')
+
+        response = self.client.get(url, {**filters, 'status': 'inactive'})
+        self.assertContains(response, 'Inactive Subject')
+        self.assertNotContains(response, 'Other Subject')
+
     def test_shared_section_partial_has_no_selection_ui_outside_sections_page(self):
         Section.objects.create(
             name='7-A', grade_level=self.level, school_year=self.sy

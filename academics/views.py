@@ -4,6 +4,7 @@ from django.http import HttpResponse
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, Q
+from django.utils.http import urlencode
 from .filters import select_school_year
 from .models import (
     SchoolYear,
@@ -502,15 +503,51 @@ def section_bulk_delete(request):
 
 @admin_required
 def subject_list(request):
-    subjects = Subject.objects.select_related("grade_level").all()
-    paginator = Paginator(subjects, 15)
-    page = request.GET.get("page", 1)
-    subjects_page = paginator.get_page(page)
-    if request.headers.get("HX-Request"):
-        return render(
-            request, "academics/partials/subject_table.html", {"subjects": subjects_page}
+    query = request.GET.get("q", "").strip()
+    grade_levels = list(GradeLevel.objects.all())
+    grade_filter = request.GET.get("grade_level", "")
+    status_filter = request.GET.get("status", "")
+    sort_options = {
+        "grade": ("Grade level", ("grade_level__level", "name", "code")),
+        "name": ("Subject name", ("name", "code")),
+        "code": ("Subject code", ("code",)),
+    }
+    sort = request.GET.get("sort", "grade")
+    if sort not in sort_options:
+        sort = "grade"
+    if grade_filter not in {str(level.pk) for level in grade_levels}:
+        grade_filter = ""
+    if status_filter not in ("active", "inactive"):
+        status_filter = ""
+
+    subjects = Subject.objects.select_related("grade_level").order_by(*sort_options[sort][1])
+    for term in query.split():
+        subjects = subjects.filter(
+            Q(name__icontains=term) | Q(code__icontains=term) | Q(description__icontains=term)
         )
-    return render(request, "academics/subject_list.html", {"subjects": subjects_page})
+    if grade_filter:
+        subjects = subjects.filter(grade_level_id=grade_filter)
+    if status_filter:
+        subjects = subjects.filter(is_active=(status_filter == "active"))
+
+    paginator = Paginator(subjects, 15)
+    filters = {
+        "q": query, "grade_level": grade_filter, "status": status_filter,
+        "sort": sort if sort != "grade" else "",
+    }
+    context = {
+        "subjects": paginator.get_page(request.GET.get("page", 1)),
+        "grade_levels": grade_levels,
+        "query": query,
+        "grade_filter": grade_filter,
+        "status_filter": status_filter,
+        "sort": sort,
+        "sort_options": [(key, label) for key, (label, _) in sort_options.items()],
+        "filters_active": bool(query or grade_filter or status_filter),
+        "pagination_query": urlencode({name: value for name, value in filters.items() if value}),
+    }
+    template = "academics/partials/subject_table.html" if request.headers.get("HX-Request") else "academics/subject_list.html"
+    return render(request, template, context)
 
 
 @admin_required

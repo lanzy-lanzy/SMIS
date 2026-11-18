@@ -4,10 +4,46 @@
 {% block content %}
 <div class="space-y-6">
     <div class="page-head flex-col items-stretch sm:flex-row sm:items-center sm:justify-between">
-            <h1 class="page-head-title">Subjects</h1>
+        <h1 class="page-head-title">Subjects</h1>
         <button onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: { url: '{% url 'academics:subject_create' %}' } }))" class="btn btn-primary">Add Subject</button>
     </div>
     <div class="glass-card">
+        <form method="get" action="{% url 'academics:subject_list' %}" role="search" aria-label="Filter subjects"
+              class="student-filter-panel space-y-4">
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <label class="table-filter-field">Search subjects
+                    <input type="search" name="q" value="{{ query }}" placeholder="Name, code, or description" class="px-3 py-2">
+                </label>
+                <label class="table-filter-field">Grade level
+                    <select name="grade_level" class="px-3 py-2">
+                        <option value="">All grade levels</option>
+                        {% for level in grade_levels %}
+                        <option value="{{ level.pk }}" {% if grade_filter == level.pk|stringformat:"s" %}selected{% endif %}>{{ level.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="table-filter-field">Status
+                    <select name="status" class="px-3 py-2">
+                        <option value="">All statuses</option>
+                        <option value="active" {% if status_filter == "active" %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status_filter == "inactive" %}selected{% endif %}>Inactive</option>
+                    </select>
+                </label>
+                <label class="table-filter-field">Sort by
+                    <select name="sort" class="px-3 py-2">
+                        {% for value, label in sort_options %}
+                        <option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+            <div class="flex flex-wrap justify-end gap-2">
+                {% if filters_active or sort != "grade" %}
+                <a href="{% url 'academics:subject_list' %}" class="btn btn-secondary">Reset filters</a>
+                {% endif %}
+                <button type="submit" class="btn btn-primary">Apply filters</button>
+            </div>
+        </form>
         <div class="overflow-x-auto">
             {% include 'academics/partials/subject_table.html' %}
         </div>

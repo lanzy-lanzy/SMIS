@@ -3,14 +3,15 @@ from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator
 from django.views.decorators.cache import never_cache
-from django.db.models import Q, Avg, Count, Subquery, OuterRef, Case, When, Value, IntegerField, DecimalField
+from django.db.models import Q, Avg, Count, Exists, Subquery, OuterRef, Case, When, Value, IntegerField, DecimalField
 from django.utils import timezone
+from django.utils.http import urlencode
 from .models import (
     Grade, GradeSubmission, GradeValidation, weighted_initial_grade, transmute_grade,
     TRANSMUTATION_BANDS, DESCRIPTOR_BANDS, grade_remarks, scores_missing,
     WW_WEIGHT, PT_WEIGHT, AS_WEIGHT, WW_DOMAIN_SHARES, PT_DOMAIN_SHARES,
 )
-from academics.models import TeacherAssignment, GradingPeriod, SchoolYear, Section, Subject
+from academics.models import TeacherAssignment, GradingPeriod, SchoolYear, Section, Subject, GradeLevel
 from .mapeh import MAPEH_COMPONENTS, is_mapeh_subject, mapeh_component
 from students.models import Student, ENROLLED_STATUSES
 from accounts.models import AuditLog
@@ -24,113 +25,127 @@ from accounts.decorators import (
 
 @role_required('admin', 'registrar', 'teacher')
 def grade_list(request):
-    from django.db.models import Count, Q
-    
-    teacher = request.user
     current_sy = SchoolYear.objects.filter(is_current=True).first()
-    current_period = GradingPeriod.objects.filter(is_current=True).first()
-    all_periods = GradingPeriod.objects.filter(school_year=current_sy).order_by('order') if current_sy else GradingPeriod.objects.none()
-    
-    period_filter = request.GET.get('period', '')
-    if period_filter:
-        selected_period = GradingPeriod.objects.filter(pk=period_filter).first()
-    else:
-        selected_period = current_period
-    
-    query = request.GET.get('q', '')
-    subject_filter = request.GET.get('subject', '')
+    periods = list(GradingPeriod.objects.filter(school_year=current_sy)) if current_sy else []
+    period_filter = request.GET.get('period')
+    selected_period = next((period for period in periods if str(period.pk) == period_filter), None)
+    if selected_period is None:
+        selected_period = next((period for period in periods if period.is_current), None)
+
+    query = request.GET.get('q', '').strip()
+    grade_filter = request.GET.get('grade_level', '')
     section_filter = request.GET.get('section', '')
-    view_type = request.GET.get('view', 'grid')
-    
+    subject_filter = request.GET.get('subject', '')
+    status_filter = request.GET.get('status', '')
+    view_type = 'table' if request.GET.get('view') == 'table' else 'grid'
+    status_options = (*GradeSubmission.STATUS_CHOICES, ('unsubmitted', 'Not submitted'))
+
+    assignments = TeacherAssignment.objects.filter(school_year=current_sy)
     if request.user.is_teacher:
-        assignments = TeacherAssignment.objects.filter(
-            teacher=teacher, school_year=current_sy
-        ).select_related('subject', 'section', 'section__grade_level').annotate(
-            student_count=Count('section__student')
-        ).order_by('section__grade_level__level', 'section__name', 'subject__name')
+        assignments = assignments.filter(teacher=request.user)
+
+    grade_levels = list(GradeLevel.objects.filter(pk__in=assignments.order_by().values('section__grade_level_id')))
+    if grade_filter in {str(level.pk) for level in grade_levels}:
+        assignments = assignments.filter(section__grade_level_id=grade_filter)
     else:
-        assignments = TeacherAssignment.objects.filter(
-            school_year=current_sy
-        ).select_related('teacher', 'subject', 'section', 'section__grade_level').annotate(
-            student_count=Count('section__student')
-        ).order_by('section__grade_level__level', 'section__name', 'subject__name')
+        grade_filter = ''
 
-    if query:
-        assignments = assignments.filter(
-            Q(teacher__first_name__icontains=query)
-            | Q(teacher__last_name__icontains=query)
-            | Q(subject__name__icontains=query)
-            | Q(subject__code__icontains=query)
-        )
-    
-    if subject_filter:
-        assignments = assignments.filter(subject_id=subject_filter)
-    if section_filter:
+    sections = list(Section.objects.filter(
+        pk__in=assignments.order_by().values('section_id'),
+    ).select_related('grade_level'))
+    subjects = list(Subject.objects.filter(
+        pk__in=assignments.order_by().values('subject_id'),
+    ).select_related('grade_level'))
+    if section_filter in {str(section.pk) for section in sections}:
         assignments = assignments.filter(section_id=section_filter)
-    
-    submissions_status = {}
-    if current_sy and selected_period:
-        all_submissions = GradeSubmission.objects.filter(
-            school_year=current_sy, grading_period=selected_period
-        ).order_by('-submitted_at')
-        
-        for sub in all_submissions:
-            key = (sub.teacher_id, sub.subject_id, sub.section_id)
-            if key not in submissions_status:
-                submissions_status[key] = sub.status
-    
-    submission_status_by_pk = {}
-    for assignment in assignments:
-        key = (assignment.teacher_id, assignment.subject_id, assignment.section_id)
-        submission_status_by_pk[assignment.pk] = submissions_status.get(key)
+    else:
+        section_filter = ''
+    if subject_filter in {str(subject.pk) for subject in subjects}:
+        assignments = assignments.filter(subject_id=subject_filter)
+    else:
+        subject_filter = ''
 
-    total_assignments = assignments.count()
-    pending_submissions = GradeSubmission.objects.filter(
-        status='pending', school_year=current_sy, grading_period=selected_period
-    ).count() if current_sy and selected_period else 0
-    validated_grades = Grade.objects.filter(
-        status__in=['validated', 'locked'], school_year=current_sy, grading_period=selected_period
-    ).count() if current_sy and selected_period else 0
-    at_risk_count = Grade.objects.filter(
-        status__in=['validated', 'locked'], quarter_grade__lt=75, school_year=current_sy, grading_period=selected_period
-    ).values('student').distinct().count() if current_sy and selected_period else 0
-    
-    paginator = Paginator(assignments, 15)
-    page = request.GET.get('page', 1)
-    assignments_page = paginator.get_page(page)
+    for term in query.split():
+        assignments = assignments.filter(
+            Q(teacher__first_name__icontains=term)
+            | Q(teacher__last_name__icontains=term)
+            | Q(subject__name__icontains=term)
+            | Q(subject__code__icontains=term)
+            | Q(section__name__icontains=term)
+            | Q(section__grade_level__name__icontains=term)
+        )
 
-    if request.headers.get('HX-Request'):
-        template = 'grades/partials/assignment_table.html' if view_type == 'table' else 'grades/partials/assignment_list.html'
-        return render(request, template, {
-            'assignments': assignments_page,
-            'current_period': selected_period,
-            'submissions_status': submission_status_by_pk,
-            'query': query,
-            'subject_filter': subject_filter,
-            'section_filter': section_filter,
-            'period_filter': period_filter,
-        })
+    if selected_period:
+        submissions = GradeSubmission.objects.filter(school_year=current_sy, grading_period=selected_period)
+        matching_submission = submissions.filter(
+            teacher_id=OuterRef('teacher_id'), subject_id=OuterRef('subject_id'), section_id=OuterRef('section_id'),
+        )
+        assignments = assignments.annotate(submission_status=Subquery(matching_submission.values('status')[:1]))
+        if status_filter == 'unsubmitted':
+            assignments = assignments.filter(submission_status__isnull=True)
+        elif status_filter in dict(GradeSubmission.STATUS_CHOICES):
+            assignments = assignments.filter(submission_status=status_filter)
+        else:
+            status_filter = ''
+    else:
+        status_filter = ''
 
-    subjects = Subject.objects.all()
-    sections = Section.objects.filter(school_year=current_sy) if current_sy else Section.objects.all()
+    assignments = assignments.select_related(
+        'teacher', 'subject', 'section__grade_level',
+    ).annotate(student_count=Count('section__student')).order_by(
+        'section__grade_level__level', 'section__grade_level_id', 'section__name', 'subject__name', 'pk',
+    )
+    assignments_page = Paginator(assignments, 15).get_page(request.GET.get('page', 1))
 
-    return render(request, 'grades/grade_list.html', {
+    filters = {
+        'q': query, 'grade_level': grade_filter, 'section': section_filter,
+        'subject': subject_filter, 'status': status_filter,
+        'period': selected_period.pk if selected_period else '',
+    }
+    filters_query = urlencode({key: value for key, value in filters.items() if value})
+    view_query = f'{filters_query}&view={view_type}' if filters_query else f'view={view_type}'
+    context = {
         'assignments': assignments_page,
         'current_sy': current_sy,
         'current_period': selected_period,
-        'all_periods': all_periods,
+        'all_periods': periods,
+        'grade_levels': grade_levels,
         'subjects': subjects,
         'sections': sections,
+        'query': query,
+        'grade_filter': grade_filter,
         'subject_filter': subject_filter,
         'section_filter': section_filter,
-        'period_filter': period_filter,
-        'query': query,
-        'total_assignments': total_assignments,
-        'pending_submissions': pending_submissions,
-        'validated_grades': validated_grades,
-        'at_risk_count': at_risk_count,
-        'submissions_status': submission_status_by_pk,
-    })
+        'status_filter': status_filter,
+        'status_options': status_options,
+        'filters_active': bool(query or grade_filter or section_filter or subject_filter or status_filter),
+        'filters_query': filters_query,
+        'view_query': view_query,
+        'view_type': view_type,
+        'can_encode': bool(selected_period and (request.user.is_teacher or request.user.is_admin)),
+    }
+
+    if request.headers.get('HX-Request'):
+        return render(request, 'grades/partials/class_results.html', context)
+
+    context.update(total_assignments=assignments_page.paginator.count,
+                   pending_submissions=0, validated_grades=0, at_risk_count=0)
+    if selected_period:
+        official_grades = Grade.objects.filter(
+            status__in=['validated', 'locked'], school_year=current_sy, grading_period=selected_period,
+        )
+        if request.user.is_teacher:
+            submissions = submissions.filter(teacher=request.user)
+            official_grades = official_grades.filter(Exists(TeacherAssignment.objects.filter(
+                school_year=current_sy, teacher=request.user,
+                subject_id=OuterRef('subject_id'), section_id=OuterRef('section_id'),
+            )))
+        context.update(
+            pending_submissions=submissions.filter(status='pending').count(),
+            validated_grades=official_grades.count(),
+            at_risk_count=official_grades.filter(quarter_grade__lt=75).values('student').distinct().count(),
+        )
+    return render(request, 'grades/grade_list.html', context)
 
 
 IMMUTABLE_GRADE_STATUSES = ('validated', 'locked')

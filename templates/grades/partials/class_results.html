@@ -1,0 +1,31 @@
+<div class="flex flex-wrap items-center justify-between gap-2 mb-3 text-sm text-gray-600 dark:text-gray-300">
+    <p class="font-medium">{{ assignments.paginator.count }} class assignment{{ assignments.paginator.count|pluralize }}{% if filters_active %} found{% endif %}</p>
+    {% if current_period %}
+    <p>{{ current_period.name }} · {% if current_period.is_submissions_open %}Submissions open{% else %}Submissions closed{% endif %}</p>
+    {% endif %}
+</div>
+
+{% if view_type == 'table' %}
+<div class="glass-card overflow-x-auto">
+    {% include 'grades/partials/assignment_table.html' %}
+</div>
+{% else %}
+{% include 'grades/partials/assignment_list.html' %}
+{% endif %}
+
+{% if assignments.has_other_pages %}
+<div class="flex flex-wrap items-center justify-between gap-3 mt-4">
+    <p class="text-sm text-gray-600 dark:text-gray-300">Showing {{ assignments.start_index }}–{{ assignments.end_index }} of {{ assignments.paginator.count }}</p>
+    <nav class="flex flex-wrap gap-1" aria-label="Class pages">
+        {% if assignments.has_previous %}
+        <a href="?{{ view_query }}&amp;page={{ assignments.previous_page_number }}" class="page-link" aria-label="Previous page">&laquo;</a>
+        {% endif %}
+        {% for page in assignments.paginator.page_range %}
+        <a href="?{{ view_query }}&amp;page={{ page }}" class="page-link {% if assignments.number == page %}is-active{% endif %}" {% if assignments.number == page %}aria-current="page"{% endif %}>{{ page }}</a>
+        {% endfor %}
+        {% if assignments.has_next %}
+        <a href="?{{ view_query }}&amp;page={{ assignments.next_page_number }}" class="page-link" aria-label="Next page">&raquo;</a>
+        {% endif %}
+    </nav>
+</div>
+{% endif %}
