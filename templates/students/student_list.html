@@ -11,8 +11,9 @@
                 {% if user.is_teacher %}View students in your assigned sections{% else %}Manage student records across grade levels{% endif %}
             </p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
             {% if user.is_admin or user.is_registrar %}
+            <a href="{% url 'students:bulk_promotion' %}" class="btn btn-secondary">Bulk promotion</a>
             <a href="{% url 'students:student_export' %}" class="inline-flex items-center gap-2 btn btn-secondary text-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 Export

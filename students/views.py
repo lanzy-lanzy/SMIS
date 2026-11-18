@@ -8,12 +8,16 @@ from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
 from django.utils.cache import patch_vary_headers
+from django.utils.http import urlencode
 from django.views.decorators.http import require_http_methods
 from itertools import groupby
-from .models import Student
+from .models import Student, StudentPromotion
 from .forms import StudentForm, StudentPromotionForm
-from .promotion import promote_student
+from .promotion import (
+    default_promotion_source_year, promote_cohort, promote_student, promotion_destinations, promotion_issues,
+)
 from academics.filters import select_school_year
+from academics.models import GradeLevel, SchoolYear, Section
 from accounts.models import AuditLog
 from grades.models import Grade
 from accounts.decorators import (
@@ -271,6 +275,97 @@ def student_delete(request, pk):
             {"student": student, "title": "Student"},
         )
     return render(request, "students/student_confirm_delete.html", {"student": student})
+
+
+@registrar_or_admin_required
+@require_http_methods(["GET", "POST"])
+def bulk_promotion(request):
+    # The form posts back to its preview URL so the reviewed cohort and destination
+    # are explicit even if the active school year changes before confirmation.
+    filters = request.GET
+    school_years = list(SchoolYear.objects.order_by("-name"))
+    school_year = next((year for year in school_years if str(year.pk) == filters.get("year")), None)
+    school_year = school_year or default_promotion_source_year(school_years)
+    cohort = Student.objects.filter(school_year=school_year) if school_year else Student.objects.none()
+
+    grade_levels = list(GradeLevel.objects.all())
+    grade_level = next((level for level in grade_levels if str(level.pk) == filters.get("grade")), None)
+    if grade_level is None:
+        cohort_grades = set(cohort.order_by().values_list("grade_level_id", flat=True).distinct())
+        grade_level = next((level for level in grade_levels if level.pk in cohort_grades), next(iter(grade_levels), None))
+    cohort = cohort.filter(grade_level=grade_level) if grade_level else Student.objects.none()
+
+    source_sections = list(Section.objects.filter(school_year=school_year, grade_level=grade_level))
+    source_section = next((section for section in source_sections if str(section.pk) == filters.get("section")), None)
+    if source_section:
+        cohort = cohort.filter(section=source_section)
+    query = filters.get("q", "").strip()
+    for term in query.split():
+        cohort = cohort.filter(
+            Q(lrn__icontains=term) | Q(first_name__icontains=term)
+            | Q(middle_name__icontains=term) | Q(last_name__icontains=term)
+        )
+
+    destinations = list(promotion_destinations(school_year, grade_level)) if school_year and grade_level else []
+    destination = next((section for section in destinations if str(section.pk) == filters.get("destination")), None)
+    params = {
+        "year": school_year.pk if school_year else None,
+        "grade": grade_level.pk if grade_level else None,
+        "section": source_section.pk if source_section else None,
+        "destination": destination.pk if destination else None,
+        "q": query,
+    }
+    preview_query = urlencode({key: value for key, value in params.items() if value})
+    batch_limit = 25
+    errors = []
+    selected_ids = []
+    if request.method == "POST":
+        submitted_ids = request.POST.getlist("student")
+        explicit_cohort = (
+            school_year and grade_level and filters.get("year") == str(school_year.pk)
+            and filters.get("grade") == str(grade_level.pk)
+            and (not filters.get("section") or source_section)
+        )
+        if not destination or not explicit_cohort:
+            errors = ["Load the cohort and select a destination section before confirming promotion."]
+        elif not submitted_ids or len(submitted_ids) > batch_limit or any(
+            not value.isascii() or not value.isdecimal() or len(value) > 19
+            or not 0 < int(value) <= 2**63 - 1 for value in submitted_ids
+        ):
+            errors = [f"Select between 1 and {batch_limit} students from the roster."]
+        else:
+            selected_ids = list(dict.fromkeys(map(int, submitted_ids)))
+            try:
+                promote_cohort(cohort, selected_ids, school_year, grade_level, destination.pk, request.user)
+            except ValidationError as error:
+                errors = error.messages
+            else:
+                count = len(selected_ids)
+                noun = "student was" if count == 1 else "students were"
+                messages.success(request, f"{count} {noun} promoted to {destination} ({destination.school_year}).")
+                return redirect(f"{reverse('students:bulk_promotion')}?{preview_query}")
+
+    page = Paginator(
+        cohort.select_related("section").order_by("last_name", "first_name", "pk"), batch_limit,
+    ).get_page(filters.get("page"))
+    students = list(page)
+    issues = promotion_issues(students, school_year, grade_level, destination)
+    history = StudentPromotion.objects.filter(from_school_year=school_year, from_grade_level=grade_level)
+    if source_section:
+        history = history.filter(from_section=source_section)
+    history = history.select_related(
+        "student", "from_section", "to_grade_level", "to_section", "to_school_year", "promoted_by",
+    ).order_by("-promoted_at", "-pk")
+    return render(request, "students/bulk_promotion.html", {
+        "school_years": school_years, "school_year": school_year,
+        "grade_levels": grade_levels, "grade_level": grade_level,
+        "source_sections": source_sections, "source_section": source_section,
+        "destinations": destinations, "destination": destination, "query": query,
+        "preview_query": preview_query, "page": page, "errors": errors,
+        "rows": [(student, issues.get(student.pk)) for student in students],
+        "eligible_count": len(students) - len(issues), "blocked_count": len(issues),
+        "history": history[:10], "promoted_count": history.count(), "selected_ids": selected_ids,
+    })
 
 
 @registrar_or_admin_required

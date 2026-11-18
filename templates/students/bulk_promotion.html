@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% block title %}Bulk Promotion{% endblock %}
+{% block page_title %}Bulk Promotion{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <header class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Bulk promotion</h1>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Review a grade cohort and move eligible students to the next school year.</p>
+        </div>
+        <a href="{% url 'students:student_list' %}" class="btn btn-secondary">Back to students</a>
+    </header>
+
+    <section class="glass-card p-5" aria-labelledby="cohort-title">
+        <h2 id="cohort-title" class="font-semibold text-gray-900 dark:text-white">Cohort and destination</h2>
+        <form method="get" action="{% url 'students:bulk_promotion' %}" class="mt-4 space-y-4" role="search" aria-label="Filter promotion roster">
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <label class="table-filter-field">Source school year
+                    <select name="year" class="px-3 py-2">
+                        {% for year in school_years %}
+                        <option value="{{ year.pk }}" {% if year == school_year %}selected{% endif %}>{{ year.name }}{% if year.is_current %} (Current){% endif %}</option>
+                        {% empty %}<option value="">No school years configured</option>{% endfor %}
+                    </select>
+                </label>
+                <label class="table-filter-field">Source grade
+                    <select name="grade" class="px-3 py-2">
+                        {% for level in grade_levels %}
+                        <option value="{{ level.pk }}" {% if level == grade_level %}selected{% endif %}>{{ level.name }}</option>
+                        {% empty %}<option value="">No grade levels configured</option>{% endfor %}
+                    </select>
+                </label>
+                <label class="table-filter-field">Source section
+                    <select name="section" class="px-3 py-2">
+                        <option value="">All sections</option>
+                        {% for section in source_sections %}
+                        <option value="{{ section.pk }}" {% if section == source_section %}selected{% endif %}>{{ section.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="table-filter-field">Search students
+                    <input type="search" name="q" value="{{ query }}" placeholder="Student name or LRN" class="px-3 py-2">
+                </label>
+                <label class="table-filter-field">Destination section
+                    <select name="destination" class="px-3 py-2">
+                        <option value="">{% if destinations %}Choose a destination{% else %}No destination available{% endif %}</option>
+                        {% for section in destinations %}
+                        <option value="{{ section.pk }}" {% if section == destination %}selected{% endif %}>{{ section }} · {{ section.school_year }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                {% if not destinations %}
+                <p class="text-sm text-gray-600 dark:text-gray-300">The next school year must be marked current and have a section in the next grade.</p>
+                {% else %}
+                <p class="text-sm text-gray-600 dark:text-gray-300">Choose a destination and preview the roster to check placement eligibility.</p>
+                {% endif %}
+                <div class="flex flex-wrap gap-2">
+                    <a href="{% url 'students:bulk_promotion' %}" class="btn btn-secondary">Reset</a>
+                    <button type="submit" class="btn btn-primary">Preview roster</button>
+                </div>
+            </div>
+        </form>
+    </section>
+
+    <section class="glass-card overflow-hidden" aria-labelledby="roster-title">
+        <div class="student-filter-panel space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 id="roster-title" class="font-semibold text-gray-900 dark:text-white">Promotion roster</h2>
+                <p class="text-sm text-gray-600 dark:text-gray-300">{{ page.paginator.count }} student{{ page.paginator.count|pluralize }} in the filtered roster</p>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-300">
+                {% if destination %}<strong>{{ destination }}</strong> · {{ destination.school_year }}{% else %}Select and preview a destination before choosing students.{% endif %}
+            </p>
+            {% if rows %}
+            <div class="flex flex-wrap gap-2 text-sm">
+                <span class="chip">{{ eligible_count }} {% if destination %}ready{% else %}meet academic and enrollment requirements{% endif %} on this page</span>
+                <span class="chip">{{ blocked_count }} blocked on this page</span>
+            </div>
+            {% endif %}
+            {% if errors %}
+            <div role="alert" class="rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
+                <p class="font-semibold">Promotion could not be completed</p>
+                <ul class="mt-1 space-y-1">{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if rows %}
+        <form method="post" action="?{{ preview_query }}&amp;page={{ page.number }}"
+              x-data="{
+                  count: 0,
+                  update(form) { this.count = form.querySelectorAll('input[name=student]:checked').length; },
+                  selectAll(form, checked) {
+                      form.querySelectorAll('input[name=student]').forEach(box => { box.checked = checked; });
+                      this.update(form);
+                  }
+              }" x-init="update($root)">
+            {% csrf_token %}
+            <div class="overflow-x-auto">
+                <table class="data-table">
+                    <caption class="sr-only">Students and promotion eligibility</caption>
+                    <thead class="data-table-head">
+                        <tr>
+                            {% if destination %}
+                            <th scope="col" class="px-4 py-3 text-left">
+                                {% if eligible_count %}
+                                <input type="checkbox" aria-label="Select all eligible students on this page"
+                                       x-cloak :checked="count === {{ eligible_count }}" @change="selectAll($root, $event.target.checked)">
+                                {% endif %}
+                            </th>
+                            {% endif %}
+                            <th scope="col" class="px-4 py-3 text-left">Student</th>
+                            <th scope="col" class="px-4 py-3 text-left">Source section</th>
+                            <th scope="col" class="px-4 py-3 text-left">Eligibility</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-500/15">
+                        {% for student, issue in rows %}
+                        <tr>
+                            {% if destination %}
+                            <td class="px-4 py-3">
+                                {% if not issue %}
+                                <input type="checkbox" name="student" value="{{ student.pk }}" aria-label="Select {{ student.full_name }} ({{ student.lrn }})"
+                                       @change="update($root)" {% if student.pk in selected_ids %}checked{% endif %}>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                            <td class="px-4 py-3">
+                                <a href="{% url 'students:student_detail' student.pk %}" class="link-action font-semibold">{{ student.full_name }}</a>
+                                <p class="text-xs text-gray-600 dark:text-gray-300">{{ student.lrn }}</p>
+                            </td>
+                            <td class="px-4 py-3">{{ student.section.name|default:"Unassigned" }}</td>
+                            <td class="px-4 py-3 text-sm">
+                                {% if issue %}
+                                <span class="font-semibold text-red-700 dark:text-red-300">Blocked</span>
+                                <p class="mt-1 text-gray-600 dark:text-gray-300">{{ issue }}</p>
+                                {% elif destination %}
+                                <span class="font-semibold text-green-700 dark:text-green-300">Ready to promote</span>
+                                {% else %}
+                                <span class="font-semibold text-gray-600 dark:text-gray-300">Requirements met</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if destination and eligible_count %}
+            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-4 py-4 dark:border-slate-700">
+                <div class="text-sm text-gray-600 dark:text-gray-300">
+                    <p>Selection applies to this page. Every selected student will move to {{ destination }}.</p>
+                    <p x-cloak aria-live="polite"><strong x-text="count"></strong> selected</p>
+                </div>
+                <button type="submit" class="btn btn-primary" :disabled="count === 0">Confirm promotion</button>
+            </div>
+            {% endif %}
+        </form>
+        {% else %}
+        <p class="p-6 text-center text-sm text-gray-600 dark:text-gray-300">No students match this cohort and search.</p>
+        {% endif %}
+
+        {% if page.has_other_pages %}
+        <nav aria-label="Promotion roster pages" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-4 py-3 dark:border-slate-700">
+            <p class="text-sm text-gray-600 dark:text-gray-300">Showing {{ page.start_index }}–{{ page.end_index }} of {{ page.paginator.count }}</p>
+            <div class="flex flex-wrap gap-2">
+                {% if page.has_previous %}<a class="page-link" href="?{{ preview_query }}&amp;page={{ page.previous_page_number }}">Previous</a>{% endif %}
+                <span class="page-link is-active" aria-current="page">{{ page.number }}</span>
+                {% if page.has_next %}<a class="page-link" href="?{{ preview_query }}&amp;page={{ page.next_page_number }}">Next</a>{% endif %}
+            </div>
+        </nav>
+        {% endif %}
+    </section>
+
+    <section class="glass-card overflow-hidden" aria-labelledby="history-title">
+        <div class="student-filter-panel">
+            <h2 id="history-title" class="font-semibold text-gray-900 dark:text-white">Promotion history</h2>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">{{ promoted_count }} recorded for the selected year, grade, and source section. Shows up to 10 recent promotions.</p>
+        </div>
+        {% if history %}
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <caption class="sr-only">Recent promotions from this cohort</caption>
+                <thead class="data-table-head">
+                    <tr>
+                        <th scope="col" class="px-4 py-3 text-left">Student</th>
+                        <th scope="col" class="px-4 py-3 text-left">From section</th>
+                        <th scope="col" class="px-4 py-3 text-left">Destination</th>
+                        <th scope="col" class="px-4 py-3 text-left">Recorded by</th>
+                        <th scope="col" class="px-4 py-3 text-left">Date</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-500/15">
+                    {% for record in history %}
+                    <tr>
+                        <td class="px-4 py-3"><a href="{% url 'students:student_detail' record.student_id %}" class="link-action">{{ record.student.full_name }}</a></td>
+                        <td class="px-4 py-3">{{ record.from_section.name|default:"—" }}</td>
+                        <td class="px-4 py-3">{{ record.to_grade_level }}{% if record.to_section %} · {{ record.to_section.name }}{% endif %} · {{ record.to_school_year }}</td>
+                        <td class="px-4 py-3">{% if record.promoted_by %}{{ record.promoted_by.get_full_name|default:record.promoted_by.username }}{% else %}—{% endif %}</td>
+                        <td class="px-4 py-3">{{ record.promoted_at|date:"M j, Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="p-5 text-sm text-gray-600 dark:text-gray-300">No promotions have been recorded for this cohort.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
