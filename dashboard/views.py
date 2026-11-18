@@ -29,65 +29,66 @@ def index(request):
     if request.user.is_teacher:
         return _teacher_dashboard(request, current_sy)
 
-    total_students = Student.objects.filter(status__in=ENROLLED_STATUSES).count()
-    sex_counts = Student.objects.filter(status__in=ENROLLED_STATUSES).aggregate(
+    learners = Student.objects.filter(school_year=current_sy, status__in=ENROLLED_STATUSES) if current_sy else Student.objects.none()
+    year_grades = Grade.objects.filter(school_year=current_sy) if current_sy else Grade.objects.none()
+    year_submissions = GradeSubmission.objects.filter(school_year=current_sy) if current_sy else GradeSubmission.objects.none()
+    sex_counts = learners.aggregate(
+        total=Count('id'),
         male=Count('id', filter=Q(sex='M')),
         female=Count('id', filter=Q(sex='F')),
     )
+    total_students = sex_counts['total']
     male_learners = sex_counts['male']
     female_learners = sex_counts['female']
     male_share = round(male_learners * 100 / total_students) if total_students else 0
     female_share = round(female_learners * 100 / total_students) if total_students else 0
-    total_teachers = User.objects.filter(role='teacher', is_active=True).count()
+    total_teachers = User.objects.filter(
+        role='teacher', is_active=True, assignments__school_year=current_sy,
+    ).distinct().count() if current_sy else 0
 
-    pending_submissions = GradeSubmission.objects.filter(status='pending').count()
-    returned_submissions = GradeSubmission.objects.filter(status='returned').count()
+    pending_submissions = year_submissions.filter(status='pending').count()
+    returned_submissions = year_submissions.filter(status='returned').count()
 
     # Validated / locked grades
-    validated_grades = Grade.objects.filter(
-        status__in=['validated', 'locked']
-    ).count() if current_sy else 0
+    official_grades = year_grades.filter(status__in=['validated', 'locked'])
+    validated_grades = official_grades.count()
 
     # Form 137 generated this school year
     form137_generated = Form137Record.objects.filter(
         school_year=current_sy
     ).count() if current_sy else 0
 
-    at_risk_count = Grade.objects.filter(
-        status__in=['validated', 'locked'], quarter_grade__lt=75
-    ).values('student').distinct().count() if current_sy else 0
+    failing_grades = official_grades.filter(student__in=learners, quarter_grade__lt=75)
+    at_risk_count = failing_grades.order_by().values('student').distinct().count()
 
     # Recent submissions (legacy fallback data)
-    recent_submissions = GradeSubmission.objects.select_related(
+    recent_submissions = year_submissions.select_related(
         'teacher', 'subject', 'section'
     ).order_by('-submitted_at')[:5]
 
     # Recent activity (legacy fallback data)
-    recent_activity = Grade.objects.select_related(
+    recent_activity = year_grades.select_related(
         'student', 'subject', 'encoded_by'
     ).order_by('-updated_at')[:10]
 
     # Students by grade level for bar chart
-    students_by_level = Student.objects.filter(status__in=ENROLLED_STATUSES).values(
+    students_by_level = learners.values(
         'grade_level__name'
     ).annotate(count=Count('id')).order_by('grade_level__level')
 
     # Grade validation workflow counts for donut chart
     grade_validation_counts = {
-        'draft': Grade.objects.filter(status='draft').count() if current_sy else 0,
-        'pending': GradeSubmission.objects.filter(status='pending').count() if current_sy else 0,
-        'returned': GradeSubmission.objects.filter(status='returned').count() if current_sy else 0,
-        'validated': Grade.objects.filter(status__in=['validated', 'locked']).count() if current_sy else 0,
+        'draft': year_grades.filter(status='draft').count(),
+        'pending': pending_submissions,
+        'returned': returned_submissions,
+        'validated': validated_grades,
     }
     grade_validation_total = sum(grade_validation_counts.values())
 
     # At-risk students details (top 5)
     at_risk_students = []
     if current_sy:
-        failing_grades = Grade.objects.filter(
-            status__in=['validated', 'locked'],
-            quarter_grade__lt=75
-        ).select_related('student', 'subject', 'student__grade_level', 'student__section')
+        failing_grades = failing_grades.select_related('student', 'subject', 'student__grade_level', 'student__section')
 
         at_risk_map = {}
         for grade in failing_grades:
@@ -197,7 +198,7 @@ def _teacher_dashboard(request, current_sy):
         .annotate(
             learner_count=Count(
                 'section__student',
-                filter=Q(section__student__status__in=ENROLLED_STATUSES),
+                filter=Q(section__student__status__in=ENROLLED_STATUSES, section__student__school_year=current_sy),
                 distinct=True,
             )
         )
@@ -206,7 +207,7 @@ def _teacher_dashboard(request, current_sy):
 
     section_ids = list(assignments.values_list('section_id', flat=True))
     learners = (
-        Student.objects.filter(section_id__in=section_ids, status__in=ENROLLED_STATUSES)
+        Student.objects.filter(section_id__in=section_ids, school_year=current_sy, status__in=ENROLLED_STATUSES)
         if section_ids else Student.objects.none()
     )
     sex_counts = learners.aggregate(
@@ -215,9 +216,9 @@ def _teacher_dashboard(request, current_sy):
     )
     total_learners = learners.count()
 
-    current_period = GradingPeriod.objects.filter(is_current=True).first()
+    current_period = GradingPeriod.objects.filter(school_year=current_sy, is_current=True).first()
     pending_submissions = GradeSubmission.objects.filter(
-        teacher=request.user, status='pending'
+        teacher=request.user, school_year=current_sy, status='pending'
     ).count()
     validated_grades = Grade.objects.filter(
         section_id__in=section_ids,

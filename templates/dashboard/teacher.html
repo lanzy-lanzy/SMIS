@@ -204,7 +204,7 @@
                     Welcome back, {{ user.first_name|default:user.username }}!
                 </h1>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    {% if current_period %}{{ current_period.name }} is in progress.{% else %}Here is an overview of your classes.{% endif %}
+                    {% if not current_sy %}No school year is marked current.{% elif current_period %}{{ current_period.name }} is in progress.{% else %}Here is an overview of your classes.{% endif %}
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
