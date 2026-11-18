@@ -11,7 +11,7 @@ from types import SimpleNamespace
 
 from grades.models import Grade
 from grades.mapeh import is_mapeh_subject, mapeh_component, merge_mapeh_grades
-from students.models import ENROLLED_STATUSES, Student
+from students.models import ENROLLED_STATUSES, Student, StudentPromotion
 
 
 SF6_GRADE_LEVELS = (7, 8, 9, 10, 11, 12)
@@ -190,6 +190,18 @@ def build_sf6_summary(school_year):
             .filter(school_year=school_year, status__in=ENROLLED_STATUSES)
             .select_related('grade_level', 'section__grade_level')
         )
+        enrolled_ids = {student.pk for student in students}
+        promotions = StudentPromotion.objects.filter(from_school_year=school_year).select_related(
+            'student', 'from_grade_level', 'from_section',
+        )
+        promoted_ids = set()
+        for promotion in promotions:
+            student = promotion.student
+            promoted_ids.add(student.pk)
+            if student.pk not in enrolled_ids:
+                student.grade_level = promotion.from_grade_level
+                student.section = promotion.from_section
+                students.append(student)
         finals = _student_finals(students, school_year)
 
         for student in students:
@@ -204,6 +216,8 @@ def build_sf6_summary(school_year):
             if status is None:
                 entry['ungraded'] += 1
                 continue
+            if student.pk in promoted_ids:
+                status = 'promoted'
 
             _add(entry['counts'][status], student.sex)
             _add(entry['counts'][band], student.sex)

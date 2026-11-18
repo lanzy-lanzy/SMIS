@@ -74,6 +74,7 @@
             <div>
                 <label class="block text-sm font-medium mb-1">Grade Level</label>
                 {{ form.grade_level }}
+                {% if form.grade_level.errors %}<p class="text-red-500 text-xs mt-1">{{ form.grade_level.errors.0 }}</p>{% endif %}
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">Section</label>

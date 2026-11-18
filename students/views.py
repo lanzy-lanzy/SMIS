@@ -1,12 +1,16 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Q
+from django.views.decorators.http import require_http_methods
 from itertools import groupby
 from .models import Student
-from .forms import StudentForm
+from .forms import StudentForm, StudentPromotionForm
+from .promotion import promote_student
 from accounts.models import AuditLog
 from grades.models import Grade
 from accounts.decorators import (
@@ -174,8 +178,10 @@ def student_create(request):
 
 
 @registrar_or_admin_required
+@transaction.atomic
 def student_edit(request, pk):
-    student = get_object_or_404(Student, pk=pk)
+    students = Student.objects.select_for_update() if request.method == "POST" else Student.objects.all()
+    student = get_object_or_404(students, pk=pk)
 
     from academics.models import GradeLevel, Section, SchoolYear
 
@@ -252,6 +258,24 @@ def student_delete(request, pk):
             {"student": student, "title": "Student"},
         )
     return render(request, "students/student_confirm_delete.html", {"student": student})
+
+
+@registrar_or_admin_required
+@require_http_methods(["GET", "POST"])
+def student_promote(request, pk):
+    student = get_object_or_404(Student, pk=pk)
+    form = StudentPromotionForm(request.POST if request.method == "POST" else None, student=student)
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
+        try:
+            promote_student(pk, data["source_year"], data["source_grade"], data["section"].pk, request.user)
+        except ValidationError as error:
+            form.add_error(None, error)
+        else:
+            messages.success(request, f"{student.full_name} was promoted to {data['section']} ({data['section'].school_year}).")
+            return redirect("students:student_detail", pk=pk)
+
+    return render(request, "students/student_promote.html", {"student": student, "form": form})
 
 
 @role_required('admin', 'registrar', 'teacher')

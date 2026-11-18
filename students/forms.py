@@ -1,5 +1,6 @@
 from django import forms
 from .models import Student
+from .promotion import promotion_sections
 
 
 class StudentForm(forms.ModelForm):
@@ -43,3 +44,24 @@ class StudentForm(forms.ModelForm):
         if self.instance.pk and current and current not in dict(Student.STATUS_CHOICES):
             options.append((current, self.instance.get_status_display()))
         status_field.choices = options
+
+    def clean_grade_level(self):
+        level = self.cleaned_data['grade_level']
+        current_level = self.instance.grade_level
+        if self.instance.pk and current_level and level and level.level > current_level.level:
+            raise forms.ValidationError('Use Promote on the student profile to move to a higher grade.')
+        return level
+
+
+class StudentPromotionForm(forms.Form):
+    section = forms.ModelChoiceField(queryset=None, label='Destination section')
+    source_year = forms.IntegerField(widget=forms.HiddenInput)
+    source_grade = forms.IntegerField(widget=forms.HiddenInput)
+
+    def __init__(self, *args, student, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['section'].queryset = promotion_sections(student)
+        self.fields['section'].label_from_instance = (
+            lambda section: f'{section} ({section.school_year})'
+        )
+        self.initial.update(source_year=student.school_year_id, source_grade=student.grade_level_id)

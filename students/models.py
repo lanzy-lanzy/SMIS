@@ -71,3 +71,20 @@ class Student(models.Model):
         if self.suffix:
             name += f" {self.suffix}"
         return name
+
+
+class StudentPromotion(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='promotions')
+    from_grade_level = models.ForeignKey('academics.GradeLevel', on_delete=models.CASCADE, related_name='+')
+    from_school_year = models.ForeignKey('academics.SchoolYear', on_delete=models.CASCADE, related_name='+')
+    from_section = models.ForeignKey('academics.Section', on_delete=models.SET_NULL, null=True, related_name='+')
+    to_grade_level = models.ForeignKey('academics.GradeLevel', on_delete=models.CASCADE, related_name='+')
+    to_school_year = models.ForeignKey('academics.SchoolYear', on_delete=models.CASCADE, related_name='+')
+    to_section = models.ForeignKey('academics.Section', on_delete=models.SET_NULL, null=True, related_name='+')
+    promoted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='+')
+    promoted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['student', 'from_school_year'], name='one_promotion_per_student_year'),
+        ]

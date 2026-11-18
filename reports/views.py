@@ -575,7 +575,12 @@ def _report_card_context(request, student):
     terms = list(
         GradingPeriod.objects.filter(school_year=school_year).order_by('order')
     ) if school_year else []
-    completed = _completed_period_orders(school_year, student.section)
+    placement = student.promotions.filter(from_school_year=school_year).select_related(
+        'from_section__adviser', 'from_grade_level',
+    ).first()
+    section = placement.from_section if placement else student.section
+    grade_level = placement.from_grade_level if placement else student.grade_level
+    completed = _completed_period_orders(school_year, section)
 
     grades = (
         Grade.objects
@@ -607,7 +612,6 @@ def _report_card_context(request, student):
     if finals:
         general_average = int((Decimal(sum(finals)) / Decimal(len(finals))).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
 
-    section = student.section
     adviser_name = section.adviser.get_full_name().upper() if section and section.adviser else ''
 
     middle = f" {student.middle_name.upper()}" if student.middle_name else ''
@@ -633,7 +637,7 @@ def _report_card_context(request, student):
         'lrn': student.lrn,
         'sex': student.get_sex_display() or '',
         'section_name': section.name.upper() if section else '',
-        'grade_level': student.grade_level.level if student.grade_level else '',
+        'grade_level': grade_level.level if grade_level else '',
         'adviser_name': adviser_name,
         'school_head_name': SCHOOL_HEAD_NAME,
         'age': _compute_age(student.birthdate),
