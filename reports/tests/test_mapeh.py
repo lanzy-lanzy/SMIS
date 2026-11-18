@@ -10,9 +10,10 @@ from django.urls import reverse
 from academics.models import GradeLevel, GradingPeriod, SchoolYear, Section, Subject
 from accounts.models import User
 from form137.utils import build_grade_blocks, build_printable_subject_rows
+from grades.annual import annual_results
 from grades.mapeh import mapeh_component, mapeh_component_label, merge_mapeh_grades, merge_mapeh_periods
 from grades.models import Grade, GradeSubmission
-from reports.sf6 import _student_finals, build_sf6_summary
+from reports.sf6 import build_sf6_summary
 from reports.views import _build_grade_rows
 from students.models import Student
 
@@ -248,9 +249,10 @@ class Sf6MapehMergeTests(TestCase):
         self.section = Section.objects.create(
             name='7-A', grade_level=self.level, school_year=self.sy
         )
-        self.term = GradingPeriod.objects.create(
-            name='Term 1', order=1, school_year=self.sy, is_current=True
-        )
+        terms = [
+            GradingPeriod.objects.create(name=f'Term {order}', order=order, school_year=self.sy)
+            for order in (1, 2, 3)
+        ]
         self.filipino = Subject.objects.create(name='Filipino', code='FIL7', grade_level=self.level)
         self.ma = Subject.objects.create(name='MUSIC AND ARTS', code='MAPEH7-2', grade_level=self.level)
         self.peh = Subject.objects.create(
@@ -261,30 +263,32 @@ class Sf6MapehMergeTests(TestCase):
             birthdate=datetime.date(2012, 1, 1), status='active',
             grade_level=self.level, section=self.section, school_year=self.sy,
         )
-        for subject, value in ((self.filipino, '80'), (self.ma, '88'), (self.peh, '90')):
-            Grade.objects.create(
-                student=self.student, subject=subject, grading_period=self.term,
-                school_year=self.sy, section=self.section, status='validated',
-                quarter_grade=Decimal(value), final_grade=Decimal(value),
-            )
+        for term in terms:
+            for subject, value in ((self.filipino, '78'), (self.ma, '87'), (self.peh, '89')):
+                Grade.objects.create(
+                    student=self.student, subject=subject, grading_period=term,
+                    school_year=self.sy, section=self.section, status='validated',
+                    quarter_grade=Decimal(value), final_grade=Decimal(value),
+                )
 
     def test_component_finals_merge_into_one_mapeh_final(self):
-        finals = _student_finals([self.student], self.sy)
+        finals, issue = annual_results(self.sy, {self.student.pk: self.level.pk})[self.student.pk]
+        self.assertIsNone(issue)
         self.assertEqual(
-            finals[self.student.id],
-            {'Filipino': Decimal('80'), 'MAPEH': Decimal('89')},
+            finals,
+            {(self.filipino.pk, 'Filipino'): Decimal('78'), (None, 'MAPEH'): Decimal('88')},
         )
 
     def test_summary_counts_mapeh_once_in_the_average(self):
         summary = build_sf6_summary(self.sy)
-        # (80 + 89) / 2 = 84.5 -> 85, Very Satisfactory; unmerged would be 86.
+        # Counting MAPEH once gives 83. Counting its two components separately gives 85.
         band_rows = {
             row['label']: row['cells'][0]
             for row in summary['rows'] if row['kind'] == 'data'
         }
-        self.assertEqual(band_rows['Satisfactory (80%-84%)'], {'male': 0, 'female': 0, 'total': 0})
+        self.assertEqual(band_rows['Very Satisfactory (85%-89%)'], {'male': 0, 'female': 0, 'total': 0})
         self.assertEqual(
-            band_rows['Very Satisfactory (85%-89%)'], {'male': 1, 'female': 0, 'total': 1}
+            band_rows['Satisfactory (80%-84%)'], {'male': 1, 'female': 0, 'total': 1}
         )
         self.assertEqual(summary['graded_total'], 1)
 

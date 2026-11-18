@@ -11,7 +11,7 @@ from academics.models import GradeLevel, GradingPeriod, SchoolYear, Section, Sub
 from accounts.models import User
 from grades.models import Grade
 from reports.sf6 import build_sf6_summary, classify_finals
-from students.models import Student
+from students.models import Student, StudentPromotion
 
 
 def _base_context_copy(self):
@@ -92,6 +92,9 @@ class Sf6SummaryTests(TestCase):
         self.term2 = GradingPeriod.objects.create(
             name='Term 2', order=2, school_year=self.sy
         )
+        self.term3 = GradingPeriod.objects.create(
+            name='Term 3', order=3, school_year=self.sy
+        )
 
         self.filipino7 = Subject.objects.create(
             name='Filipino', code='FIL7', grade_level=self.level7
@@ -112,25 +115,19 @@ class Sf6SummaryTests(TestCase):
         self.paul = self._student('Paul', 'Santos', 'M', self.level7, self.section7, '104')
         self.quinn = self._student('Quinn', 'Lopez', 'M', self.level8, self.section8, '105')
 
-        # Linda: term 1 failing, term 2 passing - only the latest final counts.
-        self._grade(self.linda, self.filipino7, self.term1, '60', self.section7)
-        self._grade(self.linda, self.filipino7, self.term2, '90', self.section7)
-        self._grade(self.linda, self.english7, self.term2, '90', self.section7)
-
-        # Marco: passing average with one failed subject.
-        self._grade(self.marco, self.filipino7, self.term2, '80', self.section7)
-        self._grade(self.marco, self.english7, self.term2, '70', self.section7)
-
-        # Nina: failing average.
-        self._grade(self.nina, self.filipino7, self.term2, '60', self.section7)
-        self._grade(self.nina, self.english7, self.term2, '60', self.section7)
-
-        # Paul: draft grade only, so he stays unclassified.
-        self._grade(self.paul, self.filipino7, self.term2, '60', self.section7, status='draft')
-
-        # Quinn: MAPEH parent covers the Music sub-grade.
-        self._grade(self.quinn, self.mapeh8, self.term2, '90', self.section8)
-        self._grade(self.quinn, self.music8, self.term2, '50', self.section8)
+        for term in (self.term1, self.term2, self.term3):
+            # Linda's annual average is 85 even though the latest marks are both 90.
+            self._grade(self.linda, self.filipino7, term, '60' if term == self.term1 else '90', self.section7)
+            self._grade(self.linda, self.english7, term, '90', self.section7)
+            self._grade(self.marco, self.filipino7, term, '80', self.section7)
+            self._grade(self.marco, self.english7, term, '70', self.section7)
+            self._grade(self.nina, self.filipino7, term, '60', self.section7)
+            self._grade(self.nina, self.english7, term, '60', self.section7)
+            self._grade(self.paul, self.filipino7, term, '90', self.section7)
+            self._grade(self.paul, self.english7, term, '90', self.section7,
+                        status='draft' if term == self.term3 else 'validated')
+            self._grade(self.quinn, self.mapeh8, term, '90', self.section8)
+            self._grade(self.quinn, self.music8, term, '50', self.section8)
 
         self.summary = build_sf6_summary(self.sy)
 
@@ -194,7 +191,7 @@ class Sf6SummaryTests(TestCase):
 
     def test_achievement_bands_follow_the_general_average(self):
         self.assertEqual(
-            self._cells('Outstanding (90%-100%)')['GRADE 7'],
+            self._cells('Very Satisfactory (85%-89%)')['GRADE 7'],
             {'male': 0, 'female': 1, 'total': 1},
         )
         self.assertEqual(
@@ -235,6 +232,43 @@ class Sf6SummaryTests(TestCase):
         self.assertEqual(empty['enrolled_total'], 0)
         self.assertEqual(empty['graded_total'], 0)
         self.assertEqual(self._row('TOTAL')['total'], {'male': 3, 'female': 2, 'total': 5})
+
+    def test_recorded_promotion_preserves_source_grade_and_outcome(self):
+        next_year = SchoolYear.objects.create(name='2026-2027')
+        next_section = Section.objects.create(name='8-A', grade_level=self.level8, school_year=next_year)
+        StudentPromotion.objects.create(
+            student=self.paul, from_school_year=self.sy, from_grade_level=self.level7, from_section=self.section7,
+            to_school_year=next_year, to_grade_level=self.level8, to_section=next_section,
+        )
+        Student.objects.filter(pk=self.paul.pk).update(
+            school_year=next_year, grade_level=self.level8, section=next_section,
+        )
+        self.summary = build_sf6_summary(self.sy)
+        self.assertEqual(self._cells('TOTAL')['GRADE 7']['total'], 4)
+        self.assertEqual(self._cells('PROMOTED')['GRADE 7'], {'male': 1, 'female': 1, 'total': 2})
+        self.assertEqual(self.summary['recorded_promoted_total'], 1)
+        self.assertEqual(self.summary['ungraded_total'], 1)
+        self.assertEqual(self.summary['unclassified_total'], 0)
+
+    def test_missing_required_term_keeps_learner_unclassified(self):
+        Grade.objects.filter(student=self.linda, subject=self.english7, grading_period=self.term1).delete()
+        self.summary = build_sf6_summary(self.sy)
+        self.assertEqual(self._cells('PROMOTED')['GRADE 7']['total'], 0)
+        self.assertEqual(self.summary['ungraded_total'], 2)
+        self.assertEqual(self.summary['unclassified_total'], 2)
+
+    def test_mapeh_split_components_need_both_marks_each_term(self):
+        grades = Grade.objects.filter(student=self.quinn, subject=self.mapeh8)
+        grades.update(component='ma', quarter_grade=80)
+        self.assertEqual(build_sf6_summary(self.sy)['ungraded_total'], 2)
+        for term in (self.term1, self.term2, self.term3):
+            Grade.objects.create(
+                student=self.quinn, subject=self.mapeh8, grading_period=term, school_year=self.sy,
+                section=self.section8, component='peh', quarter_grade=100, status='locked',
+            )
+        self.summary = build_sf6_summary(self.sy)
+        self.assertEqual(self._cells('Outstanding (90%-100%)')['GRADE 8']['total'], 1)
+        self.assertEqual(self.summary['ungraded_total'], 1)
 
 
 class Sf6ViewTests(Python314ContextCopyMixin, TestCase):

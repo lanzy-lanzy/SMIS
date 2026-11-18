@@ -2,23 +2,17 @@
 
 SF6 summarises, per grade level, how many learners were promoted, retained or
 needed conditional promotion, and groups every learner by the DepEd
-achievement band of their general average. The numbers are derived from
-validated/locked grades only, so the form always reflects finalized records.
+achievement band of their general average. The table uses finalized annual
+grades and recorded promotions for the selected school year.
 """
 
 from decimal import Decimal, ROUND_HALF_UP
-from types import SimpleNamespace
 
-from grades.models import Grade
-from grades.mapeh import is_mapeh_subject, mapeh_component, merge_mapeh_grades
+from grades.annual import annual_results
 from students.models import ENROLLED_STATUSES, Student, StudentPromotion
 
 
 SF6_GRADE_LEVELS = (7, 8, 9, 10, 11, 12)
-
-# MAPEH sub-components are folded into the MAPEH parent grade when the parent
-# has a final grade, matching how the general average is computed elsewhere.
-SF6_MAPEH_SUBJECTS = ('Music', 'Arts', 'Physical Education', 'Health')
 
 SF6_STATUS_ROWS = (
     ('promoted', 'PROMOTED'),
@@ -89,86 +83,12 @@ def classify_finals(subject_finals):
     return status, _band_for(average_whole), average_whole
 
 
-def _level_of(student):
-    if student.grade_level_id:
-        return student.grade_level.level
-    if student.section_id and student.section.grade_level_id:
-        return student.section.grade_level.level
-    return None
-
-
-def _student_finals(students, school_year):
-    """Return ``{student_id: {subject_name: final_grade}}`` for one school year.
-
-    Only validated/locked grades count, the latest grading period wins for each
-    subject, and MAPEH sub-components are dropped when a MAPEH parent grade
-    exists so they are not counted twice in the general average. Music and
-    Arts / PE and Health component finals are merged into one MAPEH final
-    when no parent grade exists.
-    """
-    student_levels = {student.id: student.grade_level_id for student in students}
-    grades = (
-        Grade.objects
-        .filter(
-            school_year=school_year,
-            status__in=('validated', 'locked'),
-            student__in=students,
-        )
-        .select_related('subject', 'grading_period')
-        .order_by('grading_period__order')
-    )
-
-    latest = {}
-    mapeh_components = {}
-    for grade in grades:
-        level_id = student_levels.get(grade.student_id)
-        if level_id and grade.subject.grade_level_id != level_id:
-            continue
-        # MAPEH is one Subject but two Grade rows per learner/term (component
-        # 'ma' / 'peh'); roll them up per period so the latest MAPEH final is
-        # the average of the two components, matching the report-card layout.
-        if is_mapeh_subject(grade.subject.name) and grade.component:
-            mapeh_components.setdefault((grade.student_id, grade.grading_period.order), []).append(grade)
-            continue
-        latest[(grade.student_id, grade.subject.name)] = grade
-
-    if mapeh_components:
-        by_student = {}
-        for (student_id, order), component_grades in mapeh_components.items():
-            avg = merge_mapeh_grades(g.final_grade for g in component_grades)
-            if avg is not None:
-                by_student.setdefault(student_id, {})[order] = avg
-        for student_id, period_avgs in by_student.items():
-            latest_order = max(period_avgs)
-            latest[(student_id, 'MAPEH')] = SimpleNamespace(final_grade=Decimal(period_avgs[latest_order]))
-
-    finals = {}
-    for (student_id, subject_name), grade in latest.items():
-        finals.setdefault(student_id, {})[subject_name] = grade.final_grade
-
-    for subject_finals in finals.values():
-        if subject_finals.get('MAPEH') is not None:
-            for subject_name in SF6_MAPEH_SUBJECTS:
-                subject_finals.pop(subject_name, None)
-            continue
-        component_names = [name for name in subject_finals if mapeh_component(name)]
-        if component_names:
-            merged = merge_mapeh_grades(subject_finals[name] for name in component_names)
-            for name in component_names:
-                subject_finals.pop(name)
-            if merged is not None:
-                subject_finals['MAPEH'] = Decimal(merged)
-
-    return finals
-
-
 def build_sf6_summary(school_year):
     """Build the SF6 table for *school_year*.
 
     Returns the fixed grade-level groups plus one entry per table row. The
-    TOTAL row counts enrolled learners; when some of them have no finalized
-    grades, ``ungraded_total`` reports how many are missing from the promotion
-    and achievement breakdowns.
+    TOTAL row counts enrolled learners. Outcome rows use completed annual marks
+    or a recorded promotion, while achievement rows require completed grades.
     """
     level_entries = [
         {
@@ -176,7 +96,6 @@ def build_sf6_summary(school_year):
             'label': f'GRADE {level}',
             'counts': {key: _empty_counts() for key in SF6_ROW_KEYS},
             'total': _empty_counts(),
-            'ungraded': 0,
         }
         for level in SF6_GRADE_LEVELS
     ]
@@ -184,45 +103,54 @@ def build_sf6_summary(school_year):
     row_totals = {key: _empty_counts() for key in SF6_ROW_KEYS}
     grand_total = _empty_counts()
 
+    graded_total = 0
+    unclassified_total = 0
+    recorded_promoted_total = 0
     if school_year is not None:
-        students = list(
-            Student.objects
-            .filter(school_year=school_year, status__in=ENROLLED_STATUSES)
-            .select_related('grade_level', 'section__grade_level')
-        )
-        enrolled_ids = {student.pk for student in students}
+        placements = {}
+        students = Student.objects.filter(
+            school_year=school_year, status__in=ENROLLED_STATUSES,
+        ).select_related('grade_level', 'section__grade_level')
+        for student in students:
+            level = student.grade_level or (student.section.grade_level if student.section_id else None)
+            if level:
+                placements[student.pk] = (level, student.sex)
+
         promotions = StudentPromotion.objects.filter(from_school_year=school_year).select_related(
-            'student', 'from_grade_level', 'from_section',
+            'student', 'from_grade_level',
         )
         promoted_ids = set()
         for promotion in promotions:
-            student = promotion.student
-            promoted_ids.add(student.pk)
-            if student.pk not in enrolled_ids:
-                student.grade_level = promotion.from_grade_level
-                student.section = promotion.from_section
-                students.append(student)
-        finals = _student_finals(students, school_year)
+            placements[promotion.student_id] = (promotion.from_grade_level, promotion.student.sex)
+            promoted_ids.add(promotion.student_id)
 
-        for student in students:
-            entry = by_level.get(_level_of(student))
-            if entry is None:
-                continue
+        placements = {
+            student_id: (level, sex) for student_id, (level, sex) in placements.items()
+            if level.level in by_level
+        }
+        results = annual_results(school_year, {
+            student_id: level.pk for student_id, (level, _) in placements.items()
+        })
+        for student_id, (level, sex) in placements.items():
+            entry = by_level[level.level]
+            _add(entry['total'], sex)
+            _add(grand_total, sex)
 
-            _add(entry['total'], student.sex)
-            _add(grand_total, student.sex)
-
-            status, band, _average = classify_finals(finals.get(student.id, {}))
-            if status is None:
-                entry['ungraded'] += 1
-                continue
-            if student.pk in promoted_ids:
+            finals, _reason = results[student_id]
+            status, band, _average = classify_finals(finals)
+            if student_id in promoted_ids:
                 status = 'promoted'
+                recorded_promoted_total += 1
 
-            _add(entry['counts'][status], student.sex)
-            _add(entry['counts'][band], student.sex)
-            _add(row_totals[status], student.sex)
-            _add(row_totals[band], student.sex)
+            if status:
+                _add(entry['counts'][status], sex)
+                _add(row_totals[status], sex)
+            else:
+                unclassified_total += 1
+            if band:
+                graded_total += 1
+                _add(entry['counts'][band], sex)
+                _add(row_totals[band], sex)
 
     rows = []
     for key, label in SF6_STATUS_ROWS:
@@ -250,13 +178,6 @@ def build_sf6_summary(school_year):
         'total': grand_total,
     })
 
-    graded_total = sum(
-        entry['counts']['promoted']['total']
-        + entry['counts']['conditional']['total']
-        + entry['counts']['retained']['total']
-        for entry in level_entries
-    )
-
     return {
         'levels': [
             {'level': entry['level'], 'label': entry['label']}
@@ -265,5 +186,7 @@ def build_sf6_summary(school_year):
         'rows': rows,
         'enrolled_total': grand_total['total'],
         'graded_total': graded_total,
-        'ungraded_total': sum(entry['ungraded'] for entry in level_entries),
+        'ungraded_total': grand_total['total'] - graded_total,
+        'unclassified_total': unclassified_total,
+        'recorded_promoted_total': recorded_promoted_total,
     }

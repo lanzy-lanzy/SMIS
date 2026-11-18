@@ -338,7 +338,10 @@
         </table>
 
         {% if sf6.ungraded_total %}
-        <p class="footnote">{{ sf6.ungraded_total }} enrolled learner{{ sf6.ungraded_total|pluralize }} without finalized grades. These are excluded from the promotion and achievement rows; TOTAL reflects enrollment.</p>
+        <p class="footnote">{{ sf6.ungraded_total }} enrolled learner{{ sf6.ungraded_total|pluralize }} with incomplete finalized grades. {% if sf6.unclassified_total %}{{ sf6.unclassified_total }} awaiting an outcome.{% endif %}</p>
+        {% endif %}
+        {% if sf6.recorded_promoted_total %}
+        <p class="footnote">{{ sf6.recorded_promoted_total }} recorded promotion{{ sf6.recorded_promoted_total|pluralize }} included in the PROMOTED row under the learner’s source grade.</p>
         {% endif %}
 
         <div class="signatures">

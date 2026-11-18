@@ -1,13 +1,11 @@
 import re
-from collections import defaultdict
-from decimal import Decimal, ROUND_HALF_UP
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from academics.models import GradingPeriod, Section, Subject
+from academics.models import Section
 from accounts.models import AuditLog
-from grades.mapeh import MAPEH_COMPONENTS, is_mapeh_subject, mapeh_component, merge_mapeh_grades
+from grades.annual import annual_results
 from grades.models import Grade
 
 from .models import ENROLLED_STATUSES, Student, StudentPromotion
@@ -50,57 +48,6 @@ def promotion_destinations(school_year, grade_level):
     ])
 
 
-def _check_promotion_grades(period_ids, subjects, grades):
-    if set(period_ids) != {order for order, _ in GradingPeriod.PERIOD_CHOICES}:
-        raise ValidationError('Configure all three grading terms for the source school year.')
-    recorded_subjects = {grade.subject_id for grade in grades}
-    subjects = [subject for subject in subjects if subject.is_active or subject.pk in recorded_subjects]
-    marks = {
-        (grade.subject_id, grade.grading_period_id, grade.component): grade.quarter_grade
-        for grade in grades
-        if grade.status in ('validated', 'locked') and 0 < grade.quarter_grade <= 100
-    }
-    missing = []
-    failed = []
-    legacy_mapeh = {}
-    for subject in subjects:
-        term_marks = []
-        for period_id in period_ids.values():
-            value = marks.get((subject.pk, period_id, ''))
-            if is_mapeh_subject(subject.name):
-                components = [
-                    marks.get((subject.pk, period_id, component))
-                    for component, _, _ in MAPEH_COMPONENTS
-                ]
-                if any(mark is not None for mark in components):
-                    value = merge_mapeh_grades(components) if None not in components else None
-            term_marks.append(value)
-        if None in term_marks:
-            missing.append(subject.name)
-        elif mapeh_component(subject.name):
-            legacy_mapeh[mapeh_component(subject.name)] = term_marks
-        elif _annual_grade(term_marks) < 75:
-            failed.append(subject.name)
-
-    if not subjects:
-        raise ValidationError('Configure the required subjects for the source grade level.')
-    if missing:
-        raise ValidationError('Finalized grades are missing for one or more terms in %(subjects)s.',
-                              params={'subjects': ', '.join(missing)})
-    if legacy_mapeh:
-        if set(legacy_mapeh) != {component for component, _, _ in MAPEH_COMPONENTS}:
-            raise ValidationError('Both MAPEH components must have finalized grades.')
-        if _annual_grade([merge_mapeh_grades(values) for values in zip(*legacy_mapeh.values())]) < 75:
-            failed.append('MAPEH')
-    if failed:
-        raise ValidationError('A final grade of at least 75 is required in %(subjects)s.',
-                              params={'subjects': ', '.join(failed)})
-
-
-def _annual_grade(term_marks):
-    return (sum(map(Decimal, term_marks)) / len(term_marks)).quantize(Decimal('1'), rounding=ROUND_HALF_UP)
-
-
 def promotion_issues(students, school_year, grade_level, destination=None):
     """Evaluate a cohort with the same rules used at confirmation."""
     if not students:
@@ -117,15 +64,7 @@ def promotion_issues(students, school_year, grade_level, destination=None):
             .order_by().values_list('student_id', flat=True).distinct()
         )
 
-    period_ids = dict(GradingPeriod.objects.filter(school_year=school_year).values_list('order', 'pk'))
-    subjects = list(Subject.objects.filter(grade_level=grade_level))
-    grades_by_student = defaultdict(list)
-    grades = Grade.objects.filter(
-        student_id__in=student_ids, school_year=school_year,
-        subject__grade_level=grade_level, grading_period_id__in=period_ids.values(),
-    ).only('student_id', 'subject_id', 'grading_period_id', 'component', 'quarter_grade', 'status').order_by()
-    for grade in grades:
-        grades_by_student[grade.student_id].append(grade)
+    results = annual_results(school_year, dict.fromkeys(student_ids, grade_level.pk))
 
     issues = {}
     for student in students:
@@ -136,10 +75,13 @@ def promotion_issues(students, school_year, grade_level, destination=None):
         elif student.pk in conflicts:
             issues[student.pk] = 'Existing destination-year grades conflict with the selected placement.'
         else:
-            try:
-                _check_promotion_grades(period_ids, subjects, grades_by_student[student.pk])
-            except ValidationError as error:
-                issues[student.pk] = error.messages[0]
+            finals, reason = results[student.pk]
+            if reason:
+                issues[student.pk] = reason
+            else:
+                failed = [name for (_, name), mark in finals.items() if mark < 75]
+                if failed:
+                    issues[student.pk] = f'A final grade of at least 75 is required in {", ".join(failed)}.'
     return issues
 
 
