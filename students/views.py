@@ -6,11 +6,14 @@ from django.http import HttpResponse
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
+from django.urls import reverse
+from django.utils.cache import patch_vary_headers
 from django.views.decorators.http import require_http_methods
 from itertools import groupby
 from .models import Student
 from .forms import StudentForm, StudentPromotionForm
 from .promotion import promote_student
+from academics.filters import select_school_year
 from accounts.models import AuditLog
 from grades.models import Grade
 from accounts.decorators import (
@@ -45,12 +48,11 @@ def _filter_students_by_role(queryset, user):
 
 @role_required('admin', 'registrar', 'teacher')
 def student_list(request):
-    query = request.GET.get("q", "")
+    query = request.GET.get("q", "").strip()
     grade_filter = request.GET.get("grade", "")
     section_filter = request.GET.get("section", "")
     status_filter = request.GET.get("status", "")
 
-    year_filter = request.GET.get("year", "")
     sex_filter = request.GET.get("sex", "")
     from academics.models import GradeLevel, Section, SchoolYear
 
@@ -62,15 +64,21 @@ def student_list(request):
         )
     else:
         grade_levels = GradeLevel.objects.all()
-    school_years = SchoolYear.objects.all()
+    grade_levels = list(grade_levels)
+    if grade_filter not in {str(level.pk) for level in grade_levels}:
+        grade_filter = ""
+    school_years = SchoolYear.objects.order_by("-is_current", "-name")
     if request.user.is_teacher:
         school_years = school_years.filter(pk__in=sections.values("school_year_id"))
-    if year_filter:
-        sections = sections.filter(school_year_id=year_filter)
+    school_years = list(school_years)
+    year_filter, selected_school_year = select_school_year(request.GET.get("year"), school_years)
+    if selected_school_year:
+        sections = sections.filter(school_year=selected_school_year)
     if grade_filter:
         sections = sections.filter(grade_level_id=grade_filter)
     # A grade change must not leave an incompatible section selected.
-    if section_filter and not sections.filter(pk=section_filter).exists():
+    sections = list(sections)
+    if section_filter not in {str(section.pk) for section in sections}:
         section_filter = ""
 
     students = Student.objects.select_related(
@@ -78,8 +86,8 @@ def student_list(request):
     ).all()
     students = _filter_students_by_role(students, request.user)
 
-    if year_filter:
-        students = students.filter(school_year_id=year_filter)
+    if selected_school_year:
+        students = students.filter(school_year=selected_school_year)
     if sex_filter in dict(Student.SEX_CHOICES):
         students = students.filter(sex=sex_filter)
 
@@ -106,6 +114,8 @@ def student_list(request):
     pagination_params.pop("page", None)
     pagination_params.pop("view", None)
     pagination_params["section"] = section_filter
+    pagination_params["year"] = year_filter
+    pagination_params["grade"] = grade_filter
     pagination_query = pagination_params.urlencode()
 
     if request.headers.get("HX-Request"):
@@ -115,6 +125,8 @@ def student_list(request):
             "sections": sections,
             "section_filter": section_filter,
             "update_section_filter": True,
+            "selected_school_year": selected_school_year,
+            "grade_filter": grade_filter,
         })
 
     return render(
@@ -129,6 +141,7 @@ def student_list(request):
             "year_filter": year_filter,
             "sex_filter": sex_filter,
             "school_years": school_years,
+            "selected_school_year": selected_school_year,
             "sex_choices": Student.SEX_CHOICES,
             "grade_levels": grade_levels,
             "sections": sections,
@@ -264,6 +277,7 @@ def student_delete(request, pk):
 @require_http_methods(["GET", "POST"])
 def student_promote(request, pk):
     student = get_object_or_404(Student, pk=pk)
+    is_modal = request.headers.get("HX-Request") == "true"
     form = StudentPromotionForm(request.POST if request.method == "POST" else None, student=student)
     if request.method == "POST" and form.is_valid():
         data = form.cleaned_data
@@ -273,9 +287,19 @@ def student_promote(request, pk):
             form.add_error(None, error)
         else:
             messages.success(request, f"{student.full_name} was promoted to {data['section']} ({data['section'].school_year}).")
+            if is_modal:
+                return HttpResponse(headers={"HX-Redirect": reverse("students:student_detail", args=[pk])})
             return redirect("students:student_detail", pk=pk)
 
-    return render(request, "students/student_promote.html", {"student": student, "form": form})
+    template = "students/partials/student_promote.html" if is_modal else "students/student_promote.html"
+    response = render(request, template, {
+        "student": student,
+        "form": form,
+        "is_modal": is_modal,
+        "destination": form.fields["section"].queryset.first(),
+    })
+    patch_vary_headers(response, ["HX-Request"])
+    return response
 
 
 @role_required('admin', 'registrar', 'teacher')

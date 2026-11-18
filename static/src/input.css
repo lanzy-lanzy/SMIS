@@ -2436,13 +2436,8 @@
 
 /* Student directory: search first, related filters together, results below. */
 .student-filter-panel { padding: 1.25rem; border-bottom: 1px solid rgba(148,163,184,.25); }
-.student-filter-heading { display: flex; justify-content: space-between; align-items: start; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
-.student-filter-field { display: flex; flex-direction: column; gap: .5rem; min-width: 0; font-size: .8125rem; font-weight: 600; color: var(--ink); }
-.student-filter-field input, .student-filter-field select { width: 100%; min-width: 0; font-size: .875rem; font-weight: 400; }
-.student-search-field { margin-bottom: 1rem; }
-.student-filter-fields { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem; }
+.table-filter-field { display: flex; flex-direction: column; gap: .5rem; min-width: 0; font-size: .8125rem; font-weight: 600; color: var(--ink); }
+.table-filter-field input, .table-filter-field select { width: 100%; min-width: 0; font-size: .875rem; font-weight: 400; }
 .student-filter-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-top: 1.25rem; }
 #student-table { min-width: 0; }
-@media (max-width: 1100px) { .student-filter-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 640px) { .student-filter-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; } .student-filter-panel { padding: 1rem; } .student-filter-footer > div { flex-wrap: wrap; } }
-@media (max-width: 380px) { .student-filter-fields { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .student-filter-panel { padding: 1rem; } .student-filter-footer > div { flex-wrap: wrap; } }

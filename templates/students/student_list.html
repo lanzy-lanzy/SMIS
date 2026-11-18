@@ -27,50 +27,49 @@
 
     <div class="glass-card overflow-hidden">
         <div class="student-filter-panel">
-            <div class="student-filter-heading">
-                <div><h2 class="font-semibold text-gray-900 dark:text-white">Find students</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">{% if user.is_teacher %}Search and filter students in your assigned sections.{% else %}Narrow the student directory by school year, class, or enrollment status.{% endif %}</p>
-                </div>
-                <span class="text-xs text-gray-500 dark:text-gray-400">Filters update automatically</span>
-            </div>
             <form id="student-filters" method="get" action="{% url 'students:student_list' %}"
+                  role="search" aria-label="Filter students"
                   hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-sync="this:replace"
                   hx-indicator="#student-filter-loading">
-                <label class="student-filter-field student-search-field" for="student-search">Search students
-                    <input id="student-search" type="search" name="q" value="{{ query }}" placeholder="Enter a student name or LRN"
-                           hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="input changed delay:350ms, search" hx-include="#student-filters" hx-sync="#student-filters:replace">
-                </label>
-                <div class="student-filter-fields">
-                    <label class="student-filter-field">School year
-                        <select name="year" hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="change" hx-include="#student-filters" hx-sync="#student-filters:replace">
-                            <option value="">All school years</option>{% for sy in school_years %}<option value="{{ sy.id }}" {% if year_filter == sy.id|stringformat:"d" %}selected{% endif %}>{{ sy.name }}</option>{% endfor %}
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <label class="table-filter-field">School year
+                        <select name="year" class="px-3 py-2" hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="change" hx-include="#student-filters" hx-sync="#student-filters:replace">
+                            {% include 'academics/partials/school_year_options.html' with selected_year=year_filter %}
                         </select>
                     </label>
-                    <label class="student-filter-field">Grade level
-                        <select name="grade" hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="change" hx-include="#student-filters" hx-sync="#student-filters:replace">
+                    <label class="table-filter-field" for="student-search">Search students
+                        <input id="student-search" type="search" class="px-3 py-2" name="q" value="{{ query }}" placeholder="Student name or LRN"
+                               hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="input changed delay:350ms, search" hx-include="#student-filters" hx-sync="#student-filters:replace">
+                    </label>
+                    <label class="table-filter-field">Grade level
+                        <select name="grade" class="px-3 py-2" hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="change" hx-include="#student-filters" hx-sync="#student-filters:replace">
                             <option value="">All grade levels</option>{% for gl in grade_levels %}<option value="{{ gl.id }}" {% if grade_filter == gl.id|stringformat:"d" %}selected{% endif %}>{{ gl.name }}</option>{% endfor %}
                         </select>
                     </label>
-                    <label class="student-filter-field">Section
+                    <label class="table-filter-field">Section
                         {% include 'students/partials/section_filter.html' %}
                     </label>
-                    <label class="student-filter-field">Enrollment status
-                        <select name="status" hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="change" hx-include="#student-filters" hx-sync="#student-filters:replace">
-                            <option value="">All statuses</option>{% for val, label in status_choices %}<option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
-                        </select>
-                    </label>
-                    <label class="student-filter-field">Sex
-                        <select name="sex" hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="change" hx-include="#student-filters" hx-sync="#student-filters:replace">
-                            <option value="">All students</option>{% for val, label in sex_choices %}<option value="{{ val }}" {% if sex_filter == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
-                        </select>
-                    </label>
                 </div>
+                <details class="mt-4" {% if status_filter or sex_filter %}open{% endif %}>
+                    <summary class="cursor-pointer text-sm font-medium">More filters</summary>
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                        <label class="table-filter-field">Enrollment status
+                            <select name="status" class="px-3 py-2" hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="change" hx-include="#student-filters" hx-sync="#student-filters:replace">
+                                <option value="">All statuses</option>{% for val, label in status_choices %}<option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <label class="table-filter-field">Sex
+                            <select name="sex" class="px-3 py-2" hx-get="{% url 'students:student_list' %}" hx-target="#student-table" hx-trigger="change" hx-include="#student-filters" hx-sync="#student-filters:replace">
+                                <option value="">All students</option>{% for val, label in sex_choices %}<option value="{{ val }}" {% if sex_filter == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                            </select>
+                        </label>
+                    </div>
+                </details>
                 <div class="student-filter-footer">
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Choose a school year or grade to narrow the available sections.</p>
+                    <span id="student-filter-loading" class="htmx-indicator text-sm text-gray-500" role="status">Updating…</span>
                     <div class="flex items-center gap-3">
-                        <span id="student-filter-loading" class="htmx-indicator text-sm text-gray-500" role="status">Updating…</span>
                         <a href="{% url 'students:student_list' %}" class="btn btn-secondary text-sm">Reset filters</a>
-                        <button type="submit" class="btn btn-primary text-sm">Search students</button>
+                        <button type="submit" class="btn btn-primary text-sm">Apply filters</button>
                     </div>
                 </div>
             </form>

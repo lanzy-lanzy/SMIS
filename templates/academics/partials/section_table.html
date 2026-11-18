@@ -85,13 +85,13 @@
                     <span class="sections-muted">Page {{ sections_with_teachers.number }} of {{ sections_with_teachers.paginator.num_pages }}</span>
                     <div class="sections-pagination-links">
                         {% if sections_with_teachers.has_previous %}
-                        <a href="?{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ sections_with_teachers.previous_page_number }}" class="page-link" aria-label="Previous page">&lsaquo;</a>
+                        <a href="?{% if view_type == 'section' %}view=section&amp;{% endif %}{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ sections_with_teachers.previous_page_number }}" class="page-link" aria-label="Previous page">&lsaquo;</a>
                         {% endif %}
                         {% for num in sections_with_teachers.paginator.page_range %}
-                        <a href="?{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ num }}" class="page-link {% if sections_with_teachers.number == num %}is-active{% endif %}" {% if sections_with_teachers.number == num %}aria-current="page"{% endif %}>{{ num }}</a>
+                        <a href="?{% if view_type == 'section' %}view=section&amp;{% endif %}{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ num }}" class="page-link {% if sections_with_teachers.number == num %}is-active{% endif %}" {% if sections_with_teachers.number == num %}aria-current="page"{% endif %}>{{ num }}</a>
                         {% endfor %}
                         {% if sections_with_teachers.has_next %}
-                        <a href="?{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ sections_with_teachers.next_page_number }}" class="page-link" aria-label="Next page">&rsaquo;</a>
+                        <a href="?{% if view_type == 'section' %}view=section&amp;{% endif %}{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ sections_with_teachers.next_page_number }}" class="page-link" aria-label="Next page">&rsaquo;</a>
                         {% endif %}
                     </div>
                 </nav>

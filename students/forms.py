@@ -54,7 +54,13 @@ class StudentForm(forms.ModelForm):
 
 
 class StudentPromotionForm(forms.Form):
-    section = forms.ModelChoiceField(queryset=None, label='Destination section')
+    section = forms.ModelChoiceField(
+        queryset=None, label='Destination section', empty_label='Choose a section',
+        widget=forms.Select(attrs={
+            'class': 'w-full px-4 py-2 text-sm',
+            'aria-describedby': 'promotion-requirements',
+        }),
+    )
     source_year = forms.IntegerField(widget=forms.HiddenInput)
     source_grade = forms.IntegerField(widget=forms.HiddenInput)
 

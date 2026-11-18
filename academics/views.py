@@ -4,6 +4,7 @@ from django.http import HttpResponse
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, Q
+from .filters import select_school_year
 from .models import (
     SchoolYear,
     GradeLevel,
@@ -32,7 +33,7 @@ def academics_index(request):
 
 @registrar_or_admin_required
 def school_year_list(request):
-    school_years = SchoolYear.objects.all()
+    school_years = SchoolYear.objects.order_by("-is_current", "-name", "pk")
     paginator = Paginator(school_years, 15)
     page = request.GET.get("page", 1)
     school_years_page = paginator.get_page(page)
@@ -270,28 +271,18 @@ def grade_level_delete(request, pk):
 
 @admin_required
 def section_list(request):
-    school_years = list(SchoolYear.objects.all())
+    school_years = list(SchoolYear.objects.order_by("-is_current", "-name"))
     grade_levels = list(GradeLevel.objects.filter(level__gte=7, level__lte=12))
-    valid_year_ids = {str(school_year.pk) for school_year in school_years}
     valid_grade_ids = {str(grade_level.pk) for grade_level in grade_levels}
 
-    requested_year = request.GET.get("school_year", "")
     current_year = next((year for year in school_years if year.is_current), None)
-    if requested_year == "all":
-        school_year_filter = "all"
-    elif requested_year in valid_year_ids:
-        school_year_filter = requested_year
-    else:
-        school_year_filter = str(current_year.pk) if current_year else "all"
+    school_year_filter, selected_school_year = select_school_year(request.GET.get("school_year"), school_years)
 
     grade_filter = request.GET.get("grade_level", "")
     if grade_filter not in valid_grade_ids:
         grade_filter = ""
 
     search_query = request.GET.get("q", "").strip()
-    selected_school_year = next(
-        (year for year in school_years if str(year.pk) == school_year_filter), None
-    )
     sections_with_teachers = Section.objects.select_related(
         "grade_level", "school_year", "adviser"
     ).annotate(
@@ -324,6 +315,7 @@ def section_list(request):
     sections_page = paginator.get_page(page)
     pagination_params = request.GET.copy()
     pagination_params.pop("page", None)
+    pagination_params["school_year"] = school_year_filter
     context = {
         "sections_with_teachers": sections_page,
         "section_selection": True,
@@ -623,104 +615,90 @@ def subject_delete(request, pk):
 
 @admin_required
 def assignment_list(request):
-    from django.core.paginator import Paginator
-    from django.db.models import Q, Count
     from accounts.models import User
-    
-    query = request.GET.get("q", "")
+
+    school_years = list(SchoolYear.objects.order_by("-is_current", "-name"))
+    year_filter, year = select_school_year(request.GET.get("school_year"), school_years)
+    query = request.GET.get("q", "").strip()
     subject_filter = request.GET.get("subject", "")
     section_filter = request.GET.get("section", "")
-    school_year_filter = request.GET.get("school_year", "")
-    view_type = request.GET.get("view", "teacher")
-    
+    view_type = "section" if request.GET.get("view") == "section" else "teacher"
+
     assignments = TeacherAssignment.objects.select_related(
-        "teacher", "subject", "section", "section__grade_level", "school_year"
-    ).all().order_by('teacher__last_name', 'teacher__first_name', 'subject__name', 'section__name')
-    
+        "teacher", "subject", "section", "section__grade_level", "school_year",
+    ).order_by("teacher__last_name", "teacher__first_name", "subject__name", "section__name", "pk")
+    sections = Section.objects.select_related("grade_level", "school_year", "adviser")
+    if year:
+        assignments = assignments.filter(school_year=year)
+        sections = sections.filter(school_year=year)
+
+    section_options = list(sections)
+    if section_filter in {str(section.pk) for section in section_options}:
+        assignments = assignments.filter(section_id=section_filter)
+        sections = sections.filter(pk=section_filter)
+    else:
+        section_filter = ""
+
+    subjects = list(Subject.objects.filter(
+        pk__in=assignments.order_by().values("subject_id"),
+    ).select_related("grade_level"))
+    if subject_filter in {str(subject.pk) for subject in subjects}:
+        assignments = assignments.filter(subject_id=subject_filter)
+    else:
+        subject_filter = ""
     if query:
         assignments = assignments.filter(
             Q(teacher__first_name__icontains=query)
             | Q(teacher__last_name__icontains=query)
             | Q(teacher__email__icontains=query)
         )
-    
-    if subject_filter:
-        assignments = assignments.filter(subject_id=subject_filter)
-    
-    if section_filter:
-        assignments = assignments.filter(section_id=section_filter)
-    
-    if school_year_filter:
-        assignments = assignments.filter(school_year_id=school_year_filter)
-    
-    # Stats
-    current_sy = SchoolYear.objects.filter(is_current=True).first()
-    total_assignments = assignments.count()
-    active_teachers = User.objects.filter(role='teacher', is_active=True).count()
-    assigned_teacher_ids = assignments.values_list('teacher_id', flat=True).distinct()
-    unassigned_teachers = active_teachers - len(assigned_teacher_ids)
-    sections_covered = assignments.values_list('section_id', flat=True).distinct().count()
-    
-    # Teacher workloads
-    teacher_workloads = User.objects.filter(role='teacher', is_active=True).annotate(
-        assignment_count=Count('assignments')
-    ).order_by('-assignment_count')
-    
-    # Sections with teachers for section view
-    sections_with_teachers = Section.objects.filter(school_year=current_sy).prefetch_related('assignments__teacher', 'assignments__subject') if current_sy else Section.objects.none()
 
-    # Filter options
-    all_subjects = Subject.objects.filter(is_active=True)
-    all_sections = Section.objects.filter(school_year=current_sy) if current_sy else Section.objects.none()
-    all_school_years = SchoolYear.objects.all()
+    if query or subject_filter:
+        sections = sections.filter(pk__in=assignments.order_by().values("section_id"))
+    matched_assignments = Q(assignments__pk__in=assignments.order_by().values("pk"))
+    sections = sections.annotate(
+        student_count=Count("student", distinct=True),
+        teacher_count=Count("assignments__teacher", filter=matched_assignments, distinct=True),
+        subject_count=Count("assignments__subject", filter=matched_assignments, distinct=True),
+    ).order_by("-school_year__name", "grade_level__level", "name", "pk")
 
-    # Pagination
-    paginator = Paginator(assignments, 15)
     page = request.GET.get("page", 1)
-    assignments_page = paginator.get_page(page)
-
-    sections_paginator = Paginator(sections_with_teachers, 15)
-    sections_page = sections_paginator.get_page(page)
-
+    pagination_params = request.GET.copy()
+    pagination_params.pop("page", None)
+    pagination_params["school_year"] = year_filter
+    pagination_params["section"] = section_filter
+    pagination_params["subject"] = subject_filter
+    pagination_params.pop("view", None)
+    context = {
+        "assignments": Paginator(assignments, 15).get_page(page if view_type == "teacher" else 1),
+        "sections_with_teachers": Paginator(sections, 15).get_page(page if view_type == "section" else 1),
+        "query": query,
+        "subject_filter": subject_filter,
+        "section_filter": section_filter,
+        "school_year_filter": year_filter,
+        "selected_school_year": year,
+        "school_years": school_years,
+        "subjects": subjects,
+        "sections": section_options,
+        "view_type": view_type,
+        "pagination_query": pagination_params.urlencode(),
+    }
     if request.headers.get("HX-Request"):
-        if view_type == "section":
-            return render(
-                request,
-                "academics/partials/section_table.html",
-                {"sections_with_teachers": sections_page},
-            )
-        return render(
-            request,
-            "academics/partials/assignment_table.html",
-            {
-                "assignments": assignments_page,
-                "query": query,
-                "subject_filter": subject_filter,
-                "section_filter": section_filter,
-                "school_year_filter": school_year_filter,
-            },
-        )
+        template = "academics/partials/section_table.html" if view_type == "section" else "academics/partials/assignment_table.html"
+        return render(request, template, context)
 
-    return render(
-        request,
-        "academics/assignment_list.html",
-        {
-            "assignments": assignments_page,
-            "query": query,
-            "subject_filter": subject_filter,
-            "section_filter": section_filter,
-            "school_year_filter": school_year_filter,
-            "total_assignments": total_assignments,
-            "active_teachers": active_teachers,
-            "unassigned_teachers": unassigned_teachers,
-            "sections_covered": sections_covered,
-            "teacher_workloads": teacher_workloads,
-            "sections_with_teachers": sections_page,
-            "subjects": all_subjects,
-            "sections": all_sections,
-            "school_years": all_school_years,
-        },
+    active_teachers = User.objects.filter(role="teacher", is_active=True)
+    teacher_workloads = active_teachers.annotate(
+        assignment_count=Count("assignments", filter=matched_assignments),
+    ).order_by("-assignment_count", "last_name", "pk")
+    context.update(
+        total_assignments=assignments.count(),
+        active_teachers=active_teachers.count(),
+        unassigned_teachers=teacher_workloads.filter(assignment_count=0).count(),
+        sections_covered=assignments.order_by().values("section_id").distinct().count(),
+        teacher_workloads=teacher_workloads,
     )
+    return render(request, "academics/assignment_list.html", context)
 
 
 @admin_required
@@ -918,17 +896,19 @@ def assignment_delete(request, pk):
 
 @registrar_or_admin_required
 def grading_period_list(request):
-    periods = GradingPeriod.objects.select_related("school_year").order_by("school_year__name", "order")
+    school_years = list(SchoolYear.objects.order_by("-is_current", "-name"))
+    year_filter, year = select_school_year(request.GET.get("school_year"), school_years)
+    periods = GradingPeriod.objects.select_related("school_year").order_by(
+        "-school_year__is_current", "-school_year__name", "order",
+    )
+    if year:
+        periods = periods.filter(school_year=year)
     paginator = Paginator(periods, 15)
     page = request.GET.get("page", 1)
     periods_page = paginator.get_page(page)
-    if request.headers.get("HX-Request"):
-        return render(
-            request,
-            "academics/partials/grading_period_table.html",
-            {"periods": periods_page},
-        )
-    return render(request, "academics/grading_period_list.html", {"periods": periods_page})
+    context = {"periods": periods_page, "school_years": school_years, "year_filter": year_filter}
+    template = "academics/partials/grading_period_table.html" if request.headers.get("HX-Request") else "academics/grading_period_list.html"
+    return render(request, template, context)
 
 
 @registrar_or_admin_required

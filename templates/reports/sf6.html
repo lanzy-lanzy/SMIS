@@ -253,7 +253,7 @@
         <label>School Year
             <select name="sy" onchange="this.form.submit()">
                 {% for sy in school_years %}
-                <option value="{{ sy.pk }}" {% if selected_sy and sy.pk == selected_sy.pk %}selected{% endif %}>{{ sy.name }}</option>
+                <option value="{{ sy.pk }}" {% if selected_sy and sy.pk == selected_sy.pk %}selected{% endif %}>{{ sy.name }}{% if sy.is_current %} (Current){% endif %}</option>
                 {% endfor %}
             </select>
         </label>

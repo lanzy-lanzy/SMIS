@@ -19,6 +19,7 @@ from grades.mapeh import (
 from academics.models import (
     SchoolYear, GradeLevel, Section, Subject, GradingPeriod, TeacherAssignment,
 )
+from academics.filters import select_school_year
 from accounts.models import User
 from accounts.decorators import registrar_or_admin_required, role_required
 from .sf6 import build_sf6_summary
@@ -387,15 +388,16 @@ def sf6_report(request):
 
 @registrar_or_admin_required
 def grade_trends(request):
-    sy_filter = request.GET.get('sy', '')
+    school_years = list(SchoolYear.objects.order_by('-is_current', '-name'))
+    sy_filter, year = select_school_year(request.GET.get('sy'), school_years)
     gl_filter = request.GET.get('gl', '')
     
     grades = Grade.objects.filter(status__in=['validated', 'locked']).select_related(
         'subject', 'grading_period', 'school_year', 'section', 'section__grade_level'
     )
 
-    if sy_filter:
-        grades = grades.filter(school_year_id=sy_filter)
+    if year:
+        grades = grades.filter(school_year=year)
     if gl_filter:
         grades = grades.filter(section__grade_level_id=gl_filter)
     
@@ -407,7 +409,6 @@ def grade_trends(request):
         avg_grade=Avg('quarter_grade')
     ).order_by('grading_period__order')
     
-    school_years = SchoolYear.objects.all()
     grade_levels = GradeLevel.objects.all()
     
     return render(request, 'reports/grade_trends.html', {
@@ -422,14 +423,16 @@ def grade_trends(request):
 
 @registrar_or_admin_required
 def section_performance(request):
-    sy_filter = request.GET.get('sy', '')
-    
-    sections = Section.objects.all()
+    school_years = list(SchoolYear.objects.order_by('-is_current', '-name'))
+    sy_filter, year = select_school_year(request.GET.get('sy'), school_years)
+    sections = Section.objects.select_related('grade_level', 'school_year')
+    if year:
+        sections = sections.filter(school_year=year)
     
     section_data = []
     for section in sections:
         avg = Grade.objects.filter(
-            section=section, status__in=['validated', 'locked']
+            section=section, school_year=section.school_year, status__in=['validated', 'locked']
         ).aggregate(avg=Avg('quarter_grade'))['avg'] or 0
         
         student_count = Student.objects.filter(section=section, status__in=ENROLLED_STATUSES).count()
@@ -439,8 +442,6 @@ def section_performance(request):
             'average': round(avg, 2),
             'student_count': student_count
         })
-    
-    school_years = SchoolYear.objects.all()
     
     return render(request, 'reports/section_performance.html', {
         'section_data': section_data,
@@ -471,7 +472,8 @@ def subject_performance(request):
 
 @registrar_or_admin_required
 def at_risk_students(request):
-    sy_filter = request.GET.get('sy', '')
+    school_years = list(SchoolYear.objects.order_by('-is_current', '-name'))
+    sy_filter, year = select_school_year(request.GET.get('sy'), school_years)
     gl_filter = request.GET.get('gl', '')
     
     grades = Grade.objects.filter(
@@ -479,8 +481,8 @@ def at_risk_students(request):
         quarter_grade__lt=75
     ).select_related('student', 'subject', 'school_year', 'section', 'section__grade_level')
 
-    if sy_filter:
-        grades = grades.filter(school_year_id=sy_filter)
+    if year:
+        grades = grades.filter(school_year=year)
     if gl_filter:
         grades = grades.filter(section__grade_level_id=gl_filter)
     
@@ -490,6 +492,7 @@ def at_risk_students(request):
         if student.id not in at_risk:
             at_risk[student.id] = {
                 'student': student,
+                'grade_level': grade.section.grade_level if year else student.grade_level,
                 'failing_grades': [],
                 'average': 0
             }
@@ -503,7 +506,6 @@ def at_risk_students(request):
         total = sum(g['grade'] for g in data['failing_grades'])
         data['average'] = round(total / len(data['failing_grades']), 2)
     
-    school_years = SchoolYear.objects.all()
     grade_levels = GradeLevel.objects.all()
     
     return render(request, 'reports/at_risk_students.html', {

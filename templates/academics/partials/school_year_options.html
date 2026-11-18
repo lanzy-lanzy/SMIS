@@ -1,0 +1,4 @@
+<option value="all" {% if selected_year == 'all' %}selected{% endif %}>All school years</option>
+{% for year in school_years %}
+<option value="{{ year.pk }}" {% if selected_year == year.pk|stringformat:"s" %}selected{% endif %}>{{ year.name }}{% if year.is_current %} (Current){% endif %}</option>
+{% endfor %}

@@ -1,4 +1,4 @@
-<table id="grading-period-table" class="data-table" hx-get="{% url 'academics:grading_period_list' %}" hx-trigger="refresh" hx-target="this" hx-swap="outerHTML">
+<table id="grading-period-table" class="data-table" hx-get="{% url 'academics:grading_period_list' %}?school_year={{ year_filter }}" hx-trigger="refresh, refreshTable from:body" hx-target="this" hx-swap="outerHTML">
     <thead class="data-table-head">
         <tr>
             <th class="px-4 py-3 text-left font-medium">Name</th>
@@ -60,13 +60,13 @@
                 <p class="text-sm text-gray-500">Showing {{ periods.start_index }}-{{ periods.end_index }} of {{ periods.paginator.count }}</p>
                 <div class="flex gap-1">
                     {% if periods.has_previous %}
-                    <a href="?page={{ periods.previous_page_number }}" class="page-link">&laquo;</a>
+                    <a href="?school_year={{ year_filter }}&amp;page={{ periods.previous_page_number }}" class="page-link">&laquo;</a>
                     {% endif %}
                     {% for num in periods.paginator.page_range %}
-                    <a href="?page={{ num }}" class="page-link {% if periods.number == num %}is-active{% endif %}">{{ num }}</a>
+                    <a href="?school_year={{ year_filter }}&amp;page={{ num }}" class="page-link {% if periods.number == num %}is-active{% endif %}">{{ num }}</a>
                     {% endfor %}
                     {% if periods.has_next %}
-                    <a href="?page={{ periods.next_page_number }}" class="page-link">&raquo;</a>
+                    <a href="?school_year={{ year_filter }}&amp;page={{ periods.next_page_number }}" class="page-link">&raquo;</a>
                     {% endif %}
                 </div>
             </div>

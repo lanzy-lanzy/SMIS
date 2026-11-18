@@ -125,10 +125,7 @@
             <span class="sections-filter-label">School year</span>
             <span class="sections-filter-control">
                 <select name="school_year" aria-label="School year">
-                    <option value="all" {% if school_year_filter == 'all' %}selected{% endif %}>All school years</option>
-                    {% for school_year in school_years %}
-                    <option value="{{ school_year.pk }}" {% if school_year_filter == school_year.pk|stringformat:'s' %}selected{% endif %}>{{ school_year.name }}{% if school_year.is_current %} (current){% endif %}</option>
-                    {% endfor %}
+                    {% include 'academics/partials/school_year_options.html' with selected_year=school_year_filter %}
                 </select>
             </span>
         </label>

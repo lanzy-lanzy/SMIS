@@ -1,0 +1,64 @@
+{% url 'students:student_promote' student.pk as promote_url %}
+<div class="p-6 space-y-5">
+    <header class="flex items-start gap-4">
+        <span class="w-12 h-12 shrink-0 rounded-xl bg-primary-100 dark:bg-primary-900/50 text-primary dark:text-primary-300 flex items-center justify-center">
+            <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="m3 10 9-5 9 5-9 5-9-5Zm4 3v4c3 2 7 2 10 0v-4m4-3v5"/></svg>
+        </span>
+        <div class="flex-1 min-w-0">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Promote student</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-300">{{ student.full_name }}</p>
+        </div>
+        {% if is_modal %}
+        <button type="button" @click="$dispatch('close-modal')" aria-label="Close promotion dialog"
+            class="btn btn-secondary shrink-0">
+            <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+        {% endif %}
+    </header>
+
+    <div class="grid gap-3 sm:grid-cols-2">
+        <div class="rounded-xl bg-slate-100 dark:bg-slate-800 p-4">
+            <p class="text-xs font-medium text-gray-600 dark:text-gray-300">Current placement</p>
+            <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ student.grade_level|default:"Grade unavailable" }}</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">{{ student.school_year|default:"School year unavailable" }}</p>
+        </div>
+        {% if destination %}
+        <div class="rounded-xl bg-primary-100 dark:bg-primary-900/50 p-4">
+            <p class="text-xs font-medium text-primary dark:text-primary-300">Next placement</p>
+            <p class="mt-1 font-semibold text-gray-900 dark:text-white">Grade {{ destination.grade_level.level }}</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">{{ destination.school_year }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <form method="post" action="{{ promote_url }}" class="space-y-4"
+        {% if is_modal %}hx-post="{{ promote_url }}" hx-target="#modal-content" hx-disabled-elt="find button[type=submit]"{% endif %}>
+        {% csrf_token %}
+        {{ form.source_year }}
+        {{ form.source_grade }}
+        {% if form.errors %}
+        <div role="alert" class="rounded-xl bg-red-50 dark:bg-red-950/30 p-3 text-sm text-red-700 dark:text-red-300">
+            {{ form.non_field_errors }}{{ form.source_year.errors }}{{ form.source_grade.errors }}{{ form.section.errors }}
+        </div>
+        {% endif %}
+        {% if destination %}
+        <div>
+            <label for="{{ form.section.id_for_label }}" class="block mb-2 text-sm font-semibold">{{ form.section.label }}</label>
+            {{ form.section }}
+        </div>
+        <p id="promotion-requirements" class="text-sm text-gray-600 dark:text-gray-300">Grades must be finalized for all three terms, with a final mark of at least 75 in each required subject.</p>
+        {% else %}
+        <p class="rounded-xl bg-amber-50 dark:bg-amber-900/30 p-3 text-sm text-amber-800 dark:text-amber-300">No destination section is available. Mark the next school year as current and add a section for the next grade.</p>
+        {% endif %}
+        <div class="flex flex-wrap justify-end gap-2 border-t border-slate-200 dark:border-slate-700 pt-4">
+            {% if is_modal %}
+            <button type="button" @click="$dispatch('close-modal')" class="btn btn-secondary">Cancel</button>
+            {% else %}
+            <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-secondary">Cancel</a>
+            {% endif %}
+            {% if destination %}
+            <button type="submit" class="btn btn-primary">Confirm promotion</button>
+            {% endif %}
+        </div>
+    </form>
+</div>

@@ -11,6 +11,7 @@ from .utils import build_form137_pages, build_grade_blocks
 from students.models import Student
 from grades.models import Grade
 from academics.models import SchoolYear, GradeLevel, GradingPeriod, Subject
+from academics.filters import select_school_year
 from accounts.models import AuditLog
 from accounts.decorators import role_required
 
@@ -27,10 +28,10 @@ def _form137_print_context(student, school_year, record):
 
 @role_required('admin', 'registrar')
 def form137_list(request):
-    school_years = SchoolYear.objects.all()
+    school_years = list(SchoolYear.objects.order_by('-is_current', '-name'))
     grade_levels = GradeLevel.objects.all()
     
-    sy_filter = request.GET.get('sy', '')
+    sy_filter, year = select_school_year(request.GET.get('sy'), school_years)
     gl_filter = request.GET.get('gl', '')
     query = request.GET.get('q', '')
     
@@ -38,8 +39,8 @@ def form137_list(request):
         'student', 'school_year', 'grade_level', 'generated_by'
     ).all()
     
-    if sy_filter:
-        records = records.filter(school_year_id=sy_filter)
+    if year:
+        records = records.filter(school_year=year)
     if gl_filter:
         records = records.filter(grade_level_id=gl_filter)
     if query:
@@ -50,11 +51,10 @@ def form137_list(request):
         )
     
     # Stats
-    all_records = Form137Record.objects.all()
-    total_records = all_records.count()
-    printed_count = all_records.filter(is_printed=True).count()
-    unprinted_count = all_records.filter(is_printed=False).count()
-    this_month_count = all_records.filter(
+    total_records = records.count()
+    printed_count = records.filter(is_printed=True).count()
+    unprinted_count = total_records - printed_count
+    this_month_count = records.filter(
         date_generated__year=timezone.now().year,
         date_generated__month=timezone.now().month
     ).count()
@@ -62,6 +62,9 @@ def form137_list(request):
     paginator = Paginator(records, 15)
     page = request.GET.get('page', 1)
     records_page = paginator.get_page(page)
+    pagination_params = request.GET.copy()
+    pagination_params.pop('page', None)
+    pagination_params['sy'] = sy_filter
 
     return render(request, 'form137/form137_list.html', {
         'records': records_page,
@@ -70,6 +73,7 @@ def form137_list(request):
         'sy_filter': sy_filter,
         'gl_filter': gl_filter,
         'query': query,
+        'pagination_query': pagination_params.urlencode(),
         'total_records': total_records,
         'printed_count': printed_count,
         'unprinted_count': unprinted_count,

@@ -1,4 +1,4 @@
-<table id="assignment-table" class="data-table" hx-get="{% url 'academics:assignment_list' %}?view=teacher" hx-trigger="refresh" hx-target="this" hx-swap="outerHTML">
+<table id="assignment-table" class="data-table">
     <thead class="data-table-head">
         <tr>
             <th class="px-4 py-3 text-left font-medium">Teacher</th>
@@ -61,18 +61,18 @@
 {% if assignments.has_other_pages %}
 <tfoot>
     <tr>
-        <td colspan="7">
+        <td colspan="6">
             <div class="px-4 py-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
                 <p class="text-sm text-gray-500">Showing {{ assignments.start_index }}-{{ assignments.end_index }} of {{ assignments.paginator.count }}</p>
                 <div class="flex gap-1">
                     {% if assignments.has_previous %}
-                    <a href="?page={{ assignments.previous_page_number }}" class="page-link">&laquo;</a>
+                    <a href="?view=teacher&amp;{{ pagination_query }}&amp;page={{ assignments.previous_page_number }}" class="page-link">&laquo;</a>
                     {% endif %}
                     {% for num in assignments.paginator.page_range %}
-                    <a href="?page={{ num }}" class="page-link {% if assignments.number == num %}is-active{% endif %}">{{ num }}</a>
+                    <a href="?view=teacher&amp;{{ pagination_query }}&amp;page={{ num }}" class="page-link {% if assignments.number == num %}is-active{% endif %}">{{ num }}</a>
                     {% endfor %}
                     {% if assignments.has_next %}
-                    <a href="?page={{ assignments.next_page_number }}" class="page-link">&raquo;</a>
+                    <a href="?view=teacher&amp;{{ pagination_query }}&amp;page={{ assignments.next_page_number }}" class="page-link">&raquo;</a>
                     {% endif %}
                 </div>
             </div>

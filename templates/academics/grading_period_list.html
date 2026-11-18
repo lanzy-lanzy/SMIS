@@ -11,6 +11,15 @@
         </div>
     </div>
     <div class="glass-card">
+        <form method="get" class="student-filter-panel flex flex-wrap items-end gap-3" aria-label="Filter grading periods">
+            <label class="table-filter-field">School year
+                <select name="school_year" class="px-3 py-2">
+                    {% include 'academics/partials/school_year_options.html' with selected_year=year_filter %}
+                </select>
+            </label>
+            <button type="submit" class="btn btn-primary">Apply filters</button>
+            <a href="{% url 'academics:grading_period_list' %}" class="btn btn-secondary">Reset filters</a>
+        </form>
         <div class="overflow-x-auto">
             {% include 'academics/partials/grading_period_table.html' %}
         </div>
