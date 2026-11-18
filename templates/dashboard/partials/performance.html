@@ -1,0 +1,57 @@
+{% load l10n %}
+<section class="surface-card p-5" aria-labelledby="performance-title" x-data="{ grade: 'school' }">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+            <h2 id="performance-title" class="text-lg font-semibold text-gray-900 dark:text-white">Grade performance by term</h2>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Average of enrolled learners’ finalized subject marks{% if current_sy %} · {{ current_sy.name }}{% endif %}.</p>
+        </div>
+        {% if performance_groups|length > 1 %}
+        <label class="table-filter-field" x-cloak>Grade level
+            <select x-model="grade" class="px-3 py-2">
+                {% for group in performance_groups %}<option value="{{ group.key }}">{{ group.label }}</option>{% endfor %}
+            </select>
+        </label>
+        {% endif %}
+    </div>
+
+    {% for group in performance_groups %}
+    <div x-show="grade === '{{ group.key|escapejs }}'" {% if not forloop.first %}x-cloak{% endif %} class="mt-4">
+        {% if group.has_grades %}
+        <div class="flex flex-wrap gap-4 text-xs font-medium text-gray-600 dark:text-gray-300">
+            <span class="inline-flex items-center gap-2"><span aria-hidden="true" class="performance-key"></span>Average mark</span>
+            <span class="inline-flex items-center gap-2"><span aria-hidden="true" class="performance-key performance-key-target"></span>Passing mark (75)</span>
+        </div>
+        <div class="performance-graph mt-4" role="group" aria-label="Term averages for {{ group.label }}">
+            <div class="performance-axis" aria-hidden="true">
+                <span>100</span><span>75</span><span>50</span><span>25</span><span>0</span>
+            </div>
+            <ul class="performance-columns" style="--performance-columns: {{ group.terms|length }}">
+                {% for term in group.terms %}
+                <li class="performance-column">
+                    <div class="performance-plot" aria-hidden="true">
+                        {% if term.average is not None %}<div class="performance-bar" style="--performance-mark: {{ term.average|unlocalize }}%"></div>{% endif %}
+                    </div>
+                    <div class="performance-caption">
+                        <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ term.name }}</p>
+                        {% if term.average is not None %}
+                        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ term.average }}<span class="text-xs font-normal text-gray-600 dark:text-gray-300"> / 100</span></p>
+                        <p class="text-xs text-gray-600 dark:text-gray-300">{{ term.learners }} learner{{ term.learners|pluralize }} with marks</p>
+                        {% else %}
+                        <p class="text-xs text-gray-600 dark:text-gray-300">No finalized marks</p>
+                        {% endif %}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <p class="mt-3 text-xs text-gray-600 dark:text-gray-300">Each learner with finalized marks contributes one average per term. Coverage can vary by term.</p>
+        {% else %}
+        <p class="rounded-xl bg-slate-100 px-4 py-4 text-sm text-gray-600 dark:bg-slate-800 dark:text-gray-300">
+            {% if not current_sy %}Mark a school year current to see its grade performance.
+            {% elif forloop.first %}No finalized marks are available for the current school year yet.
+            {% else %}No finalized marks are available for {{ group.label }} yet.{% endif %}
+        </p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</section>

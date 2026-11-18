@@ -7,6 +7,25 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+    .performance-graph { --plot-height: clamp(8rem, 20vw, 13rem); --bar-color: #2563eb; --target: #9a6700; display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: .5rem; }
+    .dark .performance-graph { --bar-color: #60a5fa; --target: #fbbf24; }
+    .performance-axis { display: flex; height: var(--plot-height); flex-direction: column; justify-content: space-between; color: var(--ink-muted); font-size: .7rem; text-align: right; }
+    .performance-axis span { line-height: 0; }
+    .performance-columns { display: grid; grid-template-columns: repeat(var(--performance-columns), minmax(0, 1fr)); position: relative; }
+    .performance-columns::before { content: ""; position: absolute; inset: 0 0 auto; height: var(--plot-height); background: repeating-linear-gradient(to bottom, var(--field-border) 0 1px, transparent 1px 25%); border-bottom: 1px solid var(--field-border); }
+    .performance-columns::after { content: ""; position: absolute; inset: calc(var(--plot-height) / 4) 0 auto; border-top: 2px dashed var(--target); pointer-events: none; }
+    .performance-plot { position: relative; display: flex; height: var(--plot-height); align-items: flex-end; justify-content: center; }
+    .performance-bar { width: min(48%, 5.5rem); height: var(--performance-mark); border-radius: .4rem .4rem 0 0; background: var(--bar-color); }
+    .performance-caption { padding: .5rem .2rem 0; text-align: center; overflow-wrap: anywhere; }
+    .performance-key { display: inline-block; width: 1.1rem; height: .55rem; border-radius: .15rem; background: #2563eb; }
+    .dark .performance-key { background: #60a5fa; }
+    .performance-key.performance-key-target { height: 0; border-top: 2px dashed #9a6700; background: transparent; }
+    .dark .performance-key.performance-key-target { border-color: #fbbf24; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="space-y-6">
     <!-- Welcome Header -->
@@ -92,6 +111,10 @@
             <p class="mt-0.5 text-[10px] font-medium text-purple-700 dark:text-purple-300">This school year</p>
         </div>
     </div>
+
+    {% if performance_groups %}
+    {% include 'dashboard/partials/performance.html' %}
+    {% endif %}
 
     <!-- Charts & At-Risk Row -->
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start">

@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 
 from django.test import TestCase
 from django.urls import reverse
@@ -65,3 +66,43 @@ class DashboardSchoolYearTests(TestCase):
         self.assertContains(response, 'No school year is marked current.')
         self.assertEqual(response.context['total_students'], 0)
         self.assertEqual(response.context['pending_submissions'], 0)
+
+    def test_performance_graph_weights_learners_equally_and_folds_mapeh(self):
+        original = Grade.objects.get(school_year=self.current_year)
+        level = original.section.grade_level
+        mapeh = Subject.objects.create(name='MAPEH', code='MAPEH7', grade_level=level)
+        for component, mark in [('ma', 80), ('peh', 100)]:
+            Grade.objects.create(
+                student=original.student, subject=mapeh, section=original.section, school_year=self.current_year,
+                grading_period=original.grading_period, status='locked', component=component, quarter_grade=mark,
+            )
+        another = Student.objects.create(
+            lrn='new', first_name='Second', last_name='Learner', sex='F',
+            birthdate=date(2012, 1, 1), status='active', grade_level=level,
+            section=original.section, school_year=self.current_year,
+        )
+        Grade.objects.create(
+            student=another, subject=original.subject, section=original.section, school_year=self.current_year,
+            grading_period=original.grading_period, status='validated', quarter_grade=100,
+        )
+        next_term = GradingPeriod.objects.create(name='Second Term', order=2, school_year=self.current_year)
+        Grade.objects.create(
+            student=another, subject=original.subject, section=original.section, school_year=self.current_year,
+            grading_period=next_term, status='draft', quarter_grade=100,
+        )
+
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('dashboard:index'))
+        school, grade = response.context['performance_groups']
+        self.assertEqual(grade['label'], 'Grade 7')
+        self.assertEqual(school['terms'], grade['terms'])
+        self.assertEqual(school['terms'][0]['average'], Decimal('90.0'))
+        self.assertEqual(school['terms'][0]['learners'], 2)
+        self.assertIsNone(school['terms'][1]['average'])
+        self.assertContains(response, 'Grade performance by term')
+        self.assertContains(response, 'No finalized marks')
+
+    def test_performance_graph_is_admin_only(self):
+        registrar = User.objects.create_user(username='registrar', role='registrar')
+        self.client.force_login(registrar)
+        self.assertNotContains(self.client.get(reverse('dashboard:index')), 'Grade performance by term')
