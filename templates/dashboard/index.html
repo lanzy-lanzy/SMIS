@@ -117,6 +117,9 @@
     {% endif %}
 
     <!-- Charts & At-Risk Row -->
+    {% if sf6_monitoring %}
+    {% include 'dashboard/partials/sf6_monitoring.html' %}
+    {% endif %}
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start">
         <!-- Enrollment Bar Chart -->
         <div class="space-y-6 lg:col-span-4">

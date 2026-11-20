@@ -11,6 +11,7 @@ from academics.models import (
 from accounts.models import User, AuditLog
 from form137.models import Form137Record
 from .performance import grade_performance
+from reports.sf6 import build_sf6_summary
 
 
 def landing(request):
@@ -165,6 +166,7 @@ def index(request):
     ]
 
     return render(request, 'dashboard/index.html', {
+        'sf6_monitoring': build_sf6_summary(current_sy) if request.user.is_admin else None,
         'performance_groups': grade_performance(current_sy, learners, official_grades) if request.user.is_admin else None,
         'total_students': total_students,
         'male_learners': male_learners,

@@ -1,0 +1,75 @@
+<section class="space-y-4" aria-labelledby="monitoring-title">
+    <div>
+        <h2 id="monitoring-title" class="text-xl font-semibold text-gray-900 dark:text-white">Performance monitoring</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-300">{{ current_sy.name|default:"No current school year" }} · {{ sf6_monitoring.enrolled_total }} learners · {{ sf6_monitoring.graded_total }} with complete finalized grades</p>
+    </div>
+    <div class="grid gap-4 lg:grid-cols-2">
+        <div class="surface-card p-5">
+            <h3 class="font-semibold">Students by grade level</h3>
+            <p class="text-xs text-gray-600 dark:text-gray-300 mb-4">Enrollment by sex</p>
+            <div style="position:relative;height:280px"><canvas id="sf6Enrollment" role="img" aria-label="Enrollment by grade level and sex"></canvas></div>
+        </div>
+        <div class="surface-card p-5">
+            <h3 class="font-semibold">Learning progress and achievement</h3>
+            <p class="text-xs text-gray-600 dark:text-gray-300 mb-4">Learners by annual general average and sex</p>
+            <div style="position:relative;height:280px"><canvas id="sf6Achievement" role="img" aria-label="Achievement bands by sex"></canvas></div>
+        </div>
+        <div class="surface-card p-5">
+            <h3 class="font-semibold">Promotion outcomes</h3>
+            <p class="text-xs text-gray-600 dark:text-gray-300 mb-4">{{ sf6_monitoring.unclassified_total }} awaiting an outcome</p>
+            <div style="position:relative;height:260px"><canvas id="sf6Outcomes" role="img" aria-label="Promoted, conditional, and retained learners"></canvas></div>
+        </div>
+        <details class="surface-card p-5">
+            <summary class="cursor-pointer font-semibold">View the counts behind the graphs</summary>
+            <div class="overflow-x-auto mt-4">
+                <table class="data-table">
+                    <thead><tr><th class="text-left p-2">Measure</th><th class="p-2">Male</th><th class="p-2">Female</th><th class="p-2">Total</th></tr></thead>
+                    <tbody>{% for row in sf6_monitoring.rows %}{% if row.kind != 'section' %}
+                    <tr><th class="text-left p-2">{{ row.label }}</th><td class="p-2">{{ row.total.male }}</td><td class="p-2">{{ row.total.female }}</td><td class="p-2">{{ row.total.total }}</td></tr>
+                    {% endif %}{% endfor %}</tbody>
+                </table>
+            </div>
+            <p class="mt-3 text-xs text-gray-600 dark:text-gray-300">Achievement uses complete finalized annual grades. Promotion outcomes include recorded promotions. {{ sf6_monitoring.ungraded_total }} learners have incomplete finalized grades.</p>
+        </details>
+    </div>
+</section>
+{{ sf6_monitoring|json_script:"sf6-monitoring-data" }}
+<script>
+(() => {
+    if (!window.Chart) return;
+    const summary = JSON.parse(document.getElementById('sf6-monitoring-data').textContent);
+    const rows = summary.rows.filter(row => row.kind === 'data');
+    const enrollment = summary.rows.find(row => row.kind === 'total');
+    const ink = document.documentElement.classList.contains('dark') ? '#cbd5e1' : '#475569';
+    const colors = ['#3b82f6', '#a78bfa'];
+    function bars(id, labels, cells, horizontal) {
+        new Chart(document.getElementById(id), {
+            type: 'bar',
+            data: { labels, datasets: ['Male', 'Female'].map((label, index) => ({
+                label, data: cells.map(cell => cell[index ? 'female' : 'male']),
+                backgroundColor: colors[index], borderRadius: 5, maxBarThickness: 44
+            })) },
+            options: {
+                responsive: true, maintainAspectRatio: false, indexAxis: horizontal ? 'y' : 'x',
+                plugins: { legend: { position: 'bottom', labels: { color: ink, usePointStyle: true } } },
+                scales: {
+                    x: { stacked: true, ticks: { color: ink, precision: 0 }, grid: { display: horizontal } },
+                    y: { stacked: true, beginAtZero: true, ticks: { color: ink, precision: 0 }, grid: { display: !horizontal } }
+                }
+            }
+        });
+    }
+    bars('sf6Enrollment', summary.levels.map(level => level.label), enrollment.cells, false);
+    bars('sf6Achievement', ['74 and below', '75–79', '80–84', '85–89', '90–100'], rows.slice(3).map(row => row.total), true);
+    new Chart(document.getElementById('sf6Outcomes'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Promoted', 'Conditional', 'Retained', 'Awaiting outcome'],
+            datasets: [{ data: [...rows.slice(0, 3).map(row => row.total.total), summary.unclassified_total],
+                backgroundColor: ['#10b981', '#f59e0b', '#f43f5e', '#94a3b8'], borderWidth: 2, hoverOffset: 5 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '68%',
+            plugins: { legend: { position: 'bottom', labels: { color: ink, usePointStyle: true } } } }
+    });
+})();
+</script>
