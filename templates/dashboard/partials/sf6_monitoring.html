@@ -11,7 +11,17 @@
         </div>
         <div class="surface-card p-5">
             <h3 class="font-semibold">Learning progress and achievement</h3>
-            <p class="text-xs text-gray-600 dark:text-gray-300 mb-4">Learners by annual general average and sex</p>
+            <form method="get" class="flex flex-wrap items-end gap-2 my-3">
+                <label class="table-filter-field">Grading term
+                    <select name="achievement_term" class="px-3 py-2">
+                        {% for period in term_achievement.periods %}
+                        <option value="{{ period.pk }}" {% if period == term_achievement.selected %}selected{% endif %}>{{ period.name }}{% if period.is_current %} (Current){% endif %}</option>
+                        {% empty %}<option value="">No grading terms configured</option>{% endfor %}
+                    </select>
+                </label>
+                <button type="submit" class="btn btn-primary btn-sm">View term</button>
+            </form>
+            <p class="text-xs text-gray-600 dark:text-gray-300 mb-4">{{ term_achievement.included }} learners with finalized marks · {{ term_achievement.missing }} without marks. Each student’s average uses their finalized subject marks for this term.</p>
             <div style="position:relative;height:280px"><canvas id="sf6Achievement" role="img" aria-label="Achievement bands by sex"></canvas></div>
         </div>
         <div class="surface-card p-5">
@@ -24,16 +34,24 @@
             <div class="overflow-x-auto mt-4">
                 <table class="data-table">
                     <thead><tr><th class="text-left p-2">Measure</th><th class="p-2">Male</th><th class="p-2">Female</th><th class="p-2">Total</th></tr></thead>
-                    <tbody>{% for row in sf6_monitoring.rows %}{% if row.kind != 'section' %}
+                    <tbody>{% for row in sf6_monitoring.rows %}{% if row.kind == 'total' or row.label == 'PROMOTED' or row.label == 'CONDITIONAL' or row.label == 'RETAINED' %}
                     <tr><th class="text-left p-2">{{ row.label }}</th><td class="p-2">{{ row.total.male }}</td><td class="p-2">{{ row.total.female }}</td><td class="p-2">{{ row.total.total }}</td></tr>
                     {% endif %}{% endfor %}</tbody>
                 </table>
+                <p class="mt-4 font-semibold">{{ term_achievement.selected.name|default:"Term achievement" }}</p>
+                <table class="data-table">
+                    <thead><tr><th class="text-left p-2">Average</th><th class="p-2">Male</th><th class="p-2">Female</th><th class="p-2">Total</th></tr></thead>
+                    <tbody>{% for label, count in term_achievement.rows %}
+                    <tr><th class="text-left p-2">{{ label }}</th><td class="p-2">{{ count.male }}</td><td class="p-2">{{ count.female }}</td><td class="p-2">{{ count.total }}</td></tr>
+                    {% endfor %}</tbody>
+                </table>
             </div>
-            <p class="mt-3 text-xs text-gray-600 dark:text-gray-300">Achievement uses complete finalized annual grades. Promotion outcomes include recorded promotions. {{ sf6_monitoring.ungraded_total }} learners have incomplete finalized grades.</p>
+            <p class="mt-3 text-xs text-gray-600 dark:text-gray-300">Term averages round to a whole number for achievement bands. Promotion outcomes include recorded promotions.</p>
         </details>
     </div>
 </section>
 {{ sf6_monitoring|json_script:"sf6-monitoring-data" }}
+{{ term_achievement.counts|json_script:"term-achievement-data" }}
 <script>
 (() => {
     if (!window.Chart) return;
@@ -60,7 +78,7 @@
         });
     }
     bars('sf6Enrollment', summary.levels.map(level => level.label), enrollment.cells, false);
-    bars('sf6Achievement', ['74 and below', '75–79', '80–84', '85–89', '90–100'], rows.slice(3).map(row => row.total), true);
+    bars('sf6Achievement', ['74 and below', '75–79', '80–84', '85–89', '90–100'], JSON.parse(document.getElementById('term-achievement-data').textContent), true);
     new Chart(document.getElementById('sf6Outcomes'), {
         type: 'doughnut',
         data: {

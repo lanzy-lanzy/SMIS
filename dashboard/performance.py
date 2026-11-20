@@ -8,6 +8,39 @@ from academics.models import GradeLevel
 from grades.mapeh import is_mapeh_subject, mapeh_component, merge_mapeh_grades
 
 
+def term_achievement(school_year, learners, official_grades, requested_period):
+    periods = list(school_year.grading_periods.all()) if school_year else []
+    selected = next((period for period in periods if str(period.pk) == requested_period), None)
+    selected = selected or next((period for period in periods if period.is_current), None) or next(iter(periods), None)
+    counts = [{'male': 0, 'female': 0, 'total': 0} for _ in range(5)]
+    subjects_by_student = defaultdict(lambda: defaultdict(dict))
+    sexes = dict(learners.values_list('pk', 'sex'))
+    if selected:
+        grades = official_grades.filter(
+            student__in=learners, grading_period=selected, quarter_grade__gt=0, quarter_grade__lte=100,
+        ).order_by().values_list('student_id', 'subject_id', 'subject__name', 'component', 'quarter_grade')
+        for student, subject, name, component, mark in grades:
+            subjects_by_student[student][(subject, name)][component] = mark
+    included = 0
+    for student, subjects in subjects_by_student.items():
+        marks = _complete_subject_marks(subjects)
+        if not marks:
+            continue
+        average = mean(marks).quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+        band = sum(average >= threshold for threshold in (75, 80, 85, 90))
+        counts[band]['total'] += 1
+        sex = {'M': 'male', 'F': 'female'}.get(sexes[student])
+        if sex:
+            counts[band][sex] += 1
+        included += 1
+    labels = ['74 and below', '75–79', '80–84', '85–89', '90–100']
+    return {
+        'periods': periods, 'selected': selected, 'counts': counts,
+        'rows': list(zip(labels, counts)), 'included': included,
+        'missing': len(sexes) - included,
+    }
+
+
 def grade_performance(school_year, learners, official_grades):
     """Return term averages with one equally weighted result per learner."""
     periods = list(school_year.grading_periods.all()) if school_year else []
