@@ -6,7 +6,7 @@ from datetime import datetime
 from students.models import Student, ENROLLED_STATUSES
 from grades.models import Grade, GradeSubmission
 from academics.models import (
-    SchoolYear, GradeLevel, Section, TeacherAssignment, GradingPeriod,
+    SchoolYear, GradeLevel, Section, Subject, TeacherAssignment, GradingPeriod,
 )
 from accounts.models import User, AuditLog
 from form137.models import Form137Record
@@ -17,7 +17,21 @@ from reports.sf6 import build_sf6_summary
 def landing(request):
     if request.user.is_authenticated:
         return redirect('dashboard:index')
-    return render(request, 'landing.html')
+    current_sy = SchoolYear.objects.filter(is_current=True).first()
+    learners_qs = Student.objects.filter(status__in=ENROLLED_STATUSES)
+    if current_sy:
+        learners_qs = learners_qs.filter(school_year=current_sy)
+    sections_qs = Section.objects.filter(school_year=current_sy) if current_sy else Section.objects.all()
+
+    context = {
+        'current_school_year': current_sy.name if current_sy else '2025-2026',
+        'active_learners': learners_qs.count(),
+        'grade_levels_count': GradeLevel.objects.count(),
+        'sections_count': sections_qs.count(),
+        'subjects_count': Subject.objects.filter(is_active=True).values('name').distinct().count(),
+        'faculty_count': User.objects.filter(role='teacher', is_active=True).count(),
+    }
+    return render(request, 'landing.html', context)
 
 
 @login_required

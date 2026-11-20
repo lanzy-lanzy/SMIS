@@ -1,25 +1,14 @@
 {% load static %}
 {% comment %}
-Hero media for the public landing page.
+Hero media backdrop for the public landing page.
 
-A high-definition photograph of the Paquito S. Yu Memorial National High
-School campus carries the scene. The layers above the photograph are what
-give the hero its liquid-glass read:
-
-  - .landing-hero-veil  a directional wash that seats the copy panel on the
-                        left and dissolves the photograph into the page
-                        canvas at the bottom edge.
-  - .landing-orb        two slow, blurred colour blooms; the glass panel in
-                        front of them picks up their tint, which is what
-                        separates liquid glass from plain frosted plastic.
-  - .landing-layer      the photograph itself, oversized and parallaxed from
-                        static/js/landing.js (`data-speed` < 1 = distant).
-
-To replace the campus photograph, overwrite
-static/images/campus-hero.jpg (2000x1500) and campus-hero-sm.jpg (1000x750).
+Displays the Paquito S. Yu Memorial National High School campus photograph
+beneath a deep institutional navy directional overlay and subtle architectural
+grid so the campus and Philippine flag remain dignified and visible while
+foreground typography maintains high contrast.
 {% endcomment %}
 <div class="pointer-events-none absolute inset-0" aria-hidden="true">
-    <div class="landing-layer landing-hero-media" data-parallax data-speed="0.94">
+    <div class="landing-layer landing-hero-media" data-parallax data-speed="0.93">
         <picture>
             <source media="(max-width: 767px)" srcset="{% static 'images/campus-hero-sm.jpg' %}">
             <img src="{% static 'images/campus-hero.jpg' %}" alt="Paquito S. Yu Memorial National High School campus" width="2000" height="1500"
@@ -28,9 +17,5 @@ static/images/campus-hero.jpg (2000x1500) and campus-hero-sm.jpg (1000x750).
     </div>
 
     <div class="landing-hero-veil absolute inset-0"></div>
-
-    {# Orbs paint above the veil so the glass panel in front of them samples
-       their tint instead of a flat wash. #}
-    <div class="landing-orb landing-orb-gold" data-parallax data-depth="0.14"></div>
-    <div class="landing-orb landing-orb-blue" data-parallax data-depth="0.10"></div>
+    <div class="landing-hero-grid absolute inset-0"></div>
 </div>

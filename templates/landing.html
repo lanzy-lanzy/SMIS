@@ -5,17 +5,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#f5f2ea">
-    <meta name="description" content="The School Management Information System of Paquito S. Yu Memorial National High School. A secure, centralized system for learner records, academic workflows, grade validation, Form 137 preparation, and school reporting.">
+    <meta name="theme-color" content="#0B1531">
+    <meta name="description" content="Official School Management Information System of Paquito S. Yu Memorial National High School. Centralized learner records, grade validation, Form 137 preparation, and DepEd-aligned reporting.">
     <meta property="og:type" content="website">
     <meta property="og:title" content="SMIS | Paquito S. Yu Memorial National High School">
-    <meta property="og:description" content="A secure, centralized system for student records, academic workflows, grade validation, Form 137 preparation, and school reporting.">
+    <meta property="og:description" content="Official School Management Information System for learner records, academic workflows, grade validation, Form 137 preparation, and institutional reporting.">
     <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-smis.png' %}">
     <meta property="og:image:width" content="1733">
     <meta property="og:image:height" content="907">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="SMIS | Paquito S. Yu Memorial National High School">
-    <meta name="twitter:description" content="Every learner record. One orderly system.">
+    <meta name="twitter:description" content="Institutional excellence in academic record-keeping.">
     <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-smis.png' %}">
     <title>SMIS | Paquito S. Yu Memorial National High School</title>
     <script>document.documentElement.classList.add('js');</script>
@@ -27,342 +27,525 @@
     <script defer src="{% versioned_static 'js/landing.js' %}"></script>
     <style>[x-cloak] { display: none !important; }</style>
 </head>
-<body class="landing-page min-h-screen text-slate-600 antialiased" x-data="{ mobileMenu: false }" @keydown.escape.window="mobileMenu = false">
-    <a href="#main-content" class="fixed left-4 top-4 z-[70] -translate-y-24 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-glass transition focus:translate-y-0">Skip to content</a>
+<body class="landing-page min-h-screen text-slate-700 antialiased" x-data="{ mobileMenu: false }" @keydown.escape.window="mobileMenu = false">
+    <a href="#main-content" class="fixed left-4 top-4 z-[70] -translate-y-24 rounded-md bg-primary-dark px-4 py-2 text-sm font-semibold text-white shadow-lg transition focus:translate-y-0">Skip to main content</a>
 
-    <header id="site-header" class="site-header fixed inset-x-0 top-0 z-50 px-4 pt-3 sm:px-6 sm:pt-4">
-        <div class="site-header-bar mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-3 sm:h-[4.4rem] sm:px-5 lg:px-6">
-            <a href="{% url 'dashboard:landing' %}" class="flex min-w-0 items-center gap-3" aria-label="SMIS home">
-                <img src="{% static 'images/psyu-logo.png' %}" alt="Paquito S. Yu Memorial NHS logo" class="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-white/80 shadow-md">
-                <span class="min-w-0">
-                    <span class="site-brand-name block text-base font-black tracking-[0.14em]">SMIS</span>
-                    <span class="site-brand-sub hidden truncate text-[10px] font-semibold uppercase tracking-[0.09em] sm:block">Paquito S. Yu Memorial NHS</span>
-                </span>
-            </a>
-
-            <nav class="hidden items-center gap-1.5 lg:flex" aria-label="Public navigation">
-                <a href="#capabilities" class="site-nav-link">Capabilities</a>
-                <a href="#workflow" class="site-nav-link">How it works</a>
-                <a href="#about" class="site-nav-link">About</a>
-            </nav>
-
-            <div class="flex items-center gap-2">
-                <a href="{% url 'accounts:login' %}" class="site-login formal-button hidden px-5 lg:inline-flex">
-                    Sign in
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 12h14m-5-5l5 5-5 5"/></svg>
-                </a>
-
-                <button @click="mobileMenu = !mobileMenu" class="site-menu-btn app-icon-button lg:hidden" :aria-expanded="mobileMenu" aria-controls="mobile-menu" aria-label="Toggle menu">
-                    <svg x-show="!mobileMenu" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7h16M4 12h16M4 17h16"/></svg>
-                    <svg x-show="mobileMenu" x-cloak class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
+    <header id="site-header" class="site-header fixed inset-x-0 top-0 z-50">
+        <!-- Official institutional utility bar -->
+        <div class="site-utility-bar hidden border-b border-white/10 bg-[#081128] text-[11px] text-slate-300 sm:block">
+            <div class="mx-auto flex h-8 max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8">
+                <p class="truncate font-medium tracking-[0.04em]">
+                    Republic of the Philippines &middot; Department of Education &middot; Division of Zamboanga del Sur
+                </p>
+                <div class="flex shrink-0 items-center gap-4">
+                    <span class="font-semibold tracking-[0.06em] text-slate-200">S.Y. {{ current_school_year|default:"2025-2026" }}</span>
+                    <span class="h-3 w-px bg-white/15" aria-hidden="true"></span>
+                    <span class="inline-flex items-center gap-1.5 font-medium text-emerald-300">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                        Portal Operational
+                    </span>
+                </div>
             </div>
         </div>
 
-        <div id="mobile-menu" x-show="mobileMenu" x-transition.opacity x-cloak class="site-mobile-panel mx-auto mt-2 max-w-7xl px-4 py-4 lg:hidden">
-            <nav class="flex flex-col gap-1" aria-label="Mobile navigation">
+        <!-- Primary institutional navigation bar -->
+        <div class="site-header-bar">
+            <div class="mx-auto flex h-[4.25rem] max-w-7xl items-center justify-between gap-4 px-5 sm:h-[4.65rem] sm:px-6 lg:px-8">
+                <a href="{% url 'dashboard:landing' %}" class="flex min-w-0 items-center gap-3.5" aria-label="SMIS home">
+                    <img src="{% static 'images/psyu-logo.png' %}" alt="Paquito S. Yu Memorial National High School seal" class="h-10 w-10 shrink-0 rounded-full bg-white object-cover p-0.5 ring-1 ring-white/30 shadow-sm sm:h-11 sm:w-11">
+                    <span class="min-w-0 border-l border-current/15 pl-3.5">
+                        <span class="site-brand-name block text-[15px] font-bold tracking-[0.14em]">SMIS</span>
+                        <span class="site-brand-sub block truncate text-[10px] font-semibold uppercase tracking-[0.1em]">Paquito S. Yu Memorial NHS</span>
+                    </span>
+                </a>
+
+                <nav class="hidden items-center gap-1 lg:flex" aria-label="Public navigation">
+                    <a href="#overview" class="site-nav-link">Overview</a>
+                    <a href="#capabilities" class="site-nav-link">Capabilities</a>
+                    <a href="#workflow" class="site-nav-link">Governance</a>
+                    <a href="#about" class="site-nav-link">Community</a>
+                </nav>
+
+                <div class="flex items-center gap-2.5">
+                    <a href="{% url 'accounts:login' %}" class="site-login hidden lg:inline-flex">
+                        Portal Sign In
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 12h14m-5-5l5 5-5 5"/></svg>
+                    </a>
+
+                    <button @click="mobileMenu = !mobileMenu" class="site-menu-btn inline-flex h-10 w-10 items-center justify-center rounded-lg border transition lg:hidden" :aria-expanded="mobileMenu" aria-controls="mobile-menu" aria-label="Toggle navigation menu">
+                        <svg x-show="!mobileMenu" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7h16M4 12h16M4 17h16"/></svg>
+                        <svg x-show="mobileMenu" x-cloak class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile navigation drawer -->
+        <div id="mobile-menu" x-show="mobileMenu" x-transition.opacity x-cloak class="site-mobile-panel border-b border-slate-200 bg-white px-5 py-4 shadow-xl lg:hidden">
+            <nav class="mx-auto flex max-w-7xl flex-col gap-1" aria-label="Mobile navigation">
+                <a @click="mobileMenu = false" href="#overview" class="site-mobile-link">Overview</a>
                 <a @click="mobileMenu = false" href="#capabilities" class="site-mobile-link">Capabilities</a>
-                <a @click="mobileMenu = false" href="#workflow" class="site-mobile-link">How it works</a>
-                <a @click="mobileMenu = false" href="#about" class="site-mobile-link">About</a>
-                <a href="{% url 'accounts:login' %}" class="site-login formal-button mt-3">Sign in to SMIS</a>
+                <a @click="mobileMenu = false" href="#workflow" class="site-mobile-link">Governance</a>
+                <a @click="mobileMenu = false" href="#about" class="site-mobile-link">Community</a>
+                <div class="mt-3 border-t border-slate-200 pt-3">
+                    <a href="{% url 'accounts:login' %}" class="landing-btn-navy w-full justify-center">
+                        Portal Sign In
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 12h14m-5-5l5 5-5 5"/></svg>
+                    </a>
+                </div>
             </nav>
         </div>
     </header>
 
     <main id="main-content">
-        <section id="hero" class="landing-hero relative isolate overflow-hidden">
+        <!-- Hero Section -->
+        <section id="hero" class="landing-hero relative isolate overflow-hidden text-white">
             {% include "landing/_hero_scene.html" %}
 
-            <div id="hero-content" class="landing-hero-content relative z-10 w-full">
-                <div class="mx-auto grid w-full max-w-7xl items-center gap-10 px-5 pb-56 pt-28 sm:px-6 sm:pt-32 lg:grid-cols-[minmax(0,1fr)_19.5rem] lg:gap-14 lg:px-8 lg:pb-44 lg:pt-32">
-                    <div class="landing-glass-liquid landing-hero-panel w-full max-w-[46rem] p-7 sm:p-9 lg:p-11">
-                        <p class="landing-eyebrow">Paquito S. Yu Memorial National High School</p>
-                        <h1 class="mt-6 text-[2.15rem] font-bold leading-[1.06] tracking-[-0.045em] text-primary-dark sm:text-balance sm:text-[3.1rem] sm:leading-[1.04] lg:text-[3.7rem]">
-                            Every learner record. <em class="landing-serif">One orderly system.</em>
-                        </h1>
-                        <p class="mt-5 max-w-xl text-pretty text-[0.95rem] leading-7 text-slate-600 sm:text-base sm:leading-8">
-                            Enrollment, grades, Form 137, and school reports — centralized in one secure workspace for administrators, teachers, and students.
-                        </p>
-                        <div class="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3.5">
-                            <a href="{% url 'accounts:login' %}" class="landing-btn-primary">
-                                Sign in to SMIS
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 12h14m-5-5l5 5-5 5"/></svg>
-                            </a>
-                            <a href="#workflow" class="landing-btn-glass">See how it works</a>
+            <div id="hero-content" class="relative z-10 w-full">
+                <div class="mx-auto grid w-full max-w-7xl items-center gap-12 px-5 pb-20 pt-28 sm:px-6 sm:pb-24 sm:pt-36 lg:grid-cols-[minmax(0,1.15fr)_24rem] lg:gap-14 lg:px-8 lg:pb-28 lg:pt-40">
+                    <!-- Left: Authoritative Headline & Institutional Messaging -->
+                    <div class="landing-hero-panel max-w-2xl">
+                        <div class="landing-hero-eyebrow">
+                            <span class="landing-gold-rule" aria-hidden="true"></span>
+                            <span>Official Academic Portal &middot; Est. 2008</span>
                         </div>
-                        <div class="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-white/60 pt-5 text-[10.5px] font-bold uppercase tracking-[0.18em] text-slate-500">
+
+                        <h1 class="mt-6 text-[2.35rem] font-bold leading-[1.08] tracking-[-0.035em] text-white sm:text-[3.25rem] lg:text-[3.75rem]">
+                            Institutional excellence in <em class="landing-serif landing-serif-gold">academic record-keeping.</em>
+                        </h1>
+
+                        <p class="mt-6 max-w-xl text-[0.98rem] leading-7 text-slate-200/90 sm:text-[1.05rem] sm:leading-8">
+                            The centralized School Management Information System of Paquito S. Yu Memorial National High School &mdash; unifying learner profiles, grade validation, Form 137 preparation, and DepEd-aligned reporting in one secure workspace.
+                        </p>
+
+                        <div class="mt-9 flex flex-col gap-3.5 sm:flex-row sm:items-center">
+                            <a href="{% url 'accounts:login' %}" class="landing-btn-gold">
+                                Sign In to Portal
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-5-5l5 5-5 5"/></svg>
+                            </a>
+                            <a href="#capabilities" class="landing-btn-outline-light">
+                                Explore System Modules
+                            </a>
+                        </div>
+
+                        <div class="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2.5 border-t border-white/15 pt-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">
                             <span class="inline-flex items-center gap-2">
-                                <svg class="h-3.5 w-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l7 3v5c0 4.4-3 8.3-7 10-4-1.7-7-5.6-7-10V6l7-3z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.5 12l1.8 1.8 3.4-3.4"/></svg>
-                                Authorized accounts only
+                                <svg class="h-3.5 w-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l7 3v5c0 4.4-3 8.3-7 10-4-1.7-7-5.6-7-10V6l7-3z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.5 12l1.8 1.8 3.4-3.4"/></svg>
+                                Authorized Accounts Only
                             </span>
-                            <span class="hidden h-1 w-1 rounded-full bg-slate-400/70 sm:block" aria-hidden="true"></span>
-                            <span>Role-based workspaces</span>
-                            <span class="hidden h-1 w-1 rounded-full bg-slate-400/70 sm:block" aria-hidden="true"></span>
-                            <span>DepEd-aligned records</span>
+                            <span class="inline-flex items-center gap-2">
+                                <span class="h-1 w-1 rounded-full bg-accent/80" aria-hidden="true"></span>
+                                Role-Based Workspaces
+                            </span>
+                            <span class="inline-flex items-center gap-2">
+                                <span class="h-1 w-1 rounded-full bg-accent/80" aria-hidden="true"></span>
+                                DepEd SF10 &amp; SF6 Aligned
+                            </span>
                         </div>
                     </div>
 
-                    <aside class="hidden lg:block">
-                        <div class="landing-glass-liquid landing-float rounded-[1.75rem] p-5">
-                            <div class="flex items-center justify-between">
-                                <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Enrollment</p>
-                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50/80 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Live
-                                </span>
+                    <!-- Right: Structured Institutional Dossier Card -->
+                    <aside class="landing-hero-dossier">
+                        <div class="flex items-center justify-between gap-3 border-b border-white/12 pb-5">
+                            <div class="flex items-center gap-3">
+                                <img src="{% static 'images/psyu-logo.png' %}" alt="PSYU MNHS Seal" class="h-11 w-11 rounded-full bg-white object-cover p-0.5 shadow-sm">
+                                <img src="{% static 'images/deped-logo.png' %}" alt="Department of Education Seal" class="h-11 w-11 rounded-full bg-white object-cover p-0.5 shadow-sm">
                             </div>
-                            <p class="landing-serif mt-2 text-[2.5rem] leading-none text-primary-dark">63</p>
-                            <p class="mt-1 text-[11px] font-medium text-slate-500">Active learners, S.Y. 2025&ndash;2026</p>
-                            <div class="landing-inset mt-4 flex h-16 items-end gap-1.5 rounded-xl p-2">
-                                <span class="w-full rounded-t-[3px] bg-primary-300/80" style="height: 42%"></span>
-                                <span class="w-full rounded-t-[3px] bg-primary-400/80" style="height: 66%"></span>
-                                <span class="w-full rounded-t-[3px] bg-primary-500/85" style="height: 100%"></span>
-                                <span class="w-full rounded-t-[3px] bg-primary-400/80" style="height: 55%"></span>
-                                <span class="w-full rounded-t-[3px] bg-primary-300/80" style="height: 74%"></span>
-                                <span class="w-full rounded-t-[3px] bg-primary-300/80" style="height: 38%"></span>
-                                <span class="w-full rounded-t-[3px] bg-accent/90" style="height: 60%"></span>
-                            </div>
-                            <div class="mt-4 flex items-center gap-2.5 border-t border-white/60 pt-3">
-                                <span class="landing-icon-badge h-8 w-8 rounded-[0.6rem] text-emerald-600">
-                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M5 13l4 4L19 7"/></svg>
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="text-[11px] font-bold text-slate-700">Grade validation</p>
-                                    <p class="text-[10px] text-slate-500">Workflow in progress</p>
-                                </div>
-                            </div>
+                            <span class="inline-flex items-center gap-1.5 rounded border border-emerald-400/25 bg-emerald-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-300">
+                                <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                                Active Term
+                            </span>
                         </div>
 
-                        <div class="landing-card mt-4 flex items-center gap-3.5 rounded-2xl p-4">
-                            <span class="landing-icon-badge h-10 w-10 rounded-xl text-primary">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 3h7l4 4v14H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14 3v4h4M10 12h5M10 16h5"/></svg>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">Form 137</p>
-                                <p class="text-sm font-bold text-primary-dark">Records ready to print</p>
+                        <div class="mt-5">
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">Institution Overview</p>
+                            <h2 class="mt-1.5 text-base font-bold text-white">Paquito S. Yu Memorial NHS</h2>
+                            <p class="mt-0.5 text-xs text-slate-300">Dumingag, Zamboanga del Sur &middot; S.Y. {{ current_school_year|default:"2025-2026" }}</p>
+                        </div>
+
+                        <dl class="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/12 bg-white/12">
+                            <div class="bg-[#0E1A3B]/90 p-4">
+                                <dt class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Enrolled Learners</dt>
+                                <dd class="landing-serif-num mt-1.5 text-[2rem] leading-none text-white tabular">{{ active_learners|default:"0" }}</dd>
+                            </div>
+                            <div class="bg-[#0E1A3B]/90 p-4">
+                                <dt class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Grade Levels</dt>
+                                <dd class="landing-serif-num mt-1.5 text-[2rem] leading-none text-white tabular">{{ grade_levels_count|default:"4" }}</dd>
+                            </div>
+                            <div class="bg-[#0E1A3B]/90 p-4">
+                                <dt class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Learning Areas</dt>
+                                <dd class="landing-serif-num mt-1.5 text-[2rem] leading-none text-white tabular">{{ subjects_count|default:"8" }}</dd>
+                            </div>
+                            <div class="bg-[#0E1A3B]/90 p-4">
+                                <dt class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Active Sections</dt>
+                                <dd class="landing-serif-num mt-1.5 text-[2rem] leading-none text-white tabular">{{ sections_count|default:"4" }}</dd>
+                            </div>
+                        </dl>
+
+                        <div class="mt-5 space-y-2.5 border-t border-white/12 pt-4 text-xs text-slate-300">
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-400">Record Integrity</span>
+                                <span class="font-semibold text-white">Registrar-Validated</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-400">Official Documents</span>
+                                <span class="font-semibold text-white">Report Cards &amp; Form 137</span>
                             </div>
                         </div>
                     </aside>
                 </div>
             </div>
 
-            <div class="landing-stats-strip absolute inset-x-0 bottom-0 z-10" data-reveal>
-                <div class="mx-auto grid max-w-7xl grid-cols-2 px-5 sm:px-6 lg:grid-cols-4 lg:px-8">
-                    <div class="landing-stat">
-                        <p class="landing-stat-value">63</p>
-                        <p class="landing-stat-label">Active learners</p>
-                    </div>
-                    <div class="landing-stat">
-                        <p class="landing-stat-value">4</p>
-                        <p class="landing-stat-label">Grade levels served</p>
-                    </div>
-                    <div class="landing-stat">
-                        <p class="landing-stat-value">8</p>
-                        <p class="landing-stat-label">Subjects per learner</p>
-                    </div>
-                    <div class="landing-stat">
-                        <p class="landing-stat-value">1</p>
-                        <p class="landing-stat-label">System of record</p>
-                    </div>
-                </div>
-            </div>
-
-            <a id="hero-cue" href="#intro" class="absolute bottom-32 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2.5 text-[10px] font-bold uppercase tracking-[0.32em] text-white/80 transition-colors hover:text-white lg:bottom-36 xl:flex" aria-label="Scroll to content">
+            <a id="hero-cue" href="#overview" class="absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-300/75 transition-colors hover:text-white xl:flex" aria-label="Scroll to overview">
                 <span>Scroll</span>
-                <span class="h-9 w-px bg-gradient-to-b from-white/70 to-transparent"></span>
+                <span class="h-7 w-px bg-gradient-to-b from-accent/80 to-transparent"></span>
             </a>
         </section>
 
-        <section id="intro" class="landing-canvas scroll-mt-28">
-            <div class="mx-auto max-w-7xl px-5 py-16 sm:px-6 sm:py-20 lg:px-8">
-                <div class="max-w-2xl" data-reveal>
-                    <p class="landing-kicker">Why SMIS</p>
-                    <h2 class="mt-4 text-3xl font-bold tracking-[-0.035em] text-primary-dark sm:text-[2.35rem]">A calmer way to run <em class="landing-serif">school records.</em></h2>
+        <!-- Institutional Pillars / Overview -->
+        <section id="overview" class="scroll-mt-24 border-b border-slate-200 bg-white">
+            <div class="mx-auto max-w-7xl px-5 py-20 sm:px-6 sm:py-24 lg:px-8">
+                <div class="grid gap-8 lg:grid-cols-12 lg:items-end" data-reveal>
+                    <div class="lg:col-span-7">
+                        <p class="landing-kicker">Institutional Mandate</p>
+                        <h2 class="mt-3.5 text-3xl font-bold tracking-[-0.03em] text-primary-dark sm:text-[2.25rem]">
+                            Built for accuracy, accountability, and <em class="landing-serif">academic continuity.</em>
+                        </h2>
+                    </div>
+                    <p class="text-sm leading-7 text-slate-600 lg:col-span-5">
+                        SMIS replaces fragmented spreadsheets and manual compilation with a disciplined, school-wide information architecture tailored to public secondary education.
+                    </p>
                 </div>
-                <div class="mt-12 grid gap-x-10 gap-y-10 md:grid-cols-3">
-                    <article class="principle-item" data-reveal>
-                        <p class="principle-index">01</p>
-                        <h3 class="principle-title">One dependable record</h3>
-                        <p class="mt-3 text-sm leading-6 text-slate-500">Learner profiles, enrollment, and grades live in a single workspace — no duplicate files, no conflicting copies.</p>
+
+                <div class="mt-14 grid gap-10 border-t border-slate-200 pt-12 md:grid-cols-3 md:gap-0 md:divide-x md:divide-slate-200">
+                    <article class="principle-item md:pr-10" data-reveal>
+                        <div class="flex items-center gap-3">
+                            <span class="principle-index">01</span>
+                            <span class="h-px flex-1 bg-slate-200" aria-hidden="true"></span>
+                        </div>
+                        <h3 class="principle-title">Single Source of Truth</h3>
+                        <p class="mt-3 text-sm leading-6 text-slate-600">
+                            Learner profiles, LRN details, enrollment history, and quarterly grades reside in one authoritative registry &mdash; eliminating duplicate files and conflicting versions.
+                        </p>
                     </article>
-                    <article class="principle-item" data-reveal style="--reveal-delay: 120ms">
-                        <p class="principle-index">02</p>
-                        <h3 class="principle-title">Clear accountability</h3>
-                        <p class="mt-3 text-sm leading-6 text-slate-500">Every submission, review, and validation is tracked, so responsibility stays visible from encoding to archive.</p>
+
+                    <article class="principle-item md:px-10" data-reveal style="--reveal-delay: 100ms">
+                        <div class="flex items-center gap-3">
+                            <span class="principle-index">02</span>
+                            <span class="h-px flex-1 bg-slate-200" aria-hidden="true"></span>
+                        </div>
+                        <h3 class="principle-title">Accountable Governance</h3>
+                        <p class="mt-3 text-sm leading-6 text-slate-600">
+                            Every grade entry, submission, revision request, and registrar validation is recorded with full traceability from classroom encoding to permanent archive.
+                        </p>
                     </article>
-                    <article class="principle-item" data-reveal style="--reveal-delay: 240ms">
-                        <p class="principle-index">03</p>
-                        <h3 class="principle-title">Better decisions</h3>
-                        <p class="mt-3 text-sm leading-6 text-slate-500">Timely reports turn day-to-day records into evidence for academic planning and learner support.</p>
+
+                    <article class="principle-item md:pl-10" data-reveal style="--reveal-delay: 200ms">
+                        <div class="flex items-center gap-3">
+                            <span class="principle-index">03</span>
+                            <span class="h-px flex-1 bg-slate-200" aria-hidden="true"></span>
+                        </div>
+                        <h3 class="principle-title">Evidence-Based Oversight</h3>
+                        <p class="mt-3 text-sm leading-6 text-slate-600">
+                            Structured academic summaries, SF6 promotion reports, and early at-risk indicators equip school leadership with reliable data for timely learner support.
+                        </p>
                     </article>
                 </div>
             </div>
         </section>
 
-        <section id="capabilities" class="landing-canvas relative scroll-mt-24 overflow-hidden py-20 sm:py-24">
-            <div class="landing-bloom pointer-events-none absolute -right-32 top-24 h-[24rem] w-[24rem] rounded-full bg-primary-100/60 blur-3xl" data-parallax data-depth="0.1" aria-hidden="true"></div>
-            <div class="relative mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+        <!-- Core System Capabilities -->
+        <section id="capabilities" class="landing-surface-subtle scroll-mt-24 border-b border-slate-200 py-20 sm:py-24">
+            <div class="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
                 <div class="flex flex-wrap items-end justify-between gap-6" data-reveal>
                     <div class="max-w-2xl">
-                        <p class="landing-kicker">Core capabilities</p>
-                        <h2 class="mt-4 text-3xl font-bold tracking-[-0.035em] text-primary-dark sm:text-[2.35rem]">Essential school operations, <em class="landing-serif">connected.</em></h2>
+                        <p class="landing-kicker">Core System Modules</p>
+                        <h2 class="mt-3.5 text-3xl font-bold tracking-[-0.03em] text-primary-dark sm:text-[2.25rem]">
+                            Essential school operations, <em class="landing-serif">systematically unified.</em>
+                        </h2>
                     </div>
-                    <p class="max-w-sm text-sm leading-6 text-slate-500">Each authorized user gets a focused view of the records and workflows they are responsible for.</p>
+                    <p class="max-w-md text-sm leading-6 text-slate-600">
+                        Each module is structured around DepEd standards and scoped to the responsibilities of every authorized account.
+                    </p>
                 </div>
 
-                <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-                    <article class="cap-card group sm:col-span-2" data-reveal>
-                        <span class="cap-arrow" aria-hidden="true"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M9 7h8v8"/></svg></span>
-                        <div class="flex h-full flex-col justify-between gap-8 lg:flex-row lg:items-end">
+                <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <!-- Featured Module 01: Report Cards & Form 137 -->
+                    <article class="cap-card cap-card-featured group sm:col-span-2" data-reveal>
+                        <div class="flex h-full flex-col justify-between gap-8 lg:flex-row lg:items-center">
                             <div class="min-w-0 max-w-md">
-                                <p class="landing-card-index">01</p>
-                                <h3 class="mt-2 text-lg font-bold text-primary-dark">Report cards and Form 137</h3>
-                                <p class="mt-2 text-sm leading-6 text-slate-600">Generate print-ready report cards and official Form 137 records directly from validated grades — formatted to the school's standard, on paper or as PDF.</p>
+                                <div class="flex items-center gap-3">
+                                    <span class="cap-icon-box">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M7 3h7l5 5v13H7a2 2 0 01-2-2V5a2 2 0 012-2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+                                    </span>
+                                    <span class="landing-card-index">Module 01</span>
+                                </div>
+                                <h3 class="mt-5 text-xl font-bold tracking-[-0.02em] text-primary-dark">Official Report Cards &amp; Form 137 (SF10)</h3>
+                                <p class="mt-2.5 text-sm leading-6 text-slate-600">
+                                    Generate print-ready learner report cards and permanent Form 137 records directly from registrar-validated grades &mdash; formatted to official DepEd layout standards for physical printing or archival PDF.
+                                </p>
                                 <a href="{% url 'accounts:login' %}" class="cap-link">
-                                    See reports
-                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-5-5l5 5-5 5"/></svg>
+                                    Access Records Module
+                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-5-5l5 5-5 5"/></svg>
                                 </a>
                             </div>
+
+                            <!-- Crisp, official miniature academic record sheet -->
                             <div class="cap-visual" aria-hidden="true">
-                                <div class="cap-visual-head">
-                                    <img src="{% static 'images/psyu-logo.png' %}" alt="" class="h-6 w-6 rounded-full object-cover">
-                                    <span class="cap-visual-title">Report Card</span>
-                                    <span class="cap-visual-chip">Passed</span>
+                                <div class="cap-visual-bar">
+                                    <img src="{% static 'images/psyu-logo.png' %}" alt="" class="h-5 w-5 rounded-full bg-white object-cover">
+                                    <span class="text-[9px] font-bold uppercase tracking-[0.14em] text-white">SF10 &middot; Academic Record</span>
+                                    <span class="ml-auto rounded bg-emerald-500/20 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-[0.08em] text-emerald-300">Validated</span>
                                 </div>
-                                <div class="cap-visual-row"><span>Filipino</span><b>87</b></div>
-                                <div class="cap-visual-row"><span>English</span><b>88</b></div>
-                                <div class="cap-visual-row"><span>Mathematics</span><b>90</b></div>
-                                <div class="cap-visual-row"><span>Science</span><b>89</b></div>
-                                <div class="cap-visual-total"><span>General average</span><b>88.5</b></div>
+                                <div class="p-3.5">
+                                    <div class="cap-visual-row"><span>Filipino</span><b>88</b></div>
+                                    <div class="cap-visual-row"><span>English</span><b>89</b></div>
+                                    <div class="cap-visual-row"><span>Mathematics</span><b>91</b></div>
+                                    <div class="cap-visual-row"><span>Science</span><b>90</b></div>
+                                    <div class="cap-visual-total">
+                                        <span>General Average</span>
+                                        <b>89.5</b>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </article>
+
+                    <!-- Module 02 -->
                     <article class="cap-card group" data-reveal style="--reveal-delay: 80ms">
-                        <span class="cap-arrow" aria-hidden="true"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M9 7h8v8"/></svg></span>
-                        <p class="landing-card-index">02</p>
-                        <h3 class="mt-2 text-lg font-bold text-primary-dark">Student records</h3>
-                        <p class="mt-2 text-sm leading-6 text-slate-600">Profiles, enrollment details, grade levels, sections, and status — one record per learner.</p>
+                        <div class="flex items-center gap-3">
+                            <span class="cap-icon-box">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4" stroke-width="1.75"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                            </span>
+                            <span class="landing-card-index">Module 02</span>
+                        </div>
+                        <h3 class="mt-5 text-lg font-bold tracking-[-0.015em] text-primary-dark">Learner Registry</h3>
+                        <p class="mt-2.5 text-sm leading-6 text-slate-600">
+                            Maintain complete learner profiles, LRN identifiers, grade-level placements, section assignments, and promotion status across school years.
+                        </p>
                     </article>
-                    <article class="cap-card group" data-reveal style="--reveal-delay: 160ms">
-                        <span class="cap-arrow" aria-hidden="true"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M9 7h8v8"/></svg></span>
-                        <p class="landing-card-index">03</p>
-                        <h3 class="mt-2 text-lg font-bold text-primary-dark">Grade management</h3>
-                        <p class="mt-2 text-sm leading-6 text-slate-600">Encoding, submission, registrar review, and validation in a single accountable flow.</p>
+
+                    <!-- Module 03 -->
+                    <article class="cap-card group" data-reveal style="--reveal-delay: 140ms">
+                        <div class="flex items-center gap-3">
+                            <span class="cap-icon-box">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1" stroke-width="1.75"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 14l2 2 4-4"/></svg>
+                            </span>
+                            <span class="landing-card-index">Module 03</span>
+                        </div>
+                        <h3 class="mt-5 text-lg font-bold tracking-[-0.015em] text-primary-dark">Grade Management</h3>
+                        <p class="mt-2.5 text-sm leading-6 text-slate-600">
+                            DepEd-compliant transmutation, quarterly encoding, formal submission queues, registrar review, and record locking in one structured workflow.
+                        </p>
                     </article>
-                    <article class="cap-card group" data-reveal style="--reveal-delay: 240ms">
-                        <span class="cap-arrow" aria-hidden="true"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M9 7h8v8"/></svg></span>
-                        <p class="landing-card-index">04</p>
-                        <h3 class="mt-2 text-lg font-bold text-primary-dark">Reports and analytics</h3>
-                        <p class="mt-2 text-sm leading-6 text-slate-600">Grade trends, section performance, and learners who need support — at a glance.</p>
+
+                    <!-- Module 04 -->
+                    <article class="cap-card group" data-reveal style="--reveal-delay: 200ms">
+                        <div class="flex items-center gap-3">
+                            <span class="cap-icon-box">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 3v18h18"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M7 15l4-4 3 3 5-6"/></svg>
+                            </span>
+                            <span class="landing-card-index">Module 04</span>
+                        </div>
+                        <h3 class="mt-5 text-lg font-bold tracking-[-0.015em] text-primary-dark">Reports &amp; SF6 Analytics</h3>
+                        <p class="mt-2.5 text-sm leading-6 text-slate-600">
+                            Monitor quarterly grade trends, section and subject performance, SF6 promotion summaries, and learners requiring academic intervention.
+                        </p>
                     </article>
-                    <article class="cap-card group" data-reveal style="--reveal-delay: 320ms">
-                        <span class="cap-arrow" aria-hidden="true"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M9 7h8v8"/></svg></span>
-                        <p class="landing-card-index">05</p>
-                        <h3 class="mt-2 text-lg font-bold text-primary-dark">Academic setup</h3>
-                        <p class="mt-2 text-sm leading-6 text-slate-600">School years, sections, subjects, periods, and teacher assignments, organized.</p>
+
+                    <!-- Module 05 -->
+                    <article class="cap-card group" data-reveal style="--reveal-delay: 260ms">
+                        <div class="flex items-center gap-3">
+                            <span class="cap-icon-box">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 3L2 8l10 5 10-5-10-5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M2 13l10 5 10-5M2 18l10 5 10-5"/></svg>
+                            </span>
+                            <span class="landing-card-index">Module 05</span>
+                        </div>
+                        <h3 class="mt-5 text-lg font-bold tracking-[-0.015em] text-primary-dark">Academic Configuration</h3>
+                        <p class="mt-2.5 text-sm leading-6 text-slate-600">
+                            Organize school years, grading periods, sections, curriculum subjects, and faculty teaching assignments with clear administrative control.
+                        </p>
                     </article>
-                    <article class="cap-card group" data-reveal style="--reveal-delay: 400ms">
-                        <span class="cap-arrow" aria-hidden="true"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M9 7h8v8"/></svg></span>
-                        <p class="landing-card-index">06</p>
-                        <h3 class="mt-2 text-lg font-bold text-primary-dark">Access and audit</h3>
-                        <p class="mt-2 text-sm leading-6 text-slate-600">Role-based workspaces for administrators, teachers, registrars, and students.</p>
+
+                    <!-- Module 06 (Full-width institutional security & audit bar) -->
+                    <article class="cap-card group sm:col-span-2 lg:col-span-3" data-reveal style="--reveal-delay: 320ms">
+                        <div class="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+                            <div class="max-w-2xl">
+                                <div class="flex items-center gap-3">
+                                    <span class="cap-icon-box">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 3l7 3v5c0 4.4-3 8.3-7 10-4-1.7-7-5.6-7-10V6l7-3z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9.5 12l1.8 1.8 3.4-3.4"/></svg>
+                                    </span>
+                                    <span class="landing-card-index">Module 06 &middot; Institutional Security</span>
+                                </div>
+                                <h3 class="mt-4 text-lg font-bold tracking-[-0.015em] text-primary-dark">Access Control &amp; Audit Trail</h3>
+                                <p class="mt-2 text-sm leading-6 text-slate-600">
+                                    Strict role-based permissions for administrators, registrars, teachers, and learners, backed by chronological activity logs to keep every record change accountable.
+                                </p>
+                            </div>
+
+                            <div class="grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-3 lg:w-[27rem]">
+                                <div class="rounded-lg border border-slate-200 bg-slate-50/80 px-3.5 py-3">
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">Access</p>
+                                    <p class="mt-1 text-xs font-semibold text-primary-dark">Role-Based Scopes</p>
+                                </div>
+                                <div class="rounded-lg border border-slate-200 bg-slate-50/80 px-3.5 py-3">
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">Traceability</p>
+                                    <p class="mt-1 text-xs font-semibold text-primary-dark">Full Audit Logs</p>
+                                </div>
+                                <div class="rounded-lg border border-slate-200 bg-slate-50/80 px-3.5 py-3">
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">Integrity</p>
+                                    <p class="mt-1 text-xs font-semibold text-primary-dark">Locked Official Grades</p>
+                                </div>
+                            </div>
+                        </div>
                     </article>
                 </div>
             </div>
         </section>
 
+        <!-- Academic Governance Lifecycle (Dark Navy Band) -->
         <section id="workflow" class="landing-dark relative scroll-mt-24 overflow-hidden py-20 text-white sm:py-24">
-            <div class="landing-grain pointer-events-none absolute inset-0 opacity-60" aria-hidden="true"></div>
-            <div class="pointer-events-none absolute -left-24 top-1/4 h-80 w-80 rounded-full bg-primary/40 blur-3xl" data-parallax data-depth="0.08" aria-hidden="true"></div>
-            <div class="pointer-events-none absolute -right-16 top-0 h-72 w-72 rounded-full bg-accent/10 blur-3xl" data-parallax data-depth="0.12" aria-hidden="true"></div>
-            <div class="relative mx-auto grid max-w-7xl gap-12 px-5 sm:px-6 lg:grid-cols-[.85fr_1.15fr] lg:gap-20 lg:px-8">
+            <div class="landing-hero-grid pointer-events-none absolute inset-0 opacity-40" aria-hidden="true"></div>
+            <div class="relative mx-auto grid max-w-7xl gap-12 px-5 sm:px-6 lg:grid-cols-[.88fr_1.12fr] lg:gap-20 lg:px-8">
                 <div class="lg:sticky lg:top-32 lg:self-start" data-reveal>
-                    <p class="landing-kicker landing-kicker-dark">Designed around school work</p>
-                    <h2 class="mt-4 text-3xl font-bold tracking-[-0.035em] sm:text-[2.35rem]">From data entry to an <em class="landing-serif landing-serif-gold">accountable record.</em></h2>
-                    <p class="mt-5 max-w-xl text-base leading-7 text-slate-300">Each step is organized around responsibility, helping school personnel move work forward without losing context.</p>
-                    <a href="{% url 'accounts:login' %}" class="landing-button-light mt-9">
-                        Sign in to start
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 12h14m-5-5l5 5-5 5"/></svg>
+                    <p class="landing-kicker landing-kicker-dark">Academic Governance</p>
+                    <h2 class="mt-3.5 text-3xl font-bold tracking-[-0.03em] sm:text-[2.3rem]">
+                        From classroom encoding to <em class="landing-serif landing-serif-gold">certified permanent records.</em>
+                    </h2>
+                    <p class="mt-5 max-w-md text-sm leading-7 text-slate-300 sm:text-base">
+                        A disciplined four-stage lifecycle ensures that every official report card, Form 137, and institutional summary is backed by verified academic data.
+                    </p>
+                    <a href="{% url 'accounts:login' %}" class="landing-btn-gold mt-8">
+                        Proceed to Sign In
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-5-5l5 5-5 5"/></svg>
                     </a>
                 </div>
+
                 <ol id="workflow-steps" class="relative pl-8 sm:pl-10">
                     <span class="workflow-rail" aria-hidden="true"><span class="workflow-rail-fill"></span></span>
+
                     <li class="workflow-step relative pb-5" data-reveal style="--reveal-delay: 60ms">
-                        <div class="landing-glass-dark landing-dark-step rounded-2xl p-6">
-                            <div class="flex items-center gap-3">
+                        <div class="landing-dark-step rounded-xl p-6">
+                            <div class="flex items-center gap-3.5">
                                 <span class="landing-dark-index">01</span>
-                                <h3 class="text-lg font-bold">Record</h3>
+                                <div>
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Stage One &middot; Faculty</p>
+                                    <h3 class="mt-0.5 text-lg font-bold">Encode Academic Data</h3>
+                                </div>
                             </div>
-                            <p class="mt-3 text-sm leading-6 text-slate-300">Encode student, academic, and grade information in the appropriate workspace.</p>
+                            <p class="mt-3.5 text-sm leading-6 text-slate-300">
+                                Subject teachers and advisers record learner scores and quarterly grades within their assigned sections and grading periods.
+                            </p>
                         </div>
                     </li>
+
                     <li class="workflow-step relative pb-5" data-reveal style="--reveal-delay: 140ms">
-                        <div class="landing-glass-dark landing-dark-step rounded-2xl p-6">
-                            <div class="flex items-center gap-3">
+                        <div class="landing-dark-step rounded-xl p-6">
+                            <div class="flex items-center gap-3.5">
                                 <span class="landing-dark-index">02</span>
-                                <h3 class="text-lg font-bold">Review</h3>
+                                <div>
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Stage Two &middot; Registrar</p>
+                                    <h3 class="mt-0.5 text-lg font-bold">Review &amp; Verify Submissions</h3>
+                                </div>
                             </div>
-                            <p class="mt-3 text-sm leading-6 text-slate-300">Check submissions, identify issues, and return records that require correction.</p>
+                            <p class="mt-3.5 text-sm leading-6 text-slate-300">
+                                Submitted grade sheets are checked for completeness and accuracy; discrepancies can be formally returned with remarks for correction.
+                            </p>
                         </div>
                     </li>
+
                     <li class="workflow-step relative pb-5" data-reveal style="--reveal-delay: 220ms">
-                        <div class="landing-glass-dark landing-dark-step rounded-2xl p-6">
-                            <div class="flex items-center gap-3">
+                        <div class="landing-dark-step rounded-xl p-6">
+                            <div class="flex items-center gap-3.5">
                                 <span class="landing-dark-index">03</span>
-                                <h3 class="text-lg font-bold">Validate</h3>
+                                <div>
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Stage Three &middot; Governance</p>
+                                    <h3 class="mt-0.5 text-lg font-bold">Validate &amp; Lock Records</h3>
+                                </div>
                             </div>
-                            <p class="mt-3 text-sm leading-6 text-slate-300">Confirm accurate academic information before it is used in official records.</p>
+                            <p class="mt-3.5 text-sm leading-6 text-slate-300">
+                                Approved grades are officially validated and locked to safeguard record integrity prior to school-wide reporting and archiving.
+                            </p>
                         </div>
                     </li>
+
                     <li class="workflow-step relative" data-reveal style="--reveal-delay: 300ms">
-                        <div class="landing-glass-dark landing-dark-step rounded-2xl p-6">
-                            <div class="flex items-center gap-3">
+                        <div class="landing-dark-step rounded-xl p-6">
+                            <div class="flex items-center gap-3.5">
                                 <span class="landing-dark-index">04</span>
-                                <h3 class="text-lg font-bold">Report</h3>
+                                <div>
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Stage Four &middot; Certification</p>
+                                    <h3 class="mt-0.5 text-lg font-bold">Certify &amp; Generate Reports</h3>
+                                </div>
                             </div>
-                            <p class="mt-3 text-sm leading-6 text-slate-300">Use trusted information for Form 137 preparation and school performance reports.</p>
+                            <p class="mt-3.5 text-sm leading-6 text-slate-300">
+                                Validated records immediately power official Report Cards, Form 137 (SF10) permanent records, SF6 summaries, and institutional analytics.
+                            </p>
                         </div>
                     </li>
                 </ol>
             </div>
         </section>
 
-        <section id="about" class="landing-canvas relative scroll-mt-24 overflow-hidden py-20 sm:py-24">
-            <div class="pointer-events-none absolute -left-40 bottom-10 h-[22rem] w-[22rem] rounded-full bg-accent-100/50 blur-3xl" data-parallax data-depth="0.09" aria-hidden="true"></div>
-            <div class="relative mx-auto grid max-w-7xl items-center gap-12 px-5 sm:px-6 lg:grid-cols-[1.02fr_.98fr] lg:gap-16 lg:px-8">
-                <div class="about-photo-card" data-reveal>
-                    <img src="{% static 'images/campus-hero-sm.jpg' %}" alt="The Paquito S. Yu Memorial National High School campus" class="about-photo" width="1000" height="750" loading="lazy" decoding="async">
-                    <div class="about-photo-badge">
-                        <img src="{% static 'images/psyu-logo.png' %}" alt="" class="h-10 w-10 rounded-full object-cover ring-2 ring-white">
-                        <div>
-                            <p class="text-xs font-bold text-primary-dark">Paquito S. Yu Memorial NHS</p>
-                            <p class="text-[10px] font-medium uppercase tracking-[0.12em] text-slate-500">Home campus</p>
+        <!-- School Community & Role Workspaces -->
+        <section id="about" class="scroll-mt-24 bg-white py-20 sm:py-24">
+            <div class="mx-auto grid max-w-7xl items-center gap-12 px-5 sm:px-6 lg:grid-cols-[1.02fr_.98fr] lg:gap-16 lg:px-8">
+                <!-- Framed Campus Photograph with Integrated Institutional Caption -->
+                <figure class="about-photo-frame overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" data-reveal>
+                    <img src="{% static 'images/campus-hero-sm.jpg' %}" alt="Paquito S. Yu Memorial National High School campus" class="about-photo" width="1000" height="750" loading="lazy" decoding="async">
+                    <figcaption class="flex items-center justify-between gap-4 border-t border-slate-200 bg-[#0D1938] px-5 py-4 text-white">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <img src="{% static 'images/psyu-logo.png' %}" alt="" class="h-10 w-10 shrink-0 rounded-full bg-white object-cover p-0.5">
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-bold text-white">Paquito S. Yu Memorial National High School</p>
+                                <p class="truncate text-[11px] font-medium text-slate-300">Dumingag, Zamboanga del Sur &middot; Established 2008</p>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                        <img src="{% static 'images/deped-logo.png' %}" alt="Department of Education" class="hidden h-9 w-9 shrink-0 rounded-full bg-white object-cover p-0.5 sm:block">
+                    </figcaption>
+                </figure>
+
+                <!-- Dedicated Role Workspaces -->
                 <div data-reveal style="--reveal-delay: 120ms">
-                    <p class="landing-kicker">About SMIS</p>
-                    <h2 class="mt-4 text-3xl font-bold tracking-[-0.035em] text-primary-dark sm:text-[2.35rem]">Built for the <em class="landing-serif">school community.</em></h2>
-                    <p class="mt-5 text-base leading-7 text-slate-600">The School Management Information System supports Paquito S. Yu Memorial National High School in maintaining consistent records and transparent academic processes.</p>
-                    <div class="mt-8 divide-y divide-slate-900/10 border-y border-slate-900/10">
+                    <p class="landing-kicker">School Community</p>
+                    <h2 class="mt-3.5 text-3xl font-bold tracking-[-0.03em] text-primary-dark sm:text-[2.25rem]">
+                        Dedicated workspaces for every <em class="landing-serif">institutional role.</em>
+                    </h2>
+                    <p class="mt-4 text-sm leading-7 text-slate-600 sm:text-base">
+                        SMIS provides tailored views and strict permission boundaries so every member of the school community interacts only with the tools and records relevant to their mandate.
+                    </p>
+
+                    <div class="mt-8 divide-y divide-slate-200 border-y border-slate-200">
                         <div class="role-row group">
-                            <span class="role-mark">A</span>
+                            <span class="role-mark">01</span>
                             <div class="min-w-0">
-                                <h3 class="font-bold text-primary-dark">Administrators</h3>
-                                <p class="mt-1 text-sm leading-6 text-slate-600">Configure the academic structure, manage users, and maintain oversight.</p>
+                                <h3 class="text-sm font-bold text-primary-dark sm:text-base">School Administrators</h3>
+                                <p class="mt-1 text-sm leading-6 text-slate-600">Configure school years, curriculum structure, user accounts, and monitor institution-wide academic indicators.</p>
                             </div>
                         </div>
+
                         <div class="role-row group">
-                            <span class="role-mark">T</span>
+                            <span class="role-mark">02</span>
                             <div class="min-w-0">
-                                <h3 class="font-bold text-primary-dark">Teachers and registrars</h3>
-                                <p class="mt-1 text-sm leading-6 text-slate-600">Handle grade entry, submission, review, and official record preparation.</p>
+                                <h3 class="text-sm font-bold text-primary-dark sm:text-base">Registrars</h3>
+                                <p class="mt-1 text-sm leading-6 text-slate-600">Audit grade submissions, enforce validation standards, and certify official Form 137 and SF6 records.</p>
                             </div>
                         </div>
+
                         <div class="role-row group">
-                            <span class="role-mark">S</span>
+                            <span class="role-mark">03</span>
                             <div class="min-w-0">
-                                <h3 class="font-bold text-primary-dark">Students</h3>
-                                <p class="mt-1 text-sm leading-6 text-slate-600">View authorized academic information through a focused student experience.</p>
+                                <h3 class="text-sm font-bold text-primary-dark sm:text-base">Faculty &amp; Class Advisers</h3>
+                                <p class="mt-1 text-sm leading-6 text-slate-600">Encode quarterly grades, review section performance, and submit records smoothly for formal verification.</p>
+                            </div>
+                        </div>
+
+                        <div class="role-row group">
+                            <span class="role-mark">04</span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-bold text-primary-dark sm:text-base">Enrolled Learners</h3>
+                                <p class="mt-1 text-sm leading-6 text-slate-600">View authorized academic standing and validated grades through a clean, read-only student portal.</p>
                             </div>
                         </div>
                     </div>
@@ -370,45 +553,84 @@
             </div>
         </section>
 
-        <section class="relative px-4 pb-20 pt-2 sm:px-6 sm:pb-24 lg:px-8">
-            <div class="landing-cta mx-auto max-w-6xl" data-reveal>
-                <div class="landing-cta-grain pointer-events-none absolute inset-0" aria-hidden="true"></div>
-                <div class="relative z-10 flex flex-col items-center gap-5 px-6 py-14 text-center sm:px-10 sm:py-16">
-                    <p class="landing-cta-kicker">Secure sign in</p>
-                    <h2 class="max-w-2xl text-2xl font-bold tracking-[-0.03em] text-white sm:text-[2.1rem]">Open the <em class="landing-serif landing-serif-gold">school workspace.</em></h2>
-                    <p class="max-w-xl text-sm leading-6 text-primary-100 sm:text-base">Sign in with your authorized SMIS account to continue to your dashboard.</p>
-                    <a href="{% url 'accounts:login' %}" class="landing-button-light mt-2">
-                        Sign in to SMIS
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 12h14m-5-5l5 5-5 5"/></svg>
-                    </a>
+        <!-- Formal Portal Access CTA -->
+        <section class="landing-surface-subtle border-t border-slate-200 px-5 py-16 sm:px-6 sm:py-20 lg:px-8">
+            <div class="landing-cta mx-auto max-w-7xl" data-reveal>
+                <div class="landing-hero-grid pointer-events-none absolute inset-0 opacity-35" aria-hidden="true"></div>
+                <div class="relative z-10 flex flex-col items-start justify-between gap-8 px-7 py-12 sm:px-12 sm:py-14 lg:flex-row lg:items-center">
+                    <div class="max-w-2xl">
+                        <div class="flex items-center gap-3">
+                            <span class="landing-gold-rule" aria-hidden="true"></span>
+                            <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-accent">Authorized Portal Access</p>
+                        </div>
+                        <h2 class="mt-4 text-2xl font-bold tracking-[-0.025em] text-white sm:text-[2.1rem]">
+                            Ready to access the <em class="landing-serif landing-serif-gold">school workspace?</em>
+                        </h2>
+                        <p class="mt-3 max-w-xl text-sm leading-6 text-slate-300 sm:text-base">
+                            Sign in with your institution-issued SMIS credentials to proceed to your assigned administrative, faculty, or learner dashboard.
+                        </p>
+                    </div>
+                    <div class="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">
+                        <a href="{% url 'accounts:login' %}" class="landing-btn-gold">
+                            Sign In to SMIS
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-5-5l5 5-5 5"/></svg>
+                        </a>
+                    </div>
                 </div>
             </div>
         </section>
     </main>
 
-    <footer class="landing-footer">
-        <div class="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:px-8">
-            <div class="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
-                <div class="max-w-sm">
-                    <div class="flex items-center gap-3">
-                        <img src="{% static 'images/psyu-logo.png' %}" alt="Paquito S. Yu Memorial NHS logo" class="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-white/80 shadow-md">
+    <!-- Official Institutional Footer -->
+    <footer class="landing-footer text-slate-300">
+        <div class="mx-auto max-w-7xl px-5 py-14 sm:px-6 lg:px-8">
+            <div class="grid gap-10 md:grid-cols-12">
+                <div class="md:col-span-5">
+                    <div class="flex items-center gap-3.5">
+                        <img src="{% static 'images/psyu-logo.png' %}" alt="Paquito S. Yu Memorial NHS seal" class="h-12 w-12 shrink-0 rounded-full bg-white object-cover p-0.5">
                         <div>
-                            <p class="text-sm font-bold text-primary-dark">Paquito S. Yu Memorial National High School</p>
-                            <p class="text-xs text-slate-500">School Management Information System</p>
+                            <p class="text-sm font-bold text-white">Paquito S. Yu Memorial National High School</p>
+                            <p class="mt-0.5 text-xs text-slate-400">Dumingag, Zamboanga del Sur &middot; Philippines</p>
                         </div>
                     </div>
-                    <p class="mt-4 text-sm leading-6 text-slate-500">One secure system for learner records, grades, Form 137, and school reporting.</p>
+                    <p class="mt-4 max-w-sm text-sm leading-6 text-slate-400">
+                        Official School Management Information System supporting disciplined learner record-keeping, grade validation, and DepEd-aligned reporting.
+                    </p>
                 </div>
-                <nav class="grid grid-cols-2 gap-x-14 gap-y-2.5 text-sm" aria-label="Footer navigation">
-                    <a href="#capabilities" class="footer-link">Capabilities</a>
-                    <a href="#workflow" class="footer-link">How it works</a>
-                    <a href="#about" class="footer-link">About</a>
-                    <a href="{% url 'accounts:login' %}" class="footer-link">Sign in</a>
-                </nav>
+
+                <div class="md:col-span-3">
+                    <h3 class="text-[11px] font-bold uppercase tracking-[0.18em] text-accent">Portal Navigation</h3>
+                    <nav class="mt-4 flex flex-col gap-2.5 text-sm" aria-label="Footer navigation">
+                        <a href="#overview" class="footer-link">Institutional Mandate</a>
+                        <a href="#capabilities" class="footer-link">Core Capabilities</a>
+                        <a href="#workflow" class="footer-link">Academic Governance</a>
+                        <a href="#about" class="footer-link">School Community</a>
+                        <a href="{% url 'accounts:login' %}" class="footer-link text-white">Portal Sign In &rarr;</a>
+                    </nav>
+                </div>
+
+                <div class="md:col-span-4">
+                    <h3 class="text-[11px] font-bold uppercase tracking-[0.18em] text-accent">System Standards</h3>
+                    <ul class="mt-4 space-y-2.5 text-sm text-slate-400">
+                        <li class="flex items-center gap-2.5">
+                            <span class="h-1.5 w-1.5 rounded-full bg-accent/80" aria-hidden="true"></span>
+                            DepEd K&ndash;12 Grading &amp; Transmutation
+                        </li>
+                        <li class="flex items-center gap-2.5">
+                            <span class="h-1.5 w-1.5 rounded-full bg-accent/80" aria-hidden="true"></span>
+                            Official Form 137 (SF10) &amp; SF6 Reporting
+                        </li>
+                        <li class="flex items-center gap-2.5">
+                            <span class="h-1.5 w-1.5 rounded-full bg-accent/80" aria-hidden="true"></span>
+                            Role-Based Access Control &amp; Audit Logging
+                        </li>
+                    </ul>
+                </div>
             </div>
-            <div class="mt-10 flex flex-col gap-2 border-t border-slate-900/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
-                <p class="text-xs text-slate-500">&copy; {% now "Y" %} Paquito S. Yu Memorial National High School. All rights reserved.</p>
-                <p class="text-xs text-slate-400">Records kept in order, for every learner.</p>
+
+            <div class="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+                <p>&copy; {% now "Y" %} Paquito S. Yu Memorial National High School. All rights reserved.</p>
+                <p>School Management Information System (SMIS) &middot; S.Y. {{ current_school_year|default:"2025-2026" }}</p>
             </div>
         </div>
     </footer>
