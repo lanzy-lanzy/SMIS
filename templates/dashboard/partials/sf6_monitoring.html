@@ -6,62 +6,62 @@
     <div class="grid gap-4 lg:grid-cols-2">
         <div class="surface-card p-5">
             <h3 class="font-semibold">Students by grade level</h3>
-            <p class="text-xs text-gray-600 dark:text-gray-300 mb-4">Enrollment by sex</p>
+            <p class="mb-4 text-xs text-gray-600 dark:text-gray-300">Enrollment by sex</p>
             <div style="position:relative;height:280px"><canvas id="sf6Enrollment" role="img" aria-label="Enrollment by grade level and sex"></canvas></div>
         </div>
-        <div class="surface-card p-5">
-            <h3 class="font-semibold">Learning progress and achievement</h3>
-            <form method="get" class="flex flex-wrap items-end gap-2 my-3">
-                <label class="table-filter-field">Grading term
-                    <select name="achievement_term" class="px-3 py-2">
-                        {% for period in term_achievement.periods %}
-                        <option value="{{ period.pk }}" {% if period == term_achievement.selected %}selected{% endif %}>{{ period.name }}{% if period.is_current %} (Current){% endif %}</option>
-                        {% empty %}<option value="">No grading terms configured</option>{% endfor %}
-                    </select>
-                </label>
-                <button type="submit" class="btn btn-primary btn-sm">View term</button>
-            </form>
-            <p class="text-xs text-gray-600 dark:text-gray-300 mb-4">{{ term_achievement.included }} learners with finalized marks · {{ term_achievement.missing }} without marks. Each student’s average uses their finalized subject marks for this term.</p>
-            <div style="position:relative;height:280px"><canvas id="sf6Achievement" role="img" aria-label="Achievement bands by sex"></canvas></div>
-        </div>
+
+        {% include 'dashboard/partials/achievement_card.html' %}
+
         <div class="surface-card p-5">
             <h3 class="font-semibold">Promotion outcomes</h3>
-            <p class="text-xs text-gray-600 dark:text-gray-300 mb-4">{{ sf6_monitoring.unclassified_total }} awaiting an outcome</p>
+            <p class="mb-4 text-xs text-gray-600 dark:text-gray-300">{{ sf6_monitoring.unclassified_total }} awaiting an outcome</p>
             <div style="position:relative;height:260px"><canvas id="sf6Outcomes" role="img" aria-label="Promoted, conditional, and retained learners"></canvas></div>
         </div>
         <details class="surface-card p-5">
             <summary class="cursor-pointer font-semibold">View the counts behind the graphs</summary>
-            <div class="overflow-x-auto mt-4">
+            <div class="mt-4 overflow-x-auto">
                 <table class="data-table">
-                    <thead><tr><th class="text-left p-2">Measure</th><th class="p-2">Male</th><th class="p-2">Female</th><th class="p-2">Total</th></tr></thead>
+                    <thead><tr><th class="p-2 text-left">Measure</th><th class="p-2">Male</th><th class="p-2">Female</th><th class="p-2">Total</th></tr></thead>
                     <tbody>{% for row in sf6_monitoring.rows %}{% if row.kind == 'total' or row.label == 'PROMOTED' or row.label == 'CONDITIONAL' or row.label == 'RETAINED' %}
-                    <tr><th class="text-left p-2">{{ row.label }}</th><td class="p-2">{{ row.total.male }}</td><td class="p-2">{{ row.total.female }}</td><td class="p-2">{{ row.total.total }}</td></tr>
+                    <tr><th class="p-2 text-left">{{ row.label }}</th><td class="p-2">{{ row.total.male }}</td><td class="p-2">{{ row.total.female }}</td><td class="p-2">{{ row.total.total }}</td></tr>
                     {% endif %}{% endfor %}</tbody>
                 </table>
-                <p class="mt-4 font-semibold">{{ term_achievement.selected.name|default:"Term achievement" }}</p>
-                <table class="data-table">
-                    <thead><tr><th class="text-left p-2">Average</th><th class="p-2">Male</th><th class="p-2">Female</th><th class="p-2">Total</th></tr></thead>
-                    <tbody>{% for label, count in term_achievement.rows %}
-                    <tr><th class="text-left p-2">{{ label }}</th><td class="p-2">{{ count.male }}</td><td class="p-2">{{ count.female }}</td><td class="p-2">{{ count.total }}</td></tr>
-                    {% endfor %}</tbody>
-                </table>
+                <div id="achievement-counts-table">
+                    <p class="mt-4 font-semibold">
+                        {{ term_achievement.selected_term_label }}{% if term_achievement.selected_grade %} · {{ term_achievement.selected_grade_label }}{% endif %}
+                    </p>
+                    <table class="data-table">
+                        <thead><tr><th class="p-2 text-left">Average</th><th class="p-2">Male</th><th class="p-2">Female</th><th class="p-2">Total</th></tr></thead>
+                        <tbody>{% for label, count in term_achievement.rows %}
+                        <tr><th class="p-2 text-left">{{ label }}</th><td class="p-2">{{ count.male }}</td><td class="p-2">{{ count.female }}</td><td class="p-2">{{ count.total }}</td></tr>
+                        {% endfor %}</tbody>
+                    </table>
+                </div>
             </div>
             <p class="mt-3 text-xs text-gray-600 dark:text-gray-300">Term averages round to a whole number for achievement bands. Promotion outcomes include recorded promotions.</p>
         </details>
     </div>
 </section>
 {{ sf6_monitoring|json_script:"sf6-monitoring-data" }}
-{{ term_achievement.counts|json_script:"term-achievement-data" }}
 <script>
 (() => {
     if (!window.Chart) return;
     const summary = JSON.parse(document.getElementById('sf6-monitoring-data').textContent);
     const rows = summary.rows.filter(row => row.kind === 'data');
     const enrollment = summary.rows.find(row => row.kind === 'total');
-    const ink = document.documentElement.classList.contains('dark') ? '#cbd5e1' : '#475569';
     const colors = ['#3b82f6', '#a78bfa'];
+
+    function chartInk() {
+        return document.documentElement.classList.contains('dark') ? '#cbd5e1' : '#475569';
+    }
+
     function bars(id, labels, cells, horizontal) {
-        new Chart(document.getElementById(id), {
+        const canvas = document.getElementById(id);
+        if (!canvas) return;
+        const existing = Chart.getChart(canvas);
+        if (existing) existing.destroy();
+        const ink = chartInk();
+        new Chart(canvas, {
             type: 'bar',
             data: { labels, datasets: ['Male', 'Female'].map((label, index) => ({
                 label, data: cells.map(cell => cell[index ? 'female' : 'male']),
@@ -77,8 +77,15 @@
             }
         });
     }
+
+    window.renderSf6AchievementChart = function () {
+        const dataEl = document.getElementById('term-achievement-data');
+        if (!dataEl) return;
+        bars('sf6Achievement', ['74 and below', '75–79', '80–84', '85–89', '90–100'], JSON.parse(dataEl.textContent), true);
+    };
+
     bars('sf6Enrollment', summary.levels.map(level => level.label), enrollment.cells, false);
-    bars('sf6Achievement', ['74 and below', '75–79', '80–84', '85–89', '90–100'], JSON.parse(document.getElementById('term-achievement-data').textContent), true);
+    window.renderSf6AchievementChart();
     new Chart(document.getElementById('sf6Outcomes'), {
         type: 'doughnut',
         data: {
@@ -87,7 +94,7 @@
                 backgroundColor: ['#10b981', '#f59e0b', '#f43f5e', '#94a3b8'], borderWidth: 2, hoverOffset: 5 }]
         },
         options: { responsive: true, maintainAspectRatio: false, cutout: '68%',
-            plugins: { legend: { position: 'bottom', labels: { color: ink, usePointStyle: true } } } }
+            plugins: { legend: { position: 'bottom', labels: { color: chartInk(), usePointStyle: true } } } }
     });
 })();
 </script>

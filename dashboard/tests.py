@@ -106,3 +106,78 @@ class DashboardSchoolYearTests(TestCase):
         registrar = User.objects.create_user(username='registrar', role='registrar')
         self.client.force_login(registrar)
         self.assertNotContains(self.client.get(reverse('dashboard:index')), 'Grade performance by term')
+
+    def test_achievement_supports_all_terms_and_grade_level_without_full_reload(self):
+        original = Grade.objects.get(school_year=self.current_year)
+        grade7 = original.section.grade_level
+        grade8 = GradeLevel.objects.create(name='Grade 8', level=8)
+        section8 = Section.objects.create(name='B', school_year=self.current_year, grade_level=grade8)
+        subject8 = Subject.objects.create(name='Science', code='SCI8', grade_level=grade8)
+        learner8 = Student.objects.create(
+            lrn='g8-1', first_name='Eight', last_name='Learner', sex='F',
+            birthdate=date(2011, 1, 1), status='active', grade_level=grade8,
+            section=section8, school_year=self.current_year,
+        )
+        term2 = GradingPeriod.objects.create(name='Second Term', order=2, school_year=self.current_year)
+        # Original learner (Grade 7, M) had 70 in Term 0; give 90 in Term 2 -> average across all terms = 80 (band 80-84)
+        Grade.objects.create(
+            student=original.student, subject=original.subject, section=original.section,
+            school_year=self.current_year, grading_period=term2, status='validated', quarter_grade=90,
+        )
+        # Grade 8 learner (F) has 92 in Term 2 -> band 90-100
+        Grade.objects.create(
+            student=learner8, subject=subject8, section=section8,
+            school_year=self.current_year, grading_period=term2, status='validated', quarter_grade=92,
+        )
+
+        self.client.force_login(self.admin)
+        # All terms + all grade levels via HTMX partial endpoint
+        resp = self.client.get(
+            reverse('dashboard:achievement_partial'),
+            {'achievement_term': 'all', 'achievement_grade': 'all'},
+            HTTP_HX_REQUEST='true',
+        )
+        self.assertEqual(resp.status_code, 200)
+        ta = resp.context['term_achievement']
+        self.assertTrue(ta['is_all_terms'])
+        self.assertEqual(ta['included'], 2)
+        self.assertEqual(ta['counts'][2]['male'], 1)    # 80-84 band
+        self.assertEqual(ta['counts'][4]['female'], 1)  # 90-100 band
+        self.assertContains(resp, 'hx-swap-oob="outerHTML"')
+
+        # Filter to Grade 8 only + all terms
+        resp_g8 = self.client.get(
+            reverse('dashboard:achievement_partial'),
+            {'achievement_term': 'all', 'achievement_grade': str(grade8.pk)},
+            HTTP_HX_REQUEST='true',
+        )
+        self.assertEqual(resp_g8.status_code, 200)
+        ta_g8 = resp_g8.context['term_achievement']
+        self.assertEqual(ta_g8['selected_grade'], grade8)
+        self.assertEqual(ta_g8['included'], 1)
+        self.assertEqual(ta_g8['counts'][4]['female'], 1)
+
+        # Non-admin blocked from achievement partial
+        self.client.force_login(self.teacher)
+        self.assertEqual(self.client.get(reverse('dashboard:achievement_partial')).status_code, 403)
+
+    def test_teacher_dashboard_has_learners_by_sex_shares(self):
+        self.client.force_login(self.teacher)
+        response = self.client.get(reverse('dashboard:index'))
+        self.assertEqual(response.context['male_share'], 100)
+        self.assertEqual(response.context['female_share'], 0)
+        self.assertContains(response, 'No. of Learners')
+        self.assertContains(response, '100% of learners')
+
+    def test_reports_index_categorizes_analytics_and_school_forms(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('reports:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Academic Performance Analytics')
+        self.assertContains(response, 'Grade Trend Analysis')
+        self.assertContains(response, 'Section Performance')
+        self.assertContains(response, 'At-Risk Students')
+        self.assertContains(response, 'School Forms &amp; Reports')
+        self.assertContains(response, 'School Form 6 (SF6)')
+        self.assertContains(response, 'School Form 10 (SF10 / Form 137)')
+        self.assertNotContains(response, '<span>Form 137</span>')

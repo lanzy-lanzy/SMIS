@@ -224,26 +224,40 @@
 
     <!-- Stats Cards -->
     <div class="kpi-grid">
-        <!-- No. of Learners -->
+        <!-- Learners by Sex -->
         <div class="kpi-card" style="--kpi-accent:#2F6FE0; --kpi-accent-2:#1B2A5B; --kpi-glow:rgba(47,111,224,0.20);">
-            <div class="flex items-center gap-3">
-                <div class="kpi-icon">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="9.5" cy="7.5" r="4"/><path d="M4.5 21v-1.5a5 5 0 015-5h0a5 5 0 015 5V21"/><path d="M17 5v6M14 8h6"/></svg>
-                </div>
-                <div class="min-w-0">
-                    <p class="kpi-value">{{ total_learners }}</p>
-                    <p class="kpi-label">No. of Learners</p>
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="kpi-icon shrink-0">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="9.5" cy="7.5" r="4"/><path d="M4.5 21v-1.5a5 5 0 015-5h0a5 5 0 015 5V21"/><path d="M17 5v6M14 8h6"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="kpi-value">{{ total_learners }}</p>
+                        <p class="kpi-label">No. of Learners</p>
+                    </div>
                 </div>
             </div>
-            <div class="kpi-split">
-                <div class="kpi-mini">
-                    <span>Male</span>
-                    <strong>{{ male_learners }}</strong>
+            <div class="mt-3 grid grid-cols-2 gap-2">
+                <div class="rounded-xl bg-primary-50 p-2.5 dark:bg-primary-700/25">
+                    <div class="flex items-center gap-1 text-primary-700 dark:text-primary-300">
+                        <svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="10" cy="14" r="5.5"/><path d="M14 10l7-7M15 3h6v6"/></svg>
+                        <p class="text-[11px] font-semibold">Male</p>
+                    </div>
+                    <p class="mt-1 text-lg font-bold leading-none tracking-[-0.03em] text-gray-900 dark:text-white">{{ male_learners }}</p>
+                    <p class="mt-0.5 text-[10px] font-medium text-primary-600 dark:text-primary-300">{{ male_share }}% of learners</p>
                 </div>
-                <div class="kpi-mini">
-                    <span>Female</span>
-                    <strong>{{ female_learners }}</strong>
+                <div class="rounded-xl bg-secondary-50 p-2.5 dark:bg-secondary-700/25">
+                    <div class="flex items-center gap-1 text-secondary-700 dark:text-secondary-500">
+                        <svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5.5"/><path d="M12 13.5V21M9 17.5h6"/></svg>
+                        <p class="text-[11px] font-semibold">Female</p>
+                    </div>
+                    <p class="mt-1 text-lg font-bold leading-none tracking-[-0.03em] text-gray-900 dark:text-white">{{ female_learners }}</p>
+                    <p class="mt-0.5 text-[10px] font-medium text-secondary-700 dark:text-secondary-500">{{ female_share }}% of learners</p>
                 </div>
+            </div>
+            <div class="mt-3 flex h-2 overflow-hidden rounded-full bg-gray-200/80 dark:bg-white/10">
+                <span class="bg-primary transition-[width] duration-500 dark:bg-primary-400" style="width: {{ male_share }}%"></span>
+                <span class="bg-secondary transition-[width] duration-500 dark:bg-secondary-500" style="width: {{ female_share }}%"></span>
             </div>
         </div>
 

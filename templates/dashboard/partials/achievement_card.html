@@ -1,0 +1,67 @@
+<div id="achievement-card" class="surface-card p-5">
+    <div class="flex items-start justify-between gap-2">
+        <h3 class="font-semibold text-gray-900 dark:text-white">Learning progress and achievement</h3>
+        <span id="achievement-loading" class="htmx-indicator text-xs font-medium text-primary dark:text-primary-300">Updating…</span>
+    </div>
+    <form
+        method="get"
+        action="{% url 'dashboard:index' %}"
+        hx-get="{% url 'dashboard:achievement_partial' %}"
+        hx-target="#achievement-card"
+        hx-swap="outerHTML"
+        hx-trigger="change from:select, submit"
+        hx-indicator="#achievement-loading"
+        class="my-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2"
+    >
+        <label class="table-filter-field">Grading term
+            <select name="achievement_term" class="px-3 py-2">
+                <option value="all" {% if term_achievement.is_all_terms %}selected{% endif %}>All terms</option>
+                {% for period in term_achievement.periods %}
+                <option value="{{ period.pk }}" {% if period == term_achievement.selected %}selected{% endif %}>{{ period.name }}{% if period.is_current %} (Current){% endif %}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="table-filter-field">Grade level
+            <select name="achievement_grade" class="px-3 py-2">
+                <option value="all" {% if not term_achievement.selected_grade %}selected{% endif %}>All grade levels</option>
+                {% for level in term_achievement.grade_levels %}
+                <option value="{{ level.pk }}" {% if level == term_achievement.selected_grade %}selected{% endif %}>{{ level.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <noscript class="sm:col-span-2">
+            <button type="submit" class="btn btn-primary btn-sm">Apply filter</button>
+        </noscript>
+    </form>
+    <p class="mb-4 text-xs text-gray-600 dark:text-gray-300">
+        {{ term_achievement.included }} learner{{ term_achievement.included|pluralize }} with finalized marks · {{ term_achievement.missing }} without marks.
+        {% if term_achievement.is_all_terms %}
+            Each student’s average combines their finalized term averages across all terms
+        {% else %}
+            Each student’s average uses their finalized subject marks for {{ term_achievement.selected_term_label }}
+        {% endif %}
+        {% if term_achievement.selected_grade %} ({{ term_achievement.selected_grade_label }}){% endif %}.
+    </p>
+    <div style="position:relative;height:280px"><canvas id="sf6Achievement" role="img" aria-label="Achievement bands by sex"></canvas></div>
+    {{ term_achievement.counts|json_script:"term-achievement-data" }}
+    <script>
+    (function () {
+        if (window.renderSf6AchievementChart) {
+            window.renderSf6AchievementChart();
+        }
+    })();
+    </script>
+</div>
+{% if include_oob %}
+<div id="achievement-counts-table" hx-swap-oob="outerHTML">
+    <p class="mt-4 font-semibold">
+        {{ term_achievement.selected_term_label }}{% if term_achievement.selected_grade %} · {{ term_achievement.selected_grade_label }}{% endif %}
+    </p>
+    <table class="data-table">
+        <thead><tr><th class="p-2 text-left">Average</th><th class="p-2">Male</th><th class="p-2">Female</th><th class="p-2">Total</th></tr></thead>
+        <tbody>{% for label, count in term_achievement.rows %}
+        <tr><th class="p-2 text-left">{{ label }}</th><td class="p-2">{{ count.male }}</td><td class="p-2">{{ count.female }}</td><td class="p-2">{{ count.total }}</td></tr>
+        {% endfor %}</tbody>
+    </table>
+</div>
+{% endif %}

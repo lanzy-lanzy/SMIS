@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.http import HttpResponseForbidden
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, Avg
 from django.utils import timezone
@@ -180,7 +181,11 @@ def index(request):
     ]
 
     return render(request, 'dashboard/index.html', {
-        'term_achievement': term_achievement(current_sy, learners, official_grades, request.GET.get('achievement_term')) if request.user.is_admin else None,
+        'term_achievement': term_achievement(
+            current_sy, learners, official_grades,
+            request.GET.get('achievement_term'),
+            request.GET.get('achievement_grade'),
+        ) if request.user.is_admin else None,
         'sf6_monitoring': build_sf6_summary(current_sy) if request.user.is_admin else None,
         'performance_groups': grade_performance(current_sy, learners, official_grades) if request.user.is_admin else None,
         'total_students': total_students,
@@ -205,6 +210,33 @@ def index(request):
         'announcements': announcements,
         'current_sy': current_sy,
         'today': timezone.now(),
+    })
+
+
+@login_required
+def achievement_partial(request):
+    if not request.user.is_admin:
+        return HttpResponseForbidden('Administrators only.')
+
+    current_sy = SchoolYear.objects.filter(is_current=True).first()
+    learners = (
+        Student.objects.filter(school_year=current_sy, status__in=ENROLLED_STATUSES)
+        if current_sy else Student.objects.none()
+    )
+    official_grades = (
+        Grade.objects.filter(school_year=current_sy, status__in=['validated', 'locked'])
+        if current_sy else Grade.objects.none()
+    )
+    achievement = term_achievement(
+        current_sy,
+        learners,
+        official_grades,
+        request.GET.get('achievement_term'),
+        request.GET.get('achievement_grade'),
+    )
+    return render(request, 'dashboard/partials/achievement_card.html', {
+        'term_achievement': achievement,
+        'include_oob': True,
     })
 
 
@@ -234,6 +266,10 @@ def _teacher_dashboard(request, current_sy):
         female=Count('id', filter=Q(sex='F')),
     )
     total_learners = learners.count()
+    male_learners = sex_counts['male']
+    female_learners = sex_counts['female']
+    male_share = round(male_learners * 100 / total_learners) if total_learners else 0
+    female_share = round(female_learners * 100 / total_learners) if total_learners else 0
 
     current_period = GradingPeriod.objects.filter(school_year=current_sy, is_current=True).first()
     pending_submissions = GradeSubmission.objects.filter(
@@ -255,8 +291,10 @@ def _teacher_dashboard(request, current_sy):
         'assignments': assignments,
         'current_period': current_period,
         'total_learners': total_learners,
-        'male_learners': sex_counts['male'],
-        'female_learners': sex_counts['female'],
+        'male_learners': male_learners,
+        'female_learners': female_learners,
+        'male_share': male_share,
+        'female_share': female_share,
         'total_classes': assignments.count(),
         'pending_submissions': pending_submissions,
         'validated_grades': validated_grades,
