@@ -181,3 +181,19 @@ class DashboardSchoolYearTests(TestCase):
         self.assertContains(response, 'School Form 6 (SF6)')
         self.assertContains(response, 'School Form 10 (SF10 / Form 137)')
         self.assertNotContains(response, '<span>Form 137</span>')
+
+    def test_school_years_and_terms_are_admin_only_and_hidden_from_registrar(self):
+        registrar = User.objects.create_user(username='registrar_cal', role='registrar')
+        self.client.force_login(registrar)
+        dash = self.client.get(reverse('dashboard:index'))
+        self.assertNotContains(dash, '<span>Terms</span>')
+        self.assertNotContains(dash, '<span>School Years</span>')
+
+        for url_name in ('academics:school_year_list', 'academics:grading_period_list'):
+            res = self.client.get(reverse(url_name))
+            self.assertNotEqual(res.status_code, 200)
+
+        self.client.force_login(self.admin)
+        for url_name in ('academics:school_year_list', 'academics:grading_period_list'):
+            res = self.client.get(reverse(url_name))
+            self.assertEqual(res.status_code, 200)

@@ -99,7 +99,7 @@
                 <span class="inline-flex items-center gap-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 px-4 py-2.5 text-sm font-medium text-emerald-800 dark:text-emerald-200 whitespace-nowrap">
                     {{ period_completion.next_period.name }} is already open
                 </span>
-                {% else %}
+                {% elif user.is_admin %}
                 <form method="post" action="{% url 'academics:grading_period_open_next' period_completion.period.pk %}" class="shrink-0">
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{% url 'grades:submission_list' %}?period={{ period_completion.next_period.pk }}">

@@ -24,7 +24,7 @@ from .forms import (
     GradingPeriodForm,
 )
 from accounts.models import AuditLog
-from accounts.decorators import admin_required, registrar_or_admin_required
+from accounts.decorators import admin_required
 from students.models import Student
 
 
@@ -33,7 +33,7 @@ def academics_index(request):
     return render(request, "academics/index.html")
 
 
-@registrar_or_admin_required
+@admin_required
 def school_year_list(request):
     school_years = SchoolYear.objects.order_by("-is_current", "-name", "pk")
     paginator = Paginator(school_years, 15)
@@ -50,7 +50,7 @@ def school_year_list(request):
     )
 
 
-@registrar_or_admin_required
+@admin_required
 def school_year_create(request):
     if request.method == "POST":
         form = SchoolYearForm(request.POST)
@@ -85,7 +85,7 @@ def school_year_create(request):
     )
 
 
-@registrar_or_admin_required
+@admin_required
 def school_year_edit(request, pk):
     sy = get_object_or_404(SchoolYear, pk=pk)
     if request.method == "POST":
@@ -121,7 +121,7 @@ def school_year_edit(request, pk):
     )
 
 
-@registrar_or_admin_required
+@admin_required
 def school_year_delete(request, pk):
     sy = get_object_or_404(SchoolYear, pk=pk)
     if request.method == "POST":
@@ -920,7 +920,7 @@ def assignment_delete(request, pk):
     )
 
 
-@registrar_or_admin_required
+@admin_required
 def grading_period_list(request):
     school_years = list(SchoolYear.objects.order_by("-is_current", "-name"))
     year_filter, year = select_school_year(request.GET.get("school_year"), school_years)
@@ -937,7 +937,7 @@ def grading_period_list(request):
     return render(request, template, context)
 
 
-@registrar_or_admin_required
+@admin_required
 def grading_period_create(request):
     if request.method == "POST":
         form = GradingPeriodForm(request.POST)
@@ -972,7 +972,7 @@ def grading_period_create(request):
     )
 
 
-@registrar_or_admin_required
+@admin_required
 def grading_period_edit(request, pk):
     period = get_object_or_404(GradingPeriod, pk=pk)
     if request.method == "POST":
@@ -1008,7 +1008,7 @@ def grading_period_edit(request, pk):
     )
 
 
-@registrar_or_admin_required
+@admin_required
 def grading_period_delete(request, pk):
     if request.method != "POST":
         return HttpResponse(status=405)
@@ -1031,7 +1031,7 @@ def grading_period_delete(request, pk):
     return redirect("academics:grading_period_list")
 
 
-@registrar_or_admin_required
+@admin_required
 def grading_period_toggle_submissions(request, pk):
     if request.method != 'POST':
         return HttpResponse(status=405)
@@ -1059,7 +1059,7 @@ def grading_period_toggle_submissions(request, pk):
     return redirect("academics:grading_period_list")
 
 
-@registrar_or_admin_required
+@admin_required
 def grading_period_toggle_current(request, pk):
     if request.method != 'POST':
         return HttpResponse(status=405)
@@ -1087,7 +1087,7 @@ def grading_period_toggle_current(request, pk):
     return redirect("academics:grading_period_list")
 
 
-@registrar_or_admin_required
+@admin_required
 def grading_period_open_next(request, pk):
     """Advance the academic calendar: close the completed quarter's submissions and
     open + activate the next quarter so teachers can begin encoding it."""
