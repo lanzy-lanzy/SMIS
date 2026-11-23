@@ -153,7 +153,7 @@ def _build_grade_rows(subjects_map, terms, completed):
         for period in terms[:REPORT_TERM_COUNT]:
             grade = period_map.get(period.order)
             value = None
-            if grade is not None and period.order in completed:
+            if grade is not None and (completed is None or period.order in completed):
                 value = grade.quarter_grade
                 included.append(value)
             term_cells.append(value)
@@ -586,9 +586,11 @@ def _report_card_context(request, student):
 
     grades = (
         Grade.objects
-        .filter(student=student, school_year=school_year, status__in=['validated', 'locked'])
+        .filter(student=student, school_year=school_year, quarter_grade__gt=0)
         .select_related('subject', 'grading_period')
     ) if school_year else Grade.objects.none()
+
+    has_unvalidated_grades = grades.exclude(status__in=['validated', 'locked']).exists() if school_year else False
 
     subjects_map = {}
     for grade in grades:
@@ -603,7 +605,8 @@ def _report_card_context(request, student):
                 continue
         subjects_map.setdefault(grade.subject.name, {})[grade.grading_period.order] = grade
 
-    rows = _build_grade_rows(subjects_map, terms, completed)
+    # Reflect all encoded term grades on the SF9 card (not only fully approved terms).
+    rows = _build_grade_rows(subjects_map, terms, completed=None)
 
     mapeh_parent = next((r for r in rows if r['name'] == 'MAPEH' and r['final'] is not None), None)
     finals = [
@@ -651,6 +654,7 @@ def _report_card_context(request, student):
         ],
         'descriptor_rows': PERFORMANCE_DESCRIPTORS,
         'has_exportable_term': bool(completed),
+        'has_unvalidated_grades': has_unvalidated_grades,
     }
 
 

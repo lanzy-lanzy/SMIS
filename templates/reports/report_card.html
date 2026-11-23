@@ -182,9 +182,13 @@
         </button>
     </div>
 
-    {% if not has_exportable_term %}
+    {% if has_unvalidated_grades %}
     <div class="banner">
-        No term has been completed yet for {{ school_year.name|default:"this school year" }}. Report cards unlock once every grade submission for a term is approved. Term grades below will appear only for finished terms.
+        Note: Some encoded term grades shown below are still pending registrar validation.
+    </div>
+    {% elif not has_exportable_term and not general_average %}
+    <div class="banner">
+        No encoded term grades found yet for {{ school_year.name|default:"this school year" }}.
     </div>
     {% endif %}
 

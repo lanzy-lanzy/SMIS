@@ -272,6 +272,33 @@ class TeacherReportingTests(Python314ContextCopyMixin, TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
+    def test_report_card_reflects_encoded_terms_including_draft_and_submitted(self):
+        period2, _ = GradingPeriod.objects.get_or_create(
+            order=2, school_year=self.sy, defaults={'name': 'Second Term'},
+        )
+        period3, _ = GradingPeriod.objects.get_or_create(
+            order=3, school_year=self.sy, defaults={'name': 'Third Term'},
+        )
+        Grade.objects.update_or_create(
+            student=self.boy, subject=self.filipino, section=self.section_a,
+            school_year=self.sy, grading_period=period2, component='',
+            defaults={'status': 'submitted', 'quarter_grade': Decimal('88')},
+        )
+        Grade.objects.update_or_create(
+            student=self.boy, subject=self.filipino, section=self.section_a,
+            school_year=self.sy, grading_period=period3, component='',
+            defaults={'status': 'draft', 'quarter_grade': Decimal('91')},
+        )
+        self.client.force_login(self.adviser)
+        response = self.client.get(
+            reverse('reports:report_card', args=[self.boy.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        filipino_row = next(r for r in response.context['rows'] if r['name'] == 'Filipino')
+        self.assertEqual(filipino_row['term_cells'][1], Decimal('88'))
+        self.assertEqual(filipino_row['term_cells'][2], Decimal('91'))
+        self.assertTrue(response.context['has_unvalidated_grades'])
+
     def test_report_card_denied_for_other_section(self):
         self.client.force_login(self.adviser)
         response = self.client.get(
