@@ -6,7 +6,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from academics.models import GradingPeriod, Subject
 
 from .mapeh import MAPEH_COMPONENTS, is_mapeh_subject, mapeh_component, merge_mapeh_grades
-from .models import Grade
+from .models import Grade, GradeSubmission
 
 
 def annual_results(school_year, grade_by_student):
@@ -25,17 +25,30 @@ def annual_results(school_year, grade_by_student):
     for subject in Subject.objects.filter(grade_level_id__in=grade_levels):
         subjects_by_level[subject.grade_level_id].append(subject)
 
+    approved_scopes = set(
+        GradeSubmission.objects.filter(
+            school_year=school_year,
+            status='approved',
+            grading_period_id__in=period_ids.values(),
+        ).values_list('subject_id', 'section_id', 'grading_period_id')
+    )
+
     grades_by_student = defaultdict(list)
     grades = Grade.objects.filter(
         school_year=school_year, student_id__in=grade_by_student,
         grading_period_id__in=period_ids.values(), subject__grade_level_id__in=grade_levels,
     ).values_list(
-        'student_id', 'subject_id', 'subject__grade_level_id', 'grading_period_id',
+        'student_id', 'subject_id', 'section_id', 'subject__grade_level_id', 'grading_period_id',
         'component', 'quarter_grade', 'status',
     ).order_by()
-    for student_id, subject_id, level_id, period_id, component, mark, status in grades:
+    for student_id, subject_id, section_id, level_id, period_id, component, mark, status in grades:
         if level_id == grade_by_student[student_id]:
-            grades_by_student[student_id].append((subject_id, period_id, component, mark, status))
+            effective_status = (
+                'validated'
+                if status in ('validated', 'locked') or (subject_id, section_id, period_id) in approved_scopes
+                else status
+            )
+            grades_by_student[student_id].append((subject_id, period_id, component, mark, effective_status))
 
     return {
         student_id: _subject_finals(period_ids.values(), subjects_by_level[level_id], grades_by_student[student_id])

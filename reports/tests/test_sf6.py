@@ -9,7 +9,7 @@ from django.urls import reverse
 
 from academics.models import GradeLevel, GradingPeriod, SchoolYear, Section, Subject
 from accounts.models import User
-from grades.models import Grade
+from grades.models import Grade, GradeSubmission
 from reports.sf6 import build_sf6_summary, classify_finals
 from students.models import Student, StudentPromotion
 
@@ -178,6 +178,21 @@ class Sf6SummaryTests(TestCase):
         self.assertEqual(cells['GRADE 7'], {'male': 0, 'female': 1, 'total': 1})
         self.assertEqual(cells['GRADE 8'], {'male': 1, 'female': 0, 'total': 1})
         self.assertEqual(self._row('PROMOTED')['total'], {'male': 1, 'female': 1, 'total': 2})
+
+    def test_approved_submission_counts_draft_grades_in_sf6(self):
+        teacher = User.objects.create_user(username='sf6_teacher', role='teacher')
+        GradeSubmission.objects.create(
+            teacher=teacher,
+            subject=self.english7,
+            section=self.section7,
+            school_year=self.sy,
+            grading_period=self.term3,
+            status='approved',
+        )
+        summary = build_sf6_summary(self.sy)
+        promoted = next(r for r in summary['rows'] if r['label'] == 'PROMOTED')
+        self.assertEqual(promoted['total'], {'male': 2, 'female': 1, 'total': 3})
+        self.assertEqual(summary['unclassified_total'], 0)
 
     def test_conditional_and_retained_counts(self):
         self.assertEqual(
