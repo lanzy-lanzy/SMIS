@@ -246,6 +246,7 @@ def _teacher_dashboard(request, current_sy):
         TeacherAssignment.objects
         .filter(teacher=request.user, school_year=current_sy)
         .select_related('subject', 'section', 'section__grade_level')
+        .prefetch_related('schedules')
         .annotate(
             learner_count=Count(
                 'section__student',

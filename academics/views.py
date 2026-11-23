@@ -664,7 +664,7 @@ def assignment_list(request):
 
     assignments = TeacherAssignment.objects.select_related(
         "teacher", "subject", "section", "section__grade_level", "school_year",
-    ).order_by("teacher__last_name", "teacher__first_name", "subject__name", "section__name", "pk")
+    ).prefetch_related("schedules").order_by("teacher__last_name", "teacher__first_name", "subject__name", "section__name", "pk")
     sections = Section.objects.select_related("grade_level", "school_year", "adviser")
     if year:
         assignments = assignments.filter(school_year=year)
@@ -869,11 +869,11 @@ def assignment_export(request):
     response['Content-Disposition'] = 'attachment; filename="teacher_assignments.csv"'
     
     writer = csv.writer(response)
-    writer.writerow(['Teacher', 'Email', 'Subject', 'Section', 'Grade Level', 'School Year', 'Days', 'Start Time', 'End Time', 'Room'])
+    writer.writerow(['Teacher', 'Email', 'Subject', 'Section', 'Grade Level', 'School Year', 'Schedule'])
     
     assignments = TeacherAssignment.objects.select_related(
         "teacher", "subject", "section", "section__grade_level", "school_year"
-    ).all()
+    ).prefetch_related("schedules").all()
     
     for assignment in assignments:
         writer.writerow([
@@ -883,10 +883,7 @@ def assignment_export(request):
             assignment.section.name,
             assignment.section.grade_level,
             assignment.school_year.name,
-            assignment.days_display,
-            assignment.start_time.strftime('%H:%M') if assignment.start_time else '',
-            assignment.end_time.strftime('%H:%M') if assignment.end_time else '',
-            assignment.room,
+            assignment.schedule_display,
         ])
     
     return response

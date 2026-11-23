@@ -136,18 +136,82 @@ class TeacherAssignment(models.Model):
 
     @property
     def has_schedule(self):
-        return bool(self.day_list and self.start_time and self.end_time)
+        return bool(self.schedule_groups)
+
+    @property
+    def schedule_groups(self):
+        """Group per-day schedule slots that share the same time & room for compact display."""
+        if self.pk:
+            # Use prefetched cache when available to avoid N+1 queries
+            prefetched = getattr(self, '_prefetched_objects_cache', {})
+            slots = list(prefetched['schedules']) if 'schedules' in prefetched else list(self.schedules.all())
+        else:
+            slots = []
+
+        if slots:
+            grouped = {}
+            for slot in slots:
+                key = (slot.start_time, slot.end_time, slot.room or '')
+                grouped.setdefault(key, []).append(slot.day)
+            result = []
+            for (start_t, end_t, room), day_codes in grouped.items():
+                ordered_days = [d for d in self.DAY_ORDER if d in set(day_codes)]
+                days_label = 'Mon–Fri' if ordered_days == ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] else ', '.join(ordered_days)
+                start_str = start_t.strftime('%I:%M %p').lstrip('0')
+                end_str = end_t.strftime('%I:%M %p').lstrip('0')
+                result.append({
+                    'days': days_label,
+                    'time_range': f"{start_str} – {end_str}",
+                    'room': room,
+                })
+            return result
+
+        # Fallback for legacy single-slot fields
+        if self.day_list and self.start_time and self.end_time:
+            return [{
+                'days': self.days_display,
+                'time_range': self.time_range,
+                'room': self.room,
+            }]
+        return []
 
     @property
     def schedule_display(self):
+        groups = self.schedule_groups
+        if not groups:
+            return ''
         parts = []
-        if self.days_display:
-            parts.append(self.days_display)
-        if self.time_range:
-            parts.append(self.time_range)
-        if self.room:
-            parts.append(self.room)
-        return ' · '.join(parts)
+        for g in groups:
+            line = f"{g['days']} · {g['time_range']}"
+            if g['room']:
+                line += f" · {g['room']}"
+            parts.append(line)
+        return '; '.join(parts)
+
+
+class AssignmentSchedule(models.Model):
+    DAY_CHOICES = TeacherAssignment.DAY_CHOICES
+    DAY_ORDER = TeacherAssignment.DAY_ORDER
+
+    assignment = models.ForeignKey(
+        TeacherAssignment, on_delete=models.CASCADE, related_name='schedules'
+    )
+    day = models.CharField(max_length=3, choices=DAY_CHOICES)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    room = models.CharField(max_length=50, blank=True, default='')
+
+    class Meta:
+        ordering = ['start_time', 'day']
+
+    def __str__(self):
+        return f"{self.get_day_display()} {self.time_range}"
+
+    @property
+    def time_range(self):
+        start = self.start_time.strftime('%I:%M %p').lstrip('0')
+        end = self.end_time.strftime('%I:%M %p').lstrip('0')
+        return f"{start} – {end}"
 
 
 class GradingPeriod(models.Model):

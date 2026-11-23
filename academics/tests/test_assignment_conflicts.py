@@ -145,3 +145,80 @@ class AssignmentConflictTests(TestCase):
         list_resp = self.client.get(reverse('academics:assignment_list'))
         self.assertContains(list_resp, '8:00 AM – 9:00 AM')
         self.assertContains(list_resp, 'Room 102')
+
+    def test_different_schedules_per_day_and_conflict_detection(self):
+        english = Subject.objects.create(name='English', code='ENG7B', grade_level=self.subject.grade_level)
+        edit_url = reverse('academics:assignment_edit', args=[self.assignment.pk])
+
+        # Intra-assignment overlap on Monday is rejected
+        res_self = self.client.post(edit_url, {
+            'teacher': self.teacher.pk,
+            'subject': self.subject.pk,
+            'section': self.section.pk,
+            'school_year': self.year.pk,
+            'slot_day': ['Mon', 'Mon'],
+            'slot_start': ['08:00', '08:30'],
+            'slot_end': ['09:00', '09:30'],
+            'slot_room': ['Room 101', 'Room 101'],
+        })
+        self.assertContains(res_self, 'Overlapping schedule on Monday')
+
+        # Save different schedules per day: Mon/Wed 8:00-9:00 (Room 101) & Fri 10:00-11:30 (Lab 1)
+        res_save = self.client.post(edit_url, {
+            'teacher': self.teacher.pk,
+            'subject': self.subject.pk,
+            'section': self.section.pk,
+            'school_year': self.year.pk,
+            'slot_day': ['Mon', 'Wed', 'Fri'],
+            'slot_start': ['08:00', '08:00', '10:00'],
+            'slot_end': ['09:00', '09:00', '11:30'],
+            'slot_room': ['Room 101', 'Room 101', 'Lab 1'],
+        })
+        self.assertRedirects(res_save, reverse('academics:assignment_list'))
+        self.assignment.refresh_from_db()
+        groups = self.assignment.schedule_groups
+        self.assertEqual(len(groups), 2)
+        self.assertEqual(groups[0]['days'], 'Mon, Wed')
+        self.assertEqual(groups[0]['time_range'], '8:00 AM – 9:00 AM')
+        self.assertEqual(groups[1]['days'], 'Fri')
+        self.assertEqual(groups[1]['time_range'], '10:00 AM – 11:30 AM')
+        self.assertEqual(groups[1]['room'], 'Lab 1')
+
+        # Teacher conflict specifically on Friday's distinct time (10:30-11:30)
+        res_t_conflict = self.client.post(reverse('academics:assignment_create'), {
+            'teacher': self.teacher.pk,
+            'subject': english.pk,
+            'section': self.free_section.pk,
+            'school_year': self.year.pk,
+            'slot_day': ['Fri'],
+            'slot_start': ['10:30'],
+            'slot_end': ['11:30'],
+            'slot_room': ['Room 103'],
+        })
+        self.assertContains(res_t_conflict, 'Teacher schedule conflict on Friday')
+
+        # Section conflict specifically on Friday's distinct time (11:00-12:00)
+        res_s_conflict = self.client.post(reverse('academics:assignment_create'), {
+            'teacher': self.other_teacher.pk,
+            'subject': english.pk,
+            'section': self.section.pk,
+            'school_year': self.year.pk,
+            'slot_day': ['Fri'],
+            'slot_start': ['11:00'],
+            'slot_end': ['12:00'],
+            'slot_room': ['Room 103'],
+        })
+        self.assertContains(res_s_conflict, 'Section schedule conflict on Friday')
+
+        # Friday 08:00-09:00 is FREE for both teacher and section (since Friday Math is 10:00-11:30)
+        res_free = self.client.post(reverse('academics:assignment_create'), {
+            'teacher': self.teacher.pk,
+            'subject': english.pk,
+            'section': self.section.pk,
+            'school_year': self.year.pk,
+            'slot_day': ['Fri'],
+            'slot_start': ['08:00'],
+            'slot_end': ['09:00'],
+            'slot_room': ['Room 101'],
+        })
+        self.assertRedirects(res_free, reverse('academics:assignment_list'))

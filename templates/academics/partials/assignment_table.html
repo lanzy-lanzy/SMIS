@@ -33,9 +33,15 @@
             <td class="px-4 py-3">{{ a.section.name }}</td>
             <td class="px-4 py-3">{{ a.section.grade_level }}</td>
             <td class="px-4 py-3">
-                {% if a.has_schedule %}
-                <div class="text-xs font-semibold text-gray-900 dark:text-gray-100">{{ a.days_display }}</div>
-                <div class="text-xs text-gray-600 dark:text-gray-400">{{ a.time_range }}{% if a.room %} &middot; {{ a.room }}{% endif %}</div>
+                {% if a.schedule_groups %}
+                <div class="space-y-1">
+                    {% for slot in a.schedule_groups %}
+                    <div>
+                        <span class="text-xs font-semibold text-gray-900 dark:text-gray-100">{{ slot.days }}</span>
+                        <span class="text-xs text-gray-600 dark:text-gray-400"> &middot; {{ slot.time_range }}{% if slot.room %} &middot; {{ slot.room }}{% endif %}</span>
+                    </div>
+                    {% endfor %}
+                </div>
                 {% else %}
                 <span class="text-xs text-gray-400 dark:text-gray-500">Unscheduled</span>
                 {% endif %}

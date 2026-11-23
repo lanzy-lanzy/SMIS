@@ -1,6 +1,9 @@
+from datetime import time as dt_time
 from django import forms
 from accounts.models import User
-from .models import SchoolYear, GradeLevel, Section, Subject, TeacherAssignment, GradingPeriod
+from .models import (
+    SchoolYear, GradeLevel, Section, Subject, TeacherAssignment, AssignmentSchedule, GradingPeriod,
+)
 
 
 class SchoolYearForm(forms.ModelForm):
@@ -55,6 +58,26 @@ class SubjectForm(forms.ModelForm):
             })
 
 
+def _parse_time_str(value):
+    value = (value or '').strip()
+    if not value:
+        return None
+    for fmt in ('%H:%M', '%H:%M:%S'):
+        try:
+            parts = [int(p) for p in value.split(':')]
+            if len(parts) == 2:
+                return dt_time(parts[0], parts[1])
+            if len(parts) == 3:
+                return dt_time(parts[0], parts[1], parts[2])
+        except (ValueError, TypeError):
+            continue
+    return None
+
+
+def _format_time_12h(value):
+    return value.strftime('%I:%M %p').lstrip('0')
+
+
 class TeacherAssignmentForm(forms.ModelForm):
     days = forms.MultipleChoiceField(
         choices=TeacherAssignment.DAY_CHOICES,
@@ -80,8 +103,6 @@ class TeacherAssignmentForm(forms.ModelForm):
         self.fields['start_time'].label = 'Start Time'
         self.fields['end_time'].label = 'End Time'
         self.fields['room'].label = 'Room (Optional)'
-        if self.instance and self.instance.pk and not self.is_bound:
-            self.initial['days'] = self.instance.day_list
         if not self.is_bound and not (self.instance and self.instance.pk):
             self.initial.setdefault('school_year', SchoolYear.objects.filter(is_current=True).first())
         for name, field in self.fields.items():
@@ -90,6 +111,54 @@ class TeacherAssignmentForm(forms.ModelForm):
             field.widget.attrs.update({
                 'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white'
             })
+
+        self.parsed_slots = []
+        self.schedule_slots = self._initial_schedule_slots()
+
+    def _initial_schedule_slots(self):
+        if self.is_bound:
+            slot_days = self.data.getlist('slot_day')
+            slot_starts = self.data.getlist('slot_start')
+            slot_ends = self.data.getlist('slot_end')
+            slot_rooms = self.data.getlist('slot_room')
+            count = max(len(slot_days), len(slot_starts), len(slot_ends), len(slot_rooms))
+            if count > 0:
+                return [
+                    {
+                        'day': slot_days[i] if i < len(slot_days) else '',
+                        'start_time': slot_starts[i] if i < len(slot_starts) else '',
+                        'end_time': slot_ends[i] if i < len(slot_ends) else '',
+                        'room': slot_rooms[i] if i < len(slot_rooms) else '',
+                    }
+                    for i in range(count)
+                ]
+            return []
+
+        if self.instance and self.instance.pk:
+            existing = list(self.instance.schedules.all())
+            if existing:
+                day_rank = {code: idx for idx, code in enumerate(TeacherAssignment.DAY_ORDER)}
+                existing.sort(key=lambda s: (day_rank.get(s.day, 99), s.start_time))
+                return [
+                    {
+                        'day': s.day,
+                        'start_time': s.start_time.strftime('%H:%M'),
+                        'end_time': s.end_time.strftime('%H:%M'),
+                        'room': s.room or '',
+                    }
+                    for s in existing
+                ]
+            if self.instance.day_list and self.instance.start_time and self.instance.end_time:
+                return [
+                    {
+                        'day': d,
+                        'start_time': self.instance.start_time.strftime('%H:%M'),
+                        'end_time': self.instance.end_time.strftime('%H:%M'),
+                        'room': self.instance.room or '',
+                    }
+                    for d in self.instance.day_list
+                ]
+        return []
 
     def clean_days(self):
         selected = self.cleaned_data.get('days') or []
@@ -103,30 +172,107 @@ class TeacherAssignmentForm(forms.ModelForm):
         if section and year and section.school_year_id != year.pk:
             self.add_error('section', 'Select a section from the selected school year.')
         self.add_occupied_error()
-        self._validate_schedule(cleaned)
+        self._validate_schedule_slots(cleaned)
         return cleaned
 
-    def _validate_schedule(self, cleaned):
+    def _collect_submitted_slots(self, cleaned):
+        """Support both multi-row per-day slots (slot_day/slot_start/slot_end/slot_room)
+        and legacy single-slot fields (days/start_time/end_time/room)."""
+        has_slot_inputs = any(
+            k in self.data for k in ('slot_day', 'slot_start', 'slot_end', 'slot_room')
+        )
+        valid_day_codes = set(TeacherAssignment.DAY_ORDER)
+        slots = []
+
+        if has_slot_inputs:
+            slot_days = self.data.getlist('slot_day')
+            slot_starts = self.data.getlist('slot_start')
+            slot_ends = self.data.getlist('slot_end')
+            slot_rooms = self.data.getlist('slot_room')
+            count = max(len(slot_days), len(slot_starts), len(slot_ends), len(slot_rooms))
+
+            for idx in range(count):
+                day = (slot_days[idx] if idx < len(slot_days) else '').strip()
+                raw_start = (slot_starts[idx] if idx < len(slot_starts) else '').strip()
+                raw_end = (slot_ends[idx] if idx < len(slot_ends) else '').strip()
+                room = (slot_rooms[idx] if idx < len(slot_rooms) else '').strip()
+
+                if not (day or raw_start or raw_end or room):
+                    continue
+
+                row_label = f"Schedule row #{idx + 1}"
+                start_t = _parse_time_str(raw_start)
+                end_t = _parse_time_str(raw_end)
+
+                if day not in valid_day_codes:
+                    self.add_error(None, f"{row_label}: Select a valid class day.")
+                    continue
+                if not start_t:
+                    self.add_error(None, f"{row_label}: Enter a valid start time.")
+                    continue
+                if not end_t:
+                    self.add_error(None, f"{row_label}: Enter a valid end time.")
+                    continue
+                if end_t <= start_t:
+                    self.add_error(None, f"{row_label} ({day}): End time must be later than start time.")
+                    continue
+
+                slots.append({
+                    'day': day,
+                    'start_time': start_t,
+                    'end_time': end_t,
+                    'room': room,
+                })
+            return slots
+
+        # Legacy single-slot fallback (e.g., older tests or direct form posts)
         days_csv = cleaned.get('days') or ''
-        selected_days = {d for d in days_csv.split(',') if d}
-        start_time = cleaned.get('start_time')
-        end_time = cleaned.get('end_time')
+        selected_days = [d for d in TeacherAssignment.DAY_ORDER if d in {x for x in days_csv.split(',') if x}]
+        start_t = cleaned.get('start_time')
+        end_t = cleaned.get('end_time')
+        room = (cleaned.get('room') or '').strip()
 
-        if not selected_days and not start_time and not end_time:
-            return
-
+        if not selected_days and not start_t and not end_t:
+            return []
         if not selected_days:
             self.add_error('days', 'Select at least one class day when setting a schedule time.')
-        if not start_time:
+        if not start_t:
             self.add_error('start_time', 'Enter a start time for the class schedule.')
-        if not end_time:
+        if not end_t:
             self.add_error('end_time', 'Enter an end time for the class schedule.')
-        if not (selected_days and start_time and end_time):
+        if not (selected_days and start_t and end_t):
+            return []
+        if end_t <= start_t:
+            self.add_error('end_time', 'End time must be later than start time.')
+            return []
+
+        return [
+            {'day': d, 'start_time': start_t, 'end_time': end_t, 'room': room}
+            for d in selected_days
+        ]
+
+    def _validate_schedule_slots(self, cleaned):
+        slots = self._collect_submitted_slots(cleaned)
+        self.parsed_slots = slots
+        if not slots:
             return
 
-        if end_time <= start_time:
-            self.add_error('end_time', 'End time must be later than start time.')
-            return
+        day_labels = dict(TeacherAssignment.DAY_CHOICES)
+
+        # 1. Check intra-form overlapping slots on the same day
+        by_day = {}
+        for slot in slots:
+            by_day.setdefault(slot['day'], []).append(slot)
+        for day, day_slots in by_day.items():
+            ordered = sorted(day_slots, key=lambda s: (s['start_time'], s['end_time']))
+            for first, second in zip(ordered, ordered[1:]):
+                if first['end_time'] > second['start_time']:
+                    self.add_error(
+                        None,
+                        f"Overlapping schedule on {day_labels.get(day, day)}: "
+                        f"{_format_time_12h(first['start_time'])} – {_format_time_12h(first['end_time'])} "
+                        f"conflicts with {_format_time_12h(second['start_time'])} – {_format_time_12h(second['end_time'])}.",
+                    )
 
         teacher = cleaned.get('teacher')
         section = cleaned.get('section')
@@ -134,40 +280,84 @@ class TeacherAssignmentForm(forms.ModelForm):
         if not year:
             return
 
-        overlapping = (
-            TeacherAssignment.objects.filter(
-                school_year=year,
-                start_time__lt=end_time,
-                end_time__gt=start_time,
-            )
-            .exclude(pk=self.instance.pk)
-            .exclude(days='')
-            .select_related('teacher', 'subject', 'section', 'section__grade_level')
+        # 2. Check conflicts against existing AssignmentSchedule rows in the same school year
+        base_qs = (
+            AssignmentSchedule.objects.filter(assignment__school_year=year)
+            .exclude(assignment_id=self.instance.pk)
+            .select_related('assignment__teacher', 'assignment__subject', 'assignment__section', 'assignment__section__grade_level')
         )
 
-        if teacher:
-            for existing in overlapping.filter(teacher=teacher):
-                shared = [d for d in TeacherAssignment.DAY_ORDER if d in selected_days and d in existing.day_list]
-                if shared:
-                    teacher_name = teacher.get_full_name() or teacher.username
-                    self.add_error(
-                        'start_time',
-                        f"Teacher schedule conflict: {teacher_name} already handles {existing.subject.name} "
-                        f"for {existing.section} on {', '.join(shared)} ({existing.time_range}).",
-                    )
-                    break
+        reported_teacher = set()
+        reported_section = set()
 
-        if section:
-            for existing in overlapping.filter(section=section):
-                shared = [d for d in TeacherAssignment.DAY_ORDER if d in selected_days and d in existing.day_list]
-                if shared:
-                    other_teacher = existing.teacher.get_full_name() or existing.teacher.username
-                    self.add_error(
-                        'section',
-                        f"Section schedule conflict: {section} already has {existing.subject.name} "
-                        f"with {other_teacher} on {', '.join(shared)} ({existing.time_range}).",
+        for slot in slots:
+            day = slot['day']
+            start_t = slot['start_time']
+            end_t = slot['end_time']
+            day_name = day_labels.get(day, day)
+
+            day_overlaps = base_qs.filter(
+                day=day,
+                start_time__lt=end_t,
+                end_time__gt=start_t,
+            )
+
+            if teacher:
+                for existing in day_overlaps.filter(assignment__teacher=teacher):
+                    key = (day, existing.pk)
+                    if key not in reported_teacher:
+                        reported_teacher.add(key)
+                        teacher_name = teacher.get_full_name() or teacher.username
+                        self.add_error(
+                            None,
+                            f"Teacher schedule conflict on {day_name}: {teacher_name} already handles "
+                            f"{existing.assignment.subject.name} for {existing.assignment.section} ({existing.time_range}).",
+                        )
+
+            if section:
+                for existing in day_overlaps.filter(assignment__section=section):
+                    key = (day, existing.pk)
+                    if key not in reported_section:
+                        reported_section.add(key)
+                        other_teacher = existing.assignment.teacher.get_full_name() or existing.assignment.teacher.username
+                        self.add_error(
+                            None,
+                            f"Section schedule conflict on {day_name}: {section} already has "
+                            f"{existing.assignment.subject.name} with {other_teacher} ({existing.time_range}).",
+                        )
+
+    def save(self, commit=True):
+        assignment = super().save(commit=False)
+        if self.parsed_slots:
+            ordered_days = [
+                d for d in TeacherAssignment.DAY_ORDER
+                if d in {s['day'] for s in self.parsed_slots}
+            ]
+            assignment.days = ','.join(ordered_days)
+            assignment.start_time = self.parsed_slots[0]['start_time']
+            assignment.end_time = self.parsed_slots[0]['end_time']
+            assignment.room = self.parsed_slots[0]['room']
+        else:
+            assignment.days = ''
+            assignment.start_time = None
+            assignment.end_time = None
+            assignment.room = ''
+
+        if commit:
+            assignment.save()
+            assignment.schedules.all().delete()
+            if self.parsed_slots:
+                AssignmentSchedule.objects.bulk_create([
+                    AssignmentSchedule(
+                        assignment=assignment,
+                        day=s['day'],
+                        start_time=s['start_time'],
+                        end_time=s['end_time'],
+                        room=s['room'],
                     )
-                    break
+                    for s in self.parsed_slots
+                ])
+        return assignment
 
     def add_occupied_error(self):
         subject = self.cleaned_data.get('subject')
