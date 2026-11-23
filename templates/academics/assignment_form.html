@@ -7,12 +7,60 @@
         <form method="post" class="space-y-4">
             {% csrf_token %}
             {% include "academics/partials/assignment_errors.html" %}
-            {% for field in form %}
-            <div>
-                <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
-                {{ field }}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="{{ form.teacher.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.teacher.label }}</label>
+                    {{ form.teacher }}
+                </div>
+                <div>
+                    <label for="{{ form.school_year.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.school_year.label }}</label>
+                    {{ form.school_year }}
+                </div>
+                <div>
+                    <label for="{{ form.subject.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.subject.label }}</label>
+                    {{ form.subject }}
+                </div>
+                <div>
+                    <label for="{{ form.section.id_for_label }}" class="block text-sm font-medium mb-1">{{ form.section.label }}</label>
+                    {{ form.section }}
+                </div>
             </div>
-            {% endfor %}
+
+            <div class="rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/70 dark:bg-slate-800/50 p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">Class Schedule</p>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Checked for teacher &amp; section conflicts</span>
+                </div>
+
+                <div>
+                    <span class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">{{ form.days.label }}</span>
+                    <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                        {% for checkbox in form.days %}
+                        <label class="flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2.5 py-2 text-xs font-medium cursor-pointer hover:border-primary transition">
+                            {{ checkbox.tag }}
+                            <span>{{ checkbox.choice_label|slice:":3" }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label for="{{ form.start_time.id_for_label }}" class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{{ form.start_time.label }}</label>
+                        {{ form.start_time }}
+                    </div>
+                    <div>
+                        <label for="{{ form.end_time.id_for_label }}" class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{{ form.end_time.label }}</label>
+                        {{ form.end_time }}
+                    </div>
+                    <div>
+                        <label for="{{ form.room.id_for_label }}" class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{{ form.room.label }}</label>
+                        {{ form.room }}
+                    </div>
+                </div>
+            </div>
+
             <div class="flex gap-3 pt-4 border-t">
                 <button type="submit" class="btn btn-primary">Save</button>
                 <a href="{% url 'academics:assignment_list' %}" class="btn btn-secondary">Cancel</a>

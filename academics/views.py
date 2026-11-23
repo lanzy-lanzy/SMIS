@@ -869,7 +869,7 @@ def assignment_export(request):
     response['Content-Disposition'] = 'attachment; filename="teacher_assignments.csv"'
     
     writer = csv.writer(response)
-    writer.writerow(['Teacher', 'Email', 'Subject', 'Section', 'Grade Level', 'School Year'])
+    writer.writerow(['Teacher', 'Email', 'Subject', 'Section', 'Grade Level', 'School Year', 'Days', 'Start Time', 'End Time', 'Room'])
     
     assignments = TeacherAssignment.objects.select_related(
         "teacher", "subject", "section", "section__grade_level", "school_year"
@@ -883,6 +883,10 @@ def assignment_export(request):
             assignment.section.name,
             assignment.section.grade_level,
             assignment.school_year.name,
+            assignment.days_display,
+            assignment.start_time.strftime('%H:%M') if assignment.start_time else '',
+            assignment.end_time.strftime('%H:%M') if assignment.end_time else '',
+            assignment.room,
         ])
     
     return response

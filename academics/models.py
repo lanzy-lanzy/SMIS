@@ -75,10 +75,27 @@ class Subject(models.Model):
 
 
 class TeacherAssignment(models.Model):
+    DAY_CHOICES = (
+        ('Mon', 'Monday'),
+        ('Tue', 'Tuesday'),
+        ('Wed', 'Wednesday'),
+        ('Thu', 'Thursday'),
+        ('Fri', 'Friday'),
+        ('Sat', 'Saturday'),
+    )
+    DAY_ORDER = [code for code, _ in DAY_CHOICES]
+
     teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assignments')
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='assignments')
     section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name='assignments')
     school_year = models.ForeignKey(SchoolYear, on_delete=models.CASCADE, related_name='assignments')
+    days = models.CharField(
+        max_length=50, blank=True, default='',
+        help_text='Comma-separated weekday codes (e.g. Mon,Wed,Fri).',
+    )
+    start_time = models.TimeField(null=True, blank=True)
+    end_time = models.TimeField(null=True, blank=True)
+    room = models.CharField(max_length=50, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -92,6 +109,45 @@ class TeacherAssignment(models.Model):
 
     def __str__(self):
         return f"{self.teacher.get_full_name()} - {self.subject} - {self.section}"
+
+    @property
+    def day_list(self):
+        if not self.days:
+            return []
+        raw = {d.strip() for d in self.days.split(',') if d.strip()}
+        return [code for code in self.DAY_ORDER if code in raw]
+
+    @property
+    def days_display(self):
+        days = self.day_list
+        if not days:
+            return ''
+        if days == ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']:
+            return 'Mon–Fri'
+        return ', '.join(days)
+
+    @property
+    def time_range(self):
+        if not (self.start_time and self.end_time):
+            return ''
+        start = self.start_time.strftime('%I:%M %p').lstrip('0')
+        end = self.end_time.strftime('%I:%M %p').lstrip('0')
+        return f"{start} – {end}"
+
+    @property
+    def has_schedule(self):
+        return bool(self.day_list and self.start_time and self.end_time)
+
+    @property
+    def schedule_display(self):
+        parts = []
+        if self.days_display:
+            parts.append(self.days_display)
+        if self.time_range:
+            parts.append(self.time_range)
+        if self.room:
+            parts.append(self.room)
+        return ' · '.join(parts)
 
 
 class GradingPeriod(models.Model):

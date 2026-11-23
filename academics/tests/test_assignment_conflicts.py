@@ -72,3 +72,76 @@ class AssignmentConflictTests(TestCase):
             TeacherAssignment.objects.create(
                 teacher=self.other_teacher, subject=self.subject, section=self.section, school_year=self.year,
             )
+
+    def test_schedule_creation_conflict_detection_and_display(self):
+        english = Subject.objects.create(name='English', code='ENG7', grade_level=self.subject.grade_level)
+
+        # 1. Assign schedule to existing assignment (Ana Reyes, Math, Grade 7-A, Mon/Wed 08:00-09:00, Room 101)
+        edit_url = reverse('academics:assignment_edit', args=[self.assignment.pk])
+        res = self.client.post(edit_url, {
+            'teacher': self.teacher.pk,
+            'subject': self.subject.pk,
+            'section': self.section.pk,
+            'school_year': self.year.pk,
+            'days': ['Mon', 'Wed'],
+            'start_time': '08:00',
+            'end_time': '09:00',
+            'room': 'Room 101',
+        })
+        self.assertRedirects(res, reverse('academics:assignment_list'))
+        self.assignment.refresh_from_db()
+        self.assertEqual(self.assignment.days_display, 'Mon, Wed')
+        self.assertEqual(self.assignment.time_range, '8:00 AM – 9:00 AM')
+        self.assertEqual(self.assignment.room, 'Room 101')
+
+        # 2. Invalid time range (end <= start) rejected
+        res_bad = self.client.post(reverse('academics:assignment_create'), {
+            'teacher': self.other_teacher.pk,
+            'subject': english.pk,
+            'section': self.free_section.pk,
+            'school_year': self.year.pk,
+            'days': ['Mon'],
+            'start_time': '10:00',
+            'end_time': '09:00',
+        })
+        self.assertContains(res_bad, 'End time must be later than start time.')
+
+        # 3. Teacher schedule conflict: Ana Reyes on Mon 08:30-09:30 in Section B
+        res_teacher_conflict = self.client.post(reverse('academics:assignment_create'), {
+            'teacher': self.teacher.pk,
+            'subject': english.pk,
+            'section': self.free_section.pk,
+            'school_year': self.year.pk,
+            'days': ['Mon', 'Fri'],
+            'start_time': '08:30',
+            'end_time': '09:30',
+        })
+        self.assertContains(res_teacher_conflict, 'Teacher schedule conflict')
+
+        # 4. Section schedule conflict: Another teacher in Grade 7-A on Wed 08:00-09:00
+        res_section_conflict = self.client.post(reverse('academics:assignment_create'), {
+            'teacher': self.other_teacher.pk,
+            'subject': english.pk,
+            'section': self.section.pk,
+            'school_year': self.year.pk,
+            'days': ['Wed'],
+            'start_time': '08:00',
+            'end_time': '09:00',
+        })
+        self.assertContains(res_section_conflict, 'Section schedule conflict')
+
+        # 5. Back-to-back non-overlapping slot (09:00-10:00) succeeds
+        res_ok = self.client.post(reverse('academics:assignment_create'), {
+            'teacher': self.other_teacher.pk,
+            'subject': english.pk,
+            'section': self.section.pk,
+            'school_year': self.year.pk,
+            'days': ['Mon', 'Wed'],
+            'start_time': '09:00',
+            'end_time': '10:00',
+            'room': 'Room 102',
+        })
+        self.assertRedirects(res_ok, reverse('academics:assignment_list'))
+        list_resp = self.client.get(reverse('academics:assignment_list'))
+        self.assertContains(list_resp, '8:00 AM – 9:00 AM')
+        self.assertContains(list_resp, 'Room 102')
