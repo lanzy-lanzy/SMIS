@@ -6,9 +6,12 @@ achievement band of their general average. The table uses finalized annual
 grades and recorded promotions for the selected school year.
 """
 
+from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP
 
-from grades.annual import annual_results
+from grades.annual import _annual_grade
+from grades.mapeh import MAPEH_COMPONENTS, is_mapeh_subject, mapeh_component, merge_mapeh_grades
+from grades.models import Grade, GradeSubmission
 from students.models import ENROLLED_STATUSES, Student, StudentPromotion
 
 
@@ -83,6 +86,97 @@ def classify_finals(subject_finals):
     return status, _band_for(average_whole), average_whole
 
 
+def _sf6_subject_finals(school_year, grade_by_student):
+    """Compute per-subject finals for each learner from their finalized grades in *school_year*.
+
+    Unlike bulk-promotion eligibility (which requires all three terms and every
+    configured subject), SF6 and dashboard monitoring classify every learner
+    who has finalized grades in one or more terms so real in-year progress
+    reflects immediately in PROMOTED / CONDITIONAL / RETAINED and achievement
+    bands.
+    """
+    if not grade_by_student:
+        return {}
+
+    approved_scopes = set(
+        GradeSubmission.objects.filter(
+            school_year=school_year,
+            status='approved',
+        ).values_list('subject_id', 'section_id', 'grading_period_id')
+    )
+
+    grades = Grade.objects.filter(
+        school_year=school_year,
+        student_id__in=grade_by_student,
+        quarter_grade__gt=0,
+        quarter_grade__lte=100,
+    ).values_list(
+        'student_id', 'subject_id', 'subject__name', 'section_id',
+        'grading_period_id', 'component', 'quarter_grade', 'status',
+    ).order_by()
+
+    by_student = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
+    for student_id, subject_id, subject_name, section_id, period_id, component, mark, status in grades:
+        is_finalized = (
+            status in ('validated', 'locked')
+            or (subject_id, section_id, period_id) in approved_scopes
+        )
+        if not is_finalized:
+            continue
+        by_student[student_id][(subject_id, subject_name)][period_id][component] = mark
+
+    component_keys = {key for key, _, _ in MAPEH_COMPONENTS}
+    results = {}
+    for student_id in grade_by_student:
+        subjects_data = by_student.get(student_id, {})
+        has_combined_mapeh = any(is_mapeh_subject(name) for _sid, name in subjects_data)
+        finals = {}
+        legacy_by_period = defaultdict(dict)
+
+        for (subject_id, name), period_map in subjects_data.items():
+            lower_name = (name or '').strip().lower()
+            legacy_comp = mapeh_component(lower_name)
+            is_combined = is_mapeh_subject(lower_name)
+
+            if has_combined_mapeh and (
+                legacy_comp or lower_name in {'music', 'arts', 'physical education', 'health'}
+            ):
+                continue
+
+            if legacy_comp:
+                for period_id, comp_map in period_map.items():
+                    if '' in comp_map:
+                        legacy_by_period[period_id][legacy_comp] = comp_map['']
+                continue
+
+            term_marks = []
+            for _period_id, comp_map in period_map.items():
+                if is_combined:
+                    if '' in comp_map:
+                        term_marks.append(comp_map[''])
+                    else:
+                        parts = [comp_map.get(key) for key, _, _ in MAPEH_COMPONENTS]
+                        if all(v is not None for v in parts):
+                            term_marks.append(merge_mapeh_grades(parts))
+                elif '' in comp_map:
+                    term_marks.append(comp_map[''])
+
+            if term_marks:
+                finals[(subject_id, name)] = _annual_grade(term_marks)
+
+        if legacy_by_period and not has_combined_mapeh:
+            merged_terms = [
+                merge_mapeh_grades([comps[key] for key, _, _ in MAPEH_COMPONENTS])
+                for comps in legacy_by_period.values()
+                if component_keys <= comps.keys()
+            ]
+            if merged_terms:
+                finals[(None, 'MAPEH')] = _annual_grade(merged_terms)
+
+        results[student_id] = finals
+    return results
+
+
 def build_sf6_summary(school_year):
     """Build the SF6 table for *school_year*.
 
@@ -128,7 +222,7 @@ def build_sf6_summary(school_year):
             student_id: (level, sex) for student_id, (level, sex) in placements.items()
             if level.level in by_level
         }
-        results = annual_results(school_year, {
+        results = _sf6_subject_finals(school_year, {
             student_id: level.pk for student_id, (level, _) in placements.items()
         })
         for student_id, (level, sex) in placements.items():
@@ -136,7 +230,7 @@ def build_sf6_summary(school_year):
             _add(entry['total'], sex)
             _add(grand_total, sex)
 
-            finals, _reason = results[student_id]
+            finals = results.get(student_id, {})
             status, band, _average = classify_finals(finals)
             if student_id in promoted_ids:
                 status = 'promoted'

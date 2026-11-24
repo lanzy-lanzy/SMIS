@@ -123,9 +123,8 @@ class Sf6SummaryTests(TestCase):
             self._grade(self.marco, self.english7, term, '70', self.section7)
             self._grade(self.nina, self.filipino7, term, '60', self.section7)
             self._grade(self.nina, self.english7, term, '60', self.section7)
-            self._grade(self.paul, self.filipino7, term, '90', self.section7)
-            self._grade(self.paul, self.english7, term, '90', self.section7,
-                        status='draft' if term == self.term3 else 'validated')
+            self._grade(self.paul, self.filipino7, term, '90', self.section7, status='draft')
+            self._grade(self.paul, self.english7, term, '90', self.section7, status='draft')
             self._grade(self.quinn, self.mapeh8, term, '90', self.section8)
             self._grade(self.quinn, self.music8, term, '50', self.section8)
 
@@ -265,12 +264,14 @@ class Sf6SummaryTests(TestCase):
         self.assertEqual(self.summary['ungraded_total'], 1)
         self.assertEqual(self.summary['unclassified_total'], 0)
 
-    def test_missing_required_term_keeps_learner_unclassified(self):
-        Grade.objects.filter(student=self.linda, subject=self.english7, grading_period=self.term1).delete()
+    def test_in_year_finalized_terms_still_classify_learner(self):
+        # Even when Term 3 (or Term 1) is not yet encoded, finalized grades in
+        # available terms still classify the learner into PROMOTED and bands.
+        Grade.objects.filter(student=self.linda, grading_period=self.term3).delete()
         self.summary = build_sf6_summary(self.sy)
-        self.assertEqual(self._cells('PROMOTED')['GRADE 7']['total'], 0)
-        self.assertEqual(self.summary['ungraded_total'], 2)
-        self.assertEqual(self.summary['unclassified_total'], 2)
+        self.assertEqual(self._cells('PROMOTED')['GRADE 7']['total'], 1)
+        self.assertEqual(self.summary['ungraded_total'], 1)
+        self.assertEqual(self.summary['unclassified_total'], 1)
 
     def test_mapeh_split_components_need_both_marks_each_term(self):
         grades = Grade.objects.filter(student=self.quinn, subject=self.mapeh8)
