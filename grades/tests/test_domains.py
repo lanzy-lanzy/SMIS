@@ -574,3 +574,80 @@ class NonEspGradeTests(Python314ContextCopyMixin, GradeDomainTestCase):
         self.assertEqual(grade.written_work_affective, Decimal('0'))
         self.assertEqual(grade.performance_task_behavioral, Decimal('0'))
         self.assertEqual(grade.initial_grade, Decimal('90.00'))
+
+    def test_teacher_can_encode_remaining_students_until_term_is_closed(self):
+        from grades.models import GradeSubmission
+
+        # Add a second enrolled learner in the same section
+        student2 = Student.objects.create(
+            lrn='999000000002',
+            first_name='Second',
+            last_name='Learner',
+            sex='F',
+            birthdate='2012-05-05',
+            address='Dumingag',
+            parent_name='Parent Two',
+            grade_level=self.section.grade_level,
+            section=self.section,
+            school_year=self.sy,
+            status='active',
+        )
+        # First learner is already validated & submission approved, but second learner has no grade yet
+        Grade.objects.create(
+            student=self.student,
+            subject=self.math_assignment.subject,
+            section=self.section,
+            school_year=self.sy,
+            grading_period=self.period,
+            status='validated',
+            quarter_grade=Decimal('88'),
+        )
+        GradeSubmission.objects.create(
+            teacher=self.teacher,
+            subject=self.math_assignment.subject,
+            section=self.section,
+            school_year=self.sy,
+            grading_period=self.period,
+            status='approved',
+        )
+
+        # Term is still open -> teacher can still open & encode the missing second learner
+        encode_resp = self.client.get(
+            reverse('grades:grade_encode', args=[self.math_assignment.pk]),
+            {'period': self.period.pk},
+        )
+        self.assertEqual(encode_resp.status_code, 200)
+        self.assertTrue(encode_resp.context['current_period_editable'])
+        self.assertTrue(encode_resp.context['can_submit'])
+        self.assertEqual(encode_resp.context['incomplete_count'], 1)
+
+        post_data = {
+            'period': str(self.period.pk),
+            'action': 'draft',
+            'written_weight': '40',
+            'performance_weight': '40',
+            'assessment_weight': '20',
+            'written_highest_1': '10',
+            'performance_highest_1': '10',
+            'assessment_highest_1': '10',
+            f'student_{student2.id}_written_1': '9',
+            f'student_{student2.id}_performance_1': '9',
+            f'student_{student2.id}_assessment_1': '9',
+        }
+        save_resp = self.client.post(
+            reverse('grades:grade_save', args=[self.math_assignment.pk]),
+            post_data,
+        )
+        self.assertEqual(save_resp.status_code, 302)
+        self.assertTrue(
+            Grade.objects.filter(student=student2, subject=self.math_assignment.subject, grading_period=self.period).exists()
+        )
+
+        # Once the term is closed, encoding and saving are blocked
+        self.period.is_submissions_open = False
+        self.period.save()
+        closed_resp = self.client.get(
+            reverse('grades:grade_encode', args=[self.math_assignment.pk]),
+            {'period': self.period.pk},
+        )
+        self.assertEqual(closed_resp.status_code, 302)

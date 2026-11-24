@@ -319,27 +319,68 @@ def _maxes_from_grades(grades):
     }
 
 
-def _can_submit(submission):
-    """Whether a grade-entry form may (re)submit for validation.
+def _enrolled_student_ids(assignment):
+    return set(
+        Student.objects.filter(
+            grade_level=assignment.section.grade_level,
+            section=assignment.section,
+            status__in=ENROLLED_STATUSES,
+        ).values_list('id', flat=True)
+    )
 
-    A submission can only be created or resubmitted when there is no existing
-    GradeSubmission yet, or when the Registrar returned it for correction.
-    A pending (under review) or approved (validated) submission is frozen, so
-    the submit button must be disabled on page load to reflect the true status.
+
+def _incomplete_student_count(assignment, grading_period, component=''):
+    """Return (incomplete_count, total_enrolled) for this assignment and term.
+
+    A student is considered incomplete if they have no Grade record yet for
+    this subject/component/period, or their Grade is still in draft/returned
+    status (not yet submitted or validated).
     """
-    return submission is None or submission.status == 'returned'
+    enrolled_ids = _enrolled_student_ids(assignment)
+    if not enrolled_ids:
+        return 0, 0
+    grade_filter = {
+        'student_id__in': enrolled_ids,
+        'subject': assignment.subject,
+        'section': assignment.section,
+        'school_year': assignment.school_year,
+        'grading_period': grading_period,
+        'status__in': ('submitted', 'validated', 'locked'),
+    }
+    if component:
+        grade_filter['component'] = component
+    completed_ids = set(Grade.objects.filter(**grade_filter).values_list('student_id', flat=True))
+    return len(enrolled_ids - completed_ids), len(enrolled_ids)
+
+
+def _can_submit(submission, has_incomplete=False, period_open=True):
+    """Whether a grade-entry form may still be edited / submitted.
+
+    Teachers can continue encoding and submitting whenever:
+      * the grading period is still open (`period_open` is True), AND
+      * either there is no submission yet, the submission was returned, OR
+        some enrolled learners still have unencoded/draft grades (`has_incomplete`).
+    Once the Registrar/Admin closes the term (`period_open` is False) or all
+    enrolled learners are submitted/validated, encoding is locked.
+    """
+    if not period_open:
+        return False
+    if submission is None or submission.status == 'returned':
+        return True
+    return bool(has_incomplete)
 
 
 def _locked_period_pks(assignment):
     """Return the pks of grading periods that are fully finalized for the given
     teacher assignment.
 
-    A period counts as locked only when it has at least one grade AND *every*
-    grade for that (subject, section, school_year, period) is in an immutable
-    state ('validated'/'locked'). Partially-validated terms are NOT treated as
-    finalized, so the T1 -> T2 -> T3 sequence advances correctly and a term is
-    only read-only history once the Registrar has validated it end to end.
+    A period counts as locked only when it has at least one grade, *every*
+    existing grade for that (subject, section, school_year, period) is in an
+    immutable state ('validated'/'locked'), AND every currently enrolled
+    learner in the section has a finalized grade (so teachers still have time
+    to encode missing students while the term remains open).
     """
+    enrolled_ids = _enrolled_student_ids(assignment)
     rows = (
         Grade.objects.filter(
             subject=assignment.subject,
@@ -350,13 +391,21 @@ def _locked_period_pks(assignment):
         .annotate(
             total=Count('id'),
             finalized=Count('id', filter=Q(status__in=IMMUTABLE_GRADE_STATUSES)),
+            finalized_students=Count(
+                'student_id',
+                filter=Q(student_id__in=enrolled_ids, status__in=IMMUTABLE_GRADE_STATUSES),
+                distinct=True,
+            ),
         )
     )
-    return {
-        row['grading_period_id']
-        for row in rows
-        if row['total'] and row['total'] == row['finalized']
-    }
+    locked = set()
+    for row in rows:
+        if not (row['total'] and row['total'] == row['finalized']):
+            continue
+        if enrolled_ids and row['finalized_students'] < len(enrolled_ids):
+            continue
+        locked.add(row['grading_period_id'])
+    return locked
 
 
 def _period_access(assignment, all_periods):
@@ -569,7 +618,17 @@ def grade_encode(request, assignment_pk):
         school_year=assignment.school_year,
         grading_period=grading_period
     ).first()
-    context['can_submit'] = _can_submit(context['submission'])
+    incomplete_count, total_enrolled = _incomplete_student_count(
+        assignment, grading_period, mapeh_component_value
+    )
+    context['incomplete_count'] = incomplete_count
+    context['total_enrolled'] = total_enrolled
+    context['has_incomplete_grades'] = incomplete_count > 0
+    context['can_submit'] = _can_submit(
+        context['submission'],
+        has_incomplete=incomplete_count > 0,
+        period_open=grading_period.is_submissions_open,
+    )
 
     context['mapeh_component'] = mapeh_component_value
     context['mapeh_tabs'] = _mapeh_component_tabs(assignment, grading_period, mapeh_component_value)
@@ -606,10 +665,18 @@ def grade_save(request, assignment_pk):
         messages.error(request, block_msg)
         return redirect(f'{reverse("grades:grade_encode", args=[assignment.pk])}?period={grading_period.pk}')
 
-    # Prevent duplicate submissions: once the teacher has submitted for validation
-    # (pending) or the Registrar has approved it (approved), the submission is frozen
-    # and cannot be re-submitted. Only a missing submission or one that was returned
-    # for correction may be (re)submitted.
+    # MAPEH component scope: the encode form posts the active component so the
+    # save writes to the correct Grade row (MA vs PEH). Non-MAPEH subjects get
+    # '' and behave exactly as before.
+    mapeh_component_value = _resolve_mapeh_component(assignment, request.POST.get('component'))
+
+    # Prevent duplicate submissions ONLY when every enrolled learner already
+    # has a submitted/validated grade. If grades are not yet fully entered for
+    # all learners, allow the teacher to keep encoding/submitting the remaining
+    # learners while the term remains open.
+    incomplete_count, _total_enrolled = _incomplete_student_count(
+        assignment, grading_period, mapeh_component_value
+    )
     existing_submission = GradeSubmission.objects.filter(
         teacher=request.user,
         subject=assignment.subject,
@@ -617,14 +684,14 @@ def grade_save(request, assignment_pk):
         school_year=assignment.school_year,
         grading_period=grading_period,
     ).first()
-    if existing_submission and existing_submission.status == 'pending':
+    if existing_submission and existing_submission.status == 'pending' and incomplete_count == 0:
         messages.warning(
             request,
             f'Grades for {grading_period.name} are already submitted and under review by the Registrar. '
             'Editing and duplicate submissions are locked until a decision is made.'
         )
         return redirect(f'{reverse("grades:grade_encode_select")}?assignment={assignment_pk}&period={grading_period.pk}')
-    if existing_submission and existing_submission.status == 'approved':
+    if existing_submission and existing_submission.status == 'approved' and incomplete_count == 0:
         messages.warning(
             request,
             f'Grades for {grading_period.name} have already been validated by the Registrar. '
@@ -633,11 +700,6 @@ def grade_save(request, assignment_pk):
         return redirect(f'{reverse("grades:grade_encode_select")}?assignment={assignment_pk}&period={grading_period.pk}')
 
     action = request.POST.get('action', 'draft')
-
-    # MAPEH component scope: the encode form posts the active component so the
-    # save writes to the correct Grade row (MA vs PEH). Non-MAPEH subjects get
-    # '' and behave exactly as before.
-    mapeh_component_value = _resolve_mapeh_component(assignment, request.POST.get('component'))
     encode_url = (
         f'{reverse("grades:grade_encode", args=[assignment.pk])}'
         f'?period={grading_period.pk}'
