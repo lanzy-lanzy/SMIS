@@ -12,7 +12,7 @@ from .models import (
     WW_WEIGHT, PT_WEIGHT, AS_WEIGHT, WW_DOMAIN_SHARES, PT_DOMAIN_SHARES,
 )
 from academics.models import TeacherAssignment, GradingPeriod, SchoolYear, Section, Subject, GradeLevel
-from .mapeh import MAPEH_COMPONENTS, is_mapeh_subject, mapeh_component
+from .mapeh import MAPEH_COMPONENTS, is_mapeh_subject, mapeh_component, merge_mapeh_grades
 from students.models import Student, ENROLLED_STATUSES
 from accounts.models import AuditLog
 from accounts.decorators import (
@@ -1033,9 +1033,9 @@ def submission_list(request):
         )
         .values('subject')
         .annotate(
-            n=Count('id'),
+            n=Count('student_id', distinct=True),
             avg=Avg('quarter_grade'),
-            at_risk=Count('id', filter=Q(quarter_grade__lt=75)),
+            at_risk=Count('student_id', filter=Q(quarter_grade__lt=75), distinct=True),
         )
     )
     submissions = submissions.annotate(
@@ -1158,16 +1158,59 @@ def submission_validate(request, pk):
         
         return redirect('grades:submission_list')
     
-    grades = Grade.objects.filter(
+    grades_qs = Grade.objects.filter(
         subject=submission.subject,
         section=submission.section,
         school_year=submission.school_year,
         grading_period=submission.grading_period
-    ).select_related('student')
-    
+    ).select_related('student').order_by('student__last_name', 'student__first_name', 'component', 'pk')
+
+    grades_list = list(grades_qs)
+    has_mapeh_components = is_mapeh_subject(submission.subject.name) and any(g.component for g in grades_list)
+
+    # Group by student so each learner always appears in a single row (never duplicated).
+    grouped = {}
+    for g in grades_list:
+        entry = grouped.setdefault(g.student_id, {
+            'student': g.student,
+            'grade': None,
+            'ma': None,
+            'peh': None,
+        })
+        if g.component == 'ma':
+            entry['ma'] = g
+        elif g.component == 'peh':
+            entry['peh'] = g
+        else:
+            entry['grade'] = g
+
+    student_rows = []
+    for entry in grouped.values():
+        if has_mapeh_components:
+            ma_g = entry['ma']
+            peh_g = entry['peh']
+            comp_grades = [g.quarter_grade for g in (ma_g, peh_g) if g is not None and g.quarter_grade is not None]
+            if ma_g is not None and peh_g is not None:
+                merged = merge_mapeh_grades([ma_g.quarter_grade, peh_g.quarter_grade])
+                remarks = 'Passed' if merged >= 75 else 'Failed'
+            elif comp_grades:
+                merged = None
+                remarks = 'Incomplete'
+            else:
+                merged = None
+                remarks = 'Incomplete'
+            entry['merged_grade'] = merged
+            entry['remarks'] = remarks
+        else:
+            # Prefer non-component row; fall back to first available grade for this student
+            entry['grade'] = entry['grade'] or entry['ma'] or entry['peh']
+        student_rows.append(entry)
+
     return render(request, 'grades/submission_validate.html', {
         'submission': submission,
-        'grades': grades
+        'grades': grades_list,
+        'student_rows': student_rows,
+        'has_mapeh_components': has_mapeh_components,
     })
 
 

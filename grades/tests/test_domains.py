@@ -651,3 +651,32 @@ class NonEspGradeTests(Python314ContextCopyMixin, GradeDomainTestCase):
             {'period': self.period.pk},
         )
         self.assertEqual(closed_resp.status_code, 302)
+
+    def test_submission_validate_groups_mapeh_components_into_single_row_per_student(self):
+        from grades.models import GradeSubmission
+
+        registrar = User.objects.create_user(username='reg_mapeh', password='x', role='registrar')
+        mapeh = Subject.objects.create(name='MAPEH', code='MAPEH7_VAL', grade_level=self.section.grade_level)
+        Grade.objects.create(
+            student=self.student, subject=mapeh, section=self.section,
+            school_year=self.sy, grading_period=self.period,
+            component='ma', status='submitted', quarter_grade=Decimal('86'),
+        )
+        Grade.objects.create(
+            student=self.student, subject=mapeh, section=self.section,
+            school_year=self.sy, grading_period=self.period,
+            component='peh', status='submitted', quarter_grade=Decimal('90'),
+        )
+        sub = GradeSubmission.objects.create(
+            teacher=self.teacher, subject=mapeh, section=self.section,
+            school_year=self.sy, grading_period=self.period, status='pending',
+        )
+
+        self.client.force_login(registrar)
+        resp = self.client.get(reverse('grades:submission_validate', args=[sub.pk]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.context['has_mapeh_components'])
+        self.assertEqual(len(resp.context['student_rows']), 1)
+        self.assertEqual(resp.context['student_rows'][0]['merged_grade'], 88)
+        html = resp.content.decode()
+        self.assertEqual(html.count(self.student.full_name), 1)

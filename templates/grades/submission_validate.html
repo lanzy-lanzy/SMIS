@@ -7,12 +7,63 @@
         <div class="flex items-center justify-between mb-4">
             <div>
                 <h3 class="font-semibold">{{ submission.subject }} - {{ submission.section }}</h3>
-                <p class="text-sm text-gray-500">Submitted by {{ submission.teacher.get_full_name }} | {{ submission.grading_period }}</p>
+                <p class="text-sm text-gray-500">Submitted by {{ submission.teacher.get_full_name }} | {{ submission.grading_period }} | {{ student_rows|length }} learner{{ student_rows|length|pluralize }}</p>
             </div>
             <a href="{% url 'grades:submission_list' %}" class="btn btn-secondary">Back</a>
         </div>
         
         <div class="overflow-x-auto mb-6">
+            {% if has_mapeh_components %}
+            <table class="data-table">
+                <thead class="data-table-head">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-medium">Student</th>
+                        <th class="px-4 py-3 text-left font-medium">Music &amp; Arts (MA)</th>
+                        <th class="px-4 py-3 text-left font-medium">PE &amp; Health (PEH)</th>
+                        <th class="px-4 py-3 text-left font-medium">MAPEH Grade</th>
+                        <th class="px-4 py-3 text-left font-medium">Remarks</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-500/15">
+                    {% for row in student_rows %}
+                    <tr>
+                        <td class="px-4 py-3">
+                            <div class="font-medium text-gray-900 dark:text-white">{{ row.student.full_name }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ row.student.lrn }}</div>
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if row.ma %}
+                            <div class="font-medium text-gray-900 dark:text-white">{{ row.ma.quarter_grade|floatformat:"g" }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Init {{ row.ma.initial_grade|floatformat:2 }} &middot; WW {{ row.ma.written_work }}/{{ row.ma.written_work_highest }} &middot; PT {{ row.ma.performance_task }}/{{ row.ma.performance_task_highest }} &middot; QA {{ row.ma.assessment }}/{{ row.ma.assessment_highest }}</div>
+                            {% else %}
+                            <span class="text-xs text-gray-400">Not encoded</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if row.peh %}
+                            <div class="font-medium text-gray-900 dark:text-white">{{ row.peh.quarter_grade|floatformat:"g" }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Init {{ row.peh.initial_grade|floatformat:2 }} &middot; WW {{ row.peh.written_work }}/{{ row.peh.written_work_highest }} &middot; PT {{ row.peh.performance_task }}/{{ row.peh.performance_task_highest }} &middot; QA {{ row.peh.assessment }}/{{ row.peh.assessment_highest }}</div>
+                            {% else %}
+                            <span class="text-xs text-gray-400">Not encoded</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 font-bold text-gray-900 dark:text-white">
+                            {% if row.merged_grade is not None %}{{ row.merged_grade }}{% else %}&mdash;{% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs rounded-full {% if row.remarks == 'Passed' %}bg-green-100 text-green-800{% elif row.remarks == 'Failed' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ row.remarks }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500">No grades found for this submission.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
             <table class="data-table">
                 <thead class="data-table-head">
                     <tr>
@@ -26,9 +77,13 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-500/15">
-                    {% for grade in grades %}
+                    {% for row in student_rows %}
+                    {% with grade=row.grade %}
                     <tr>
-                        <td class="px-4 py-3">{{ grade.student.full_name }}</td>
+                        <td class="px-4 py-3">
+                            <div class="font-medium text-gray-900 dark:text-white">{{ row.student.full_name }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ row.student.lrn }}</div>
+                        </td>
                         <td class="px-4 py-3">{{ grade.written_work }}/{{ grade.written_work_highest }} <span class="text-xs text-gray-400">(WS {{ grade.written_work_ws|floatformat:2 }})</span></td>
                         <td class="px-4 py-3">{{ grade.performance_task }}/{{ grade.performance_task_highest }} <span class="text-xs text-gray-400">(WS {{ grade.performance_task_ws|floatformat:2 }})</span></td>
                         <td class="px-4 py-3">{{ grade.assessment }}/{{ grade.assessment_highest }} <span class="text-xs text-gray-400">(WS {{ grade.assessment_ws|floatformat:2 }})</span></td>
@@ -40,9 +95,15 @@
                             </span>
                         </td>
                     </tr>
+                    {% endwith %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-4 py-8 text-center text-sm text-gray-500">No grades found for this submission.</td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
+            {% endif %}
         </div>
         
         <form method="post" class="space-y-4">
@@ -52,7 +113,7 @@
                 <textarea name="remarks" rows="3" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white" placeholder="Add any remarks..."></textarea>
             </div>
             <div class="flex gap-3">
-                <button type="submit" name="action" value="validate" class="btn btn-accent">Validate & Approve</button>
+                <button type="submit" name="action" value="validate" class="btn btn-accent">Validate &amp; Approve</button>
                 <button type="submit" name="action" value="return" class="btn btn-danger">Return for Correction</button>
             </div>
         </form>
