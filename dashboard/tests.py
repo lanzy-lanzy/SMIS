@@ -99,8 +99,9 @@ class DashboardSchoolYearTests(TestCase):
         self.assertEqual(school['terms'][0]['average'], Decimal('90.0'))
         self.assertEqual(school['terms'][0]['learners'], 2)
         self.assertIsNone(school['terms'][1]['average'])
-        self.assertContains(response, 'Grade performance by term')
-        self.assertContains(response, 'No finalized marks')
+        self.assertNotContains(response, 'Grade performance by term')
+        self.assertContains(response, 'Counts behind the graphs')
+        self.assertNotContains(response, '<details class="surface-card p-5">')
 
     def test_performance_graph_is_admin_only(self):
         registrar = User.objects.create_user(username='registrar', role='registrar')

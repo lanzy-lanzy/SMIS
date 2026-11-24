@@ -17,8 +17,8 @@
             <p class="mb-4 text-xs text-gray-600 dark:text-gray-300">{{ sf6_monitoring.unclassified_total }} awaiting an outcome</p>
             <div style="position:relative;height:260px"><canvas id="sf6Outcomes" role="img" aria-label="Promoted, conditional, and retained learners"></canvas></div>
         </div>
-        <details class="surface-card p-5">
-            <summary class="cursor-pointer font-semibold">View the counts behind the graphs</summary>
+        <div class="surface-card p-5">
+            <h3 class="font-semibold text-gray-900 dark:text-white">Counts behind the graphs</h3>
             <div class="mt-4 overflow-x-auto">
                 <table class="data-table">
                     <thead><tr><th class="p-2 text-left">Measure</th><th class="p-2">Male</th><th class="p-2">Female</th><th class="p-2">Total</th></tr></thead>
@@ -39,7 +39,7 @@
                 </div>
             </div>
             <p class="mt-3 text-xs text-gray-600 dark:text-gray-300">Term averages round to a whole number for achievement bands. Promotion outcomes include recorded promotions.</p>
-        </details>
+        </div>
     </div>
 </section>
 {{ sf6_monitoring|json_script:"sf6-monitoring-data" }}
