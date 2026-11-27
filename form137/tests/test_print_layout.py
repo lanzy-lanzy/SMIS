@@ -26,15 +26,14 @@ class _FakeSchoolYear:
         self.name = name
 
 
-def _subject_row(name="Filipino", q1="90", q4=None, final="91"):
+def _subject_row(name="Filipino", q1="90", q3=None, final="91"):
     return {
         "subject_name": name,
         "is_mapeh": False,
         "is_mapeh_sub": False,
         "q1": Decimal(q1) if q1 is not None else None,
         "q2": None,
-        "q3": None,
-        "q4": Decimal(q4) if q4 is not None else None,
+        "q3": Decimal(q3) if q3 is not None else None,
         "final_grade": Decimal(final) if final is not None else None,
         "remarks": "Passed",
     }
@@ -83,7 +82,7 @@ class Form137PageSplitTests(SimpleTestCase):
         )
 
     def test_populated_block_keeps_full_reference_subject_grid(self):
-        pages = build_form137_pages([_block(7, subject_rows=[_subject_row(q1="92", q4="94")])])
+        pages = build_form137_pages([_block(7, subject_rows=[_subject_row(q1="92", q3="94")])])
         subject_rows = pages["front_blocks"][0]["subject_rows"]
 
         self.assertEqual(
@@ -91,7 +90,7 @@ class Form137PageSplitTests(SimpleTestCase):
             BLANK_FORM137_SUBJECTS,
         )
         self.assertEqual(subject_rows[0]["q1"], Decimal("92"))
-        self.assertEqual(subject_rows[0]["q4"], Decimal("94"))
+        self.assertEqual(subject_rows[0]["q3"], Decimal("94"))
         self.assertIsNone(subject_rows[1]["q1"])
 
     def test_certification_grade_follows_the_last_jhs_record(self):
@@ -200,13 +199,27 @@ class Form137PrintViewTests(Python314ContextCopyMixin, TestCase):
         self.assertContains(response, 'DELA CRUZ')
         self.assertContains(response, '<strong>9</strong>')
 
-    def test_print_view_uses_four_quarter_columns(self):
+    def test_print_view_uses_three_terms_and_gmrc_label(self):
+        esp = Subject.objects.create(name='ESP', code='ESP7', grade_level=self.gl7)
+        Grade.objects.create(
+            student=self.student, subject=esp, grading_period=self.period1,
+            school_year=self.sy1, section=self.section7,
+            quarter_grade=Decimal('91'), final_grade=Decimal('91'), status='validated',
+        )
         self.client.force_login(self.registrar)
         response = self.client.get(
             reverse('form137:form137_preview', args=[self.record.pk])
         )
 
-        self.assertContains(response, 'QUARTERLY RATING')
-        self.assertContains(response, '<th class="quarter">4</th>')
+        self.assertContains(response, '<th colspan="3">TERM</th>', count=4)
+        for term in (1, 2, 3):
+            self.assertContains(response, f'<th class="term">{term}</th>', count=4)
+        self.assertNotContains(response, '<th class="term">4</th>')
+        self.assertNotContains(response, 'QUARTERLY RATING')
+        rows = response.context['front_blocks'][0]['subject_rows']
+        gmrc = [row for row in rows if row['display_name'] == 'GMRC/Values Education']
+        self.assertEqual(len(gmrc), 1)
+        self.assertEqual(gmrc[0]['q1'], Decimal('91'))
+        self.assertNotContains(response, '>ESP<')
         self.assertContains(response, '2024-2025')
         self.assertContains(response, '2025-2026')

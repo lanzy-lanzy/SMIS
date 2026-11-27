@@ -29,25 +29,23 @@
         <thead>
             <tr>
                 <th rowspan="2" class="learning">LEARNING AREAS</th>
-                <th colspan="4">QUARTERLY RATING</th>
+                <th colspan="3">TERM</th>
                 <th rowspan="2" class="final">FINAL<br>RATING</th>
                 <th rowspan="2" class="remarks">REMARKS</th>
             </tr>
             <tr>
-                <th class="quarter">1</th>
-                <th class="quarter">2</th>
-                <th class="quarter">3</th>
-                <th class="quarter">4</th>
+                <th class="term">1</th>
+                <th class="term">2</th>
+                <th class="term">3</th>
             </tr>
         </thead>
         <tbody>
             {% for row in block.subject_rows %}
-            <tr{% if row.is_mapeh_sub %} class="mapeh-sub"{% endif %}>
+            <tr>
                 <td class="learning-area">{{ row.display_name|default:row.subject_name }}</td>
                 <td>{% if row.q1 is not None %}{{ row.q1|floatformat:0 }}{% endif %}</td>
                 <td>{% if row.q2 is not None %}{{ row.q2|floatformat:0 }}{% endif %}</td>
                 <td>{% if row.q3 is not None %}{{ row.q3|floatformat:0 }}{% endif %}</td>
-                <td>{% if row.q4 is not None %}{{ row.q4|floatformat:0 }}{% endif %}</td>
                 <td class="final-rating">{% if row.final_grade is not None %}{{ row.final_grade|floatformat:0 }}{% endif %}</td>
                 <td class="remarks-cell">{{ row.remarks }}</td>
             </tr>
@@ -59,11 +57,10 @@
                 <td></td>
                 <td></td>
                 <td></td>
-                <td></td>
             </tr>
             <tr class="general-average">
                 <td></td>
-                <td colspan="4">General Average</td>
+                <td colspan="3">General Average</td>
                 <td class="final-rating">{% if block.general_average is not None %}{{ block.general_average|floatformat:0 }}{% endif %}</td>
                 <td class="remarks-cell">{% if block.general_average is not None %}{% if block.general_average >= 75 %}PROMOTED{% else %}RETAINED{% endif %}{% endif %}</td>
             </tr>

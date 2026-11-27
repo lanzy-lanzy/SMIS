@@ -335,11 +335,26 @@ class Form137MapehMergeTests(TestCase):
         block = build_grade_blocks(self.student)[0]
         self.assertEqual(block['general_average'], Decimal('84.5'))
 
-    def test_printable_rows_keep_components_under_mapeh(self):
+    def test_printable_rows_show_one_mapeh_learning_area(self):
         block = build_grade_blocks(self.student)[0]
         printable = build_printable_subject_rows(block['subject_rows'])
         names = [row['display_name'] for row in printable]
-        mapeh_index = names.index('MAPEH')
-        self.assertEqual(names[mapeh_index + 1], 'Music and Arts')
-        self.assertEqual(names[mapeh_index + 2], 'Physical Education and Health')
-        self.assertEqual(names[mapeh_index + 3], 'Music')
+        self.assertEqual(names.count('MAPEH'), 1)
+        self.assertNotIn('Music and Arts', names)
+        self.assertNotIn('Physical Education and Health', names)
+        self.assertNotIn('Music', names)
+
+    def test_current_mapeh_components_roll_up_into_one_learning_area(self):
+        mapeh = Subject.objects.create(name='MAPEH', code='MAPEH7', grade_level=self.level)
+        for component, value in [('ma', 80), ('peh', 97)]:
+            Grade.objects.create(
+                student=self.student, subject=mapeh, grading_period=self.term,
+                school_year=self.sy, section=self.section, status='validated',
+                component=component, quarter_grade=value, final_grade=value + 1,
+            )
+        block = build_grade_blocks(self.student)[0]
+        printable = build_printable_subject_rows(block['subject_rows'])
+        mapeh_rows = [row for row in printable if row['display_name'] == 'MAPEH']
+        self.assertEqual(len(mapeh_rows), 1)
+        self.assertEqual(mapeh_rows[0]['q1'], Decimal('89'))
+        self.assertEqual(mapeh_rows[0]['final_grade'], Decimal('90'))

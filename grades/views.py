@@ -7,6 +7,7 @@ from django.db import transaction
 from django.db.models import Q, Avg, Count, Exists, Subquery, OuterRef, Case, When, Value, IntegerField, DecimalField
 from django.utils import timezone
 from django.utils.http import urlencode
+from django.views.decorators.http import require_POST
 from .models import (
     Grade, GradeSubmission, GradeValidation, weighted_initial_grade, transmute_grade,
     TRANSMUTATION_BANDS, DESCRIPTOR_BANDS, grade_remarks, scores_missing,
@@ -150,6 +151,7 @@ def grade_list(request):
 
 
 IMMUTABLE_GRADE_STATUSES = ('validated', 'locked')
+SUBMISSIONS_PER_PAGE = 20
 
 
 def _parse_weights(post_data, prefix=''):
@@ -687,7 +689,7 @@ def grade_save(request, assignment_pk):
     incomplete_count, _total_enrolled = _incomplete_student_count(
         assignment, grading_period, mapeh_component_value
     )
-    existing_submission = GradeSubmission.objects.filter(
+    existing_submission = GradeSubmission.objects.select_for_update().filter(
         teacher=assignment.teacher,
         subject=assignment.subject,
         section=assignment.section,
@@ -1047,16 +1049,19 @@ def submission_list(request):
             default=Value(2),
             output_field=IntegerField(),
         ),
-    ).order_by('status_priority', 'submitted_at')
+    ).order_by('status_priority', 'submitted_at', 'pk')
     
     all_periods = GradingPeriod.objects.filter(school_year=current_sy).order_by('order') if current_sy else GradingPeriod.objects.none()
 
-    paginator = Paginator(submissions, 20)
+    paginator = Paginator(submissions, SUBMISSIONS_PER_PAGE)
     page = request.GET.get('page', 1)
     submissions_page = paginator.get_page(page)
+    pending_on_page = sum(sub.status == 'pending' for sub in submissions_page)
 
     context = {
         'submissions': submissions_page,
+        'pending_on_page': pending_on_page,
+        'can_bulk_approve': bool(pending_on_page and (request.user.is_registrar or request.user.is_admin)),
         'status_filter': status_filter,
         'status_choices': GradeSubmission.STATUS_CHOICES,
         'all_periods': all_periods,
@@ -1074,9 +1079,97 @@ def submission_list(request):
     return render(request, 'grades/submission_list.html', context)
 
 
+def _approve_submission(submission, reviewer, remarks=''):
+    submission.status = 'approved'
+    submission.reviewed_at = timezone.now()
+    submission.remarks = remarks
+    submission.save(update_fields=['status', 'reviewed_at', 'remarks'])
+
+    grades_to_validate = Grade.objects.filter(
+        subject=submission.subject,
+        section=submission.section,
+        school_year=submission.school_year,
+        grading_period=submission.grading_period,
+        status__in=['draft', 'submitted', 'returned']
+    )
+    if is_mapeh_subject(submission.subject.name):
+        grades_to_validate = grades_to_validate.filter(
+            component__in=MAPEH_TAB_META, status='submitted',
+        )
+    grades_to_validate.update(status='validated')
+
+    GradeValidation.objects.filter(submission=submission).delete()
+    GradeValidation.objects.create(
+        submission=submission,
+        validated_by=reviewer,
+        status='approved',
+        remarks=remarks
+    )
+
+    AuditLog.objects.create(
+        user=reviewer,
+        action='grade_validate',
+        model_name='GradeSubmission',
+        object_id=str(submission.id),
+        description=f'Validated grades for {submission.subject} - {submission.section}'
+    )
+
+
 @registrar_or_admin_required
+@require_POST
+@transaction.atomic
+def submission_bulk_approve(request):
+    filters = {
+        key: request.POST[key] for key in ('period', 'status', 'q', 'page')
+        if request.POST.get(key)
+    }
+    if not filters.get('period', '').isascii() or not filters.get('period', '').isdecimal():
+        filters.pop('period', None)
+    list_url = reverse('grades:submission_list')
+    if filters:
+        list_url += f'?{urlencode(filters)}'
+
+    selected = request.POST.getlist('submission_ids')
+    if not selected:
+        messages.warning(request, 'Select submissions to approve.')
+        return redirect(list_url)
+
+    if len(selected) > SUBMISSIONS_PER_PAGE:
+        messages.error(request, 'Select submissions from one page at a time.')
+        return redirect(list_url)
+
+    try:
+        submission_ids = {int(value) for value in selected}
+        if any(pk <= 0 or pk > 2**63 - 1 for pk in submission_ids):
+            raise ValueError
+    except ValueError:
+        messages.error(request, 'The submission selection was invalid.')
+        return redirect(list_url)
+
+    submissions = GradeSubmission.objects.select_for_update().filter(
+        pk__in=submission_ids, status='pending',
+        school_year__in=SchoolYear.objects.filter(is_current=True),
+    ).order_by('pk')
+    approved = 0
+    for submission in submissions:
+        _approve_submission(submission, request.user)
+        approved += 1
+
+    if approved:
+        messages.success(request, f'Approved {approved} submission{"s" if approved != 1 else ""}.')
+    skipped = len(submission_ids) - approved
+    if skipped:
+        messages.warning(request, f'Skipped {skipped} selection{"s" if skipped != 1 else ""} unavailable for approval.')
+    return redirect(list_url)
+
+
+@registrar_or_admin_required
+@transaction.atomic
 def submission_validate(request, pk):
-    submission = get_object_or_404(GradeSubmission, pk=pk)
+    submissions = GradeSubmission.objects.all()
+    if request.method == 'POST':
+        submissions = submissions.select_for_update()
+    submission = get_object_or_404(submissions, pk=pk)
 
     if submission.status != 'pending':
         messages.error(request, 'This submission is not pending review.')
@@ -1087,42 +1180,7 @@ def submission_validate(request, pk):
         remarks = request.POST.get('remarks', '')
         
         if action == 'validate':
-            submission.status = 'approved'
-            submission.reviewed_at = timezone.now()
-            submission.remarks = remarks
-            submission.save()
-            
-            # Approving finalizes the entire class scope for this period, so any
-            # grade still in draft/submitted/returned is validated together. This
-            # keeps Grade.status in sync with the approved GradeSubmission.
-            grades_to_validate = Grade.objects.filter(
-                subject=submission.subject,
-                section=submission.section,
-                school_year=submission.school_year,
-                grading_period=submission.grading_period,
-                status__in=['draft', 'submitted', 'returned']
-            )
-            if is_mapeh_subject(submission.subject.name):
-                grades_to_validate = grades_to_validate.filter(
-                    component__in=MAPEH_TAB_META, status='submitted',
-                )
-            grades_to_validate.update(status='validated')
-            
-            GradeValidation.objects.filter(submission=submission).delete()
-            GradeValidation.objects.create(
-                submission=submission,
-                validated_by=request.user,
-                status='approved',
-                remarks=remarks
-            )
-            
-            AuditLog.objects.create(
-                user=request.user,
-                action='grade_validate',
-                model_name='GradeSubmission',
-                object_id=str(submission.id),
-                description=f'Validated grades for {submission.subject} - {submission.section}'
-            )
+            _approve_submission(submission, request.user, remarks)
             messages.success(request, 'Grades validated successfully.')
         
         elif action == 'return':

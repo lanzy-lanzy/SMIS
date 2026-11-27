@@ -11,6 +11,7 @@ urlpatterns = [
     path('encode-all/', views.grade_encode_all, name='grade_encode_all'),
     path('save-all/', views.grade_save_all, name='grade_save_all'),
     path('submissions/', views.submission_list, name='submission_list'),
+    path('submissions/bulk-approve/', views.submission_bulk_approve, name='submission_bulk_approve'),
     path('submissions/<int:pk>/validate/', views.submission_validate, name='submission_validate'),
     path('submissions/<int:pk>/delete/', views.submission_delete, name='submission_delete'),
     path('export/', views.grade_export, name='grade_export'),

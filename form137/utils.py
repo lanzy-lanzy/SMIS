@@ -11,7 +11,7 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 from grades.models import Grade
-from grades.mapeh import mapeh_component, mapeh_component_label, merge_mapeh_grades
+from grades.mapeh import is_mapeh_subject, mapeh_component, merge_mapeh_grades
 
 
 # ---------------------------------------------------------------------------
@@ -33,12 +33,17 @@ JHS_SUBJECT_ORDER = [
     "Health",           # MAPEH sub-row
 ]
 
-# Subjects that are displayed as indented sub-rows under the MAPEH parent row.
+# Legacy MAPEH subjects folded into the parent row for printing.
 MAPEH_SUBS = {"Music", "Arts", "Physical Education", "Health"}
+
+VALUES_EDUCATION_ALIASES = {
+    "esp", "edukasyon sa pagpapakatao", "values education", "gmrc", "gmrc/values education",
+}
+SF10_TERMS = (1, 2, 3)
 
 FORM137_SUBJECT_LABELS = {
     "Araling Panlipunan": "Araling Panlipunan (AP)",
-    "Edukasyon sa Pagpapakatao": "Edukasyon sa Pagpapakatao (EsP)",
+    "Edukasyon sa Pagpapakatao": "GMRC/Values Education",
     "Technology and Livelihood Education": "Technology and Livelihood Education (TLE)",
 }
 
@@ -48,13 +53,9 @@ BLANK_FORM137_SUBJECTS = [
     "Mathematics",
     "Science",
     "Araling Panlipunan (AP)",
-    "Edukasyon sa Pagpapakatao (EsP)",
+    "GMRC/Values Education",
     "Technology and Livelihood Education (TLE)",
     "MAPEH",
-    "Music",
-    "Arts",
-    "Physical Education",
-    "Health",
 ]
 
 
@@ -130,12 +131,11 @@ def build_blank_subject_rows() -> list:
         {
             "subject_name": subject_name,
             "display_name": subject_name,
-            "is_mapeh": subject_name in {"MAPEH", "Music", "Arts", "Physical Education", "Health"},
-            "is_mapeh_sub": subject_name in MAPEH_SUBS,
+            "is_mapeh": subject_name == "MAPEH",
+            "is_mapeh_sub": False,
             "q1": None,
             "q2": None,
             "q3": None,
-            "q4": None,
             "final_grade": None,
             "remarks": "",
         }
@@ -148,8 +148,10 @@ def build_printable_subject_rows(subject_rows: list) -> list:
     extras = []
 
     for row in subject_rows:
+        if row["is_mapeh_sub"]:
+            continue
         printable_row = row.copy()
-        printable_row["display_name"] = mapeh_component_label(row["subject_name"]) or FORM137_SUBJECT_LABELS.get(
+        printable_row["display_name"] = FORM137_SUBJECT_LABELS.get(
             row["subject_name"],
             row["subject_name"],
         )
@@ -158,23 +160,10 @@ def build_printable_subject_rows(subject_rows: list) -> list:
         else:
             extras.append(printable_row)
 
-    mapeh_extras = sorted(
-        (row for row in extras if mapeh_component(row["subject_name"])),
-        key=lambda row: (mapeh_component(row["subject_name"]), row["subject_name"].lower()),
-    )
-    other_extras = [row for row in extras if not mapeh_component(row["subject_name"])]
-
-    printable_rows = []
-    for blank_row in build_blank_subject_rows():
-        printable_rows.append(rows_by_display_name.get(
-            blank_row["display_name"],
-            blank_row,
-        ))
-        if blank_row["subject_name"] == "MAPEH":
-            printable_rows.extend(mapeh_extras)
-
-    printable_rows.extend(other_extras)
-    return printable_rows
+    return [
+        rows_by_display_name.get(blank_row["display_name"], blank_row)
+        for blank_row in build_blank_subject_rows()
+    ] + extras
 
 
 FRONT_PAGE_LEVELS = (7, 8)
@@ -281,7 +270,6 @@ def build_grade_blocks(student) -> list:
             "q1":            Decimal | None,
             "q2":            Decimal | None,
             "q3":            Decimal | None,
-            "q4":            Decimal | None,
             "final_grade":   Decimal | None,
             "remarks":       str,   # "Passed" / "Failed" / ""
         }
@@ -293,7 +281,11 @@ def build_grade_blocks(student) -> list:
     # ------------------------------------------------------------------
     grades_qs = (
         Grade.objects
-        .filter(student=student, status__in=["validated", "locked"])
+        .filter(
+            student=student,
+            status__in=["validated", "locked"],
+            grading_period__order__in=SF10_TERMS,
+        )
         .select_related(
             "subject",
             "subject__grade_level",
@@ -334,14 +326,22 @@ def build_grade_blocks(student) -> list:
                 "school_year": grade.school_year,
                 "section": grade.section,   # may be overwritten; consistent per block
                 "subjects": {},
+                "mapeh_components": {},
             }
 
         subject_name = grade.subject.name
-        if subject_name not in raw_blocks[key]["subjects"]:
-            raw_blocks[key]["subjects"][subject_name] = {}
-
-        period_order = grade.grading_period.order  # 1–4
-        raw_blocks[key]["subjects"][subject_name][period_order] = grade
+        subject_key = " ".join(subject_name.lower().split())
+        period_order = grade.grading_period.order
+        bucket = raw_blocks[key]
+        combined_mapeh = is_mapeh_subject(subject_name)
+        if combined_mapeh and grade.component:
+            bucket["mapeh_components"].setdefault(period_order, {})[grade.component] = grade
+        else:
+            if combined_mapeh:
+                subject_name = "MAPEH"
+            elif subject_key.replace(" / ", "/") in VALUES_EDUCATION_ALIASES:
+                subject_name = "Edukasyon sa Pagpapakatao"
+            bucket["subjects"].setdefault(subject_name, {})[period_order] = grade
 
         # Prefer the most recent section record (last write wins, but all
         # grades in the same block should share the same section).
@@ -381,26 +381,27 @@ def build_grade_blocks(student) -> list:
         # --------------------------------------------------------------
         present_subjects: dict = rb["subjects"]   # subject_name -> {order: Grade}
 
-        # Music and Arts / PE and Health are encoded separately but report as
-        # one MAPEH grade; synthesize the parent row when no MAPEH subject
-        # exists so the components fold into a single final rating.
+        # Use the combined subject's component results first, followed by
+        # stored MAPEH marks and legacy component subjects for the same term.
         component_names = sorted(
-            (name for name in present_subjects if mapeh_component(name)),
-            key=lambda name: (mapeh_component(name), name.lower()),
+            name for name in present_subjects
+            if mapeh_component(name.replace("&", "and")) or name.strip().lower() == "peh"
         )
-        if component_names and "MAPEH" not in present_subjects:
-            parent_map = {}
-            orders = {order for name in component_names for order in present_subjects[name]}
-            for order in sorted(orders):
-                merged = merge_mapeh_grades(
-                    present_subjects[name][order].quarter_grade
-                    for name in component_names if order in present_subjects[name]
+        legacy_names = component_names + [name for name in JHS_SUBJECT_ORDER if name in MAPEH_SUBS]
+        parent_map = present_subjects.get("MAPEH", {}).copy()
+        for order in SF10_TERMS:
+            component_grades = list(rb["mapeh_components"].get(order, {}).values())
+            if not component_grades and order not in parent_map:
+                component_grades = [
+                    present_subjects[name][order]
+                    for name in legacy_names if order in present_subjects.get(name, {})
+                ]
+            if component_grades:
+                parent_map[order] = SimpleNamespace(
+                    quarter_grade=Decimal(merge_mapeh_grades(grade.quarter_grade for grade in component_grades)),
+                    final_grade=Decimal(merge_mapeh_grades(grade.final_grade for grade in component_grades)),
                 )
-                if merged is not None:
-                    parent_map[order] = SimpleNamespace(
-                        quarter_grade=Decimal(merged),
-                        final_grade=Decimal(merged),
-                    )
+        if parent_map:
             present_subjects["MAPEH"] = parent_map
 
         # Bucket the names.
@@ -413,48 +414,17 @@ def build_grade_blocks(student) -> list:
             if name not in set(JHS_SUBJECT_ORDER) and name not in component_names
         )
 
-        # Determine whether a MAPEH composite subject (named "MAPEH") exists.
-        has_mapeh_composite = "MAPEH" in present_subjects
-        # Determine whether any MAPEH sub-subjects exist.
-        present_mapeh_subs = [n for n in MAPEH_SUBS if n in present_subjects]
-
         subject_rows = []
 
         def _build_row(subject_name: str, is_mapeh: bool, is_mapeh_sub: bool) -> dict:
             """Build a single subject-row dict from the grade lookup."""
             period_map = present_subjects.get(subject_name, {})
 
-            def _grade_val(order: int):
-                g = period_map.get(order)
-                return g.final_grade if g is not None else None
-
-            def _quarter_val(order: int):
-                g = period_map.get(order)
-                return g.quarter_grade if g is not None else None
-
-            # For MAPEH sub-rows each Grade row holds a quarter_grade and
-            # final_grade per grading period; we display them the same way.
-            q1 = _quarter_val(1)
-            q2 = _quarter_val(2)
-            q3 = _quarter_val(3)
-            q4 = _quarter_val(4)
-
-            # final_grade: use the grade record's own final_grade field.
-            # For sub-rows this is the sub-subject final; for regular rows
-            # it is the subject's final grade for the whole year.
-            # We take the last (highest-order) grading period's final_grade
-            # as the representative final for the subject row, because the
-            # Grade model stores a running final_grade per grading period.
-            # If there are multiple periods, we prefer the one with the
-            # highest order (most recent).
-            if period_map:
-                max_order = max(period_map.keys())
-                final_grade = period_map[max_order].final_grade
-                # Treat 0 as "no grade" when the grade record exists but is empty.
-                # (The model defaults final_grade to 0.)
-                # We only treat it as None if there are literally no records.
-            else:
-                final_grade = None
+            term_marks = {
+                f"q{order}": period_map[order].quarter_grade if order in period_map else None
+                for order in SF10_TERMS
+            }
+            final_grade = period_map[max(period_map)].final_grade if period_map else None
 
             remarks = compute_remarks(final_grade)
 
@@ -462,10 +432,7 @@ def build_grade_blocks(student) -> list:
                 "subject_name": subject_name,
                 "is_mapeh": is_mapeh,
                 "is_mapeh_sub": is_mapeh_sub,
-                "q1": q1,
-                "q2": q2,
-                "q3": q3,
-                "q4": q4,
+                **term_marks,
                 "final_grade": final_grade,
                 "remarks": remarks,
             }
@@ -488,21 +455,9 @@ def build_grade_blocks(student) -> list:
                 continue
 
             if name in MAPEH_SUBS:
-                # Sub-row that appeared in canonical_names because "MAPEH"
-                # composite is absent — will be inserted below when we process
-                # un-parented sub-rows.
                 continue
 
             subject_rows.append(_build_row(name, is_mapeh=False, is_mapeh_sub=False))
-
-        # If MAPEH composite is absent but sub-rows exist, insert them now
-        # (after all canonical non-MAPEH subjects, before unknowns).
-        if not has_mapeh_composite and present_mapeh_subs:
-            for sub_name in ["Music", "Arts", "Physical Education", "Health"]:
-                if sub_name in present_subjects:
-                    subject_rows.append(
-                        _build_row(sub_name, is_mapeh=True, is_mapeh_sub=True)
-                    )
 
         # Append unknown (non-canonical) subjects alphabetically.
         for name in unknown_names:

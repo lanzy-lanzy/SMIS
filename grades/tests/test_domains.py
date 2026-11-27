@@ -10,9 +10,9 @@ from django.urls import reverse
 from academics.models import (
     GradeLevel, GradingPeriod, SchoolYear, Section, Subject, TeacherAssignment,
 )
-from accounts.models import User
+from accounts.models import AuditLog, User
 from grades.models import (
-    GradeSubmission,
+    GradeSubmission, GradeValidation,
     Grade, PT_DOMAIN_SHARES, WW_DOMAIN_SHARES,
     grade_remarks, scores_missing, split_domain_weights, weighted_initial_grade,
 )
@@ -277,6 +277,73 @@ class MapehEncodingTests(Python314ContextCopyMixin, GradeDomainTestCase):
         self.assertContains(response, 'Under Review')
         submission.refresh_from_db()
         self.assertEqual(submission.status, 'pending')
+
+
+class BulkSubmissionApprovalTests(Python314ContextCopyMixin, GradeDomainTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.registrar = User.objects.create_user(username='registrar', role='registrar')
+        cls.admin = User.objects.create_user(username='admin', role='admin')
+        cls.mapeh = Subject.objects.create(name='MAPEH', code='MAPEH7', grade_level=cls.gl)
+        cls.normal_submission = cls.make_submission(cls.subject)
+        cls.mapeh_submission = cls.make_submission(cls.mapeh)
+
+    @classmethod
+    def make_submission(cls, subject, status='pending'):
+        return GradeSubmission.objects.create(
+            subject=subject, teacher=cls.teacher, section=cls.section,
+            school_year=cls.sy, grading_period=cls.period, status=status,
+        )
+
+    def test_registrar_approves_selected_and_skips_stale_rows_on_retry(self):
+        for subject, component, status in [
+            (self.subject, '', 'submitted'),
+            (self.mapeh, 'ma', 'submitted'),
+            (self.mapeh, 'peh', 'draft'),
+        ]:
+            Grade.objects.create(
+                student=self.student, subject=subject, section=self.section,
+                school_year=self.sy, grading_period=self.period, status=status, component=component,
+            )
+        other = Subject.objects.create(name='Science', code='SCI7', grade_level=self.gl)
+        unselected = self.make_submission(other)
+        self.client.force_login(self.registrar)
+        list_url = reverse('grades:submission_list')
+        response = self.client.get(list_url, HTTP_HX_REQUEST='true')
+        self.assertContains(response, 'Approve Selected')
+        self.assertContains(response, 'name="submission_ids"', count=3)
+
+        approve_url = reverse('grades:submission_bulk_approve')
+        data = {'submission_ids': [self.normal_submission.pk, self.mapeh_submission.pk], 'period': self.period.pk}
+        response = self.client.post(approve_url, data, follow=True)
+        self.assertRedirects(response, f'{list_url}?period={self.period.pk}')
+        self.assertContains(response, 'Approved 2 submissions.')
+        self.assertContains(response, 'name="submission_ids"', count=1)
+        self.assertEqual(GradeSubmission.objects.filter(status='approved', reviewed_at__isnull=False).count(), 2)
+        self.assertEqual(GradeValidation.objects.filter(validated_by=self.registrar, status='approved').count(), 2)
+        self.assertEqual(Grade.objects.filter(status='validated').count(), 2)
+        self.assertEqual(Grade.objects.get(component='peh').status, 'draft')
+        unselected.refresh_from_db()
+        self.assertEqual(unselected.status, 'pending')
+
+        response = self.client.post(approve_url, data, follow=True)
+        self.assertContains(response, 'Skipped 2 selections unavailable for approval.')
+        self.assertEqual(AuditLog.objects.filter(user=self.registrar, action='grade_validate').count(), 2)
+
+    def test_admin_can_approve_and_teacher_cannot(self):
+        list_url = reverse('grades:submission_list')
+        approve_url = reverse('grades:submission_bulk_approve')
+        self.assertNotContains(self.client.get(list_url), 'Approve Selected')
+        self.client.post(approve_url, {'submission_ids': [self.normal_submission.pk]})
+        self.normal_submission.refresh_from_db()
+        self.assertEqual(self.normal_submission.status, 'pending')
+
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(approve_url).status_code, 405)
+        self.client.post(approve_url, {'submission_ids': [self.normal_submission.pk]})
+        self.normal_submission.refresh_from_db()
+        self.assertEqual(self.normal_submission.status, 'approved')
 
 
 class GradeSaveDomainTests(GradeDomainTestCase):
