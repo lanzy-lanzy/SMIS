@@ -2,6 +2,22 @@ from django.db import models
 from accounts.models import User
 
 
+class SchoolProfile(models.Model):
+    DEFAULT_PRINCIPAL_NAME = 'EUGENE A. BATILONG'
+
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    principal_name = models.CharField(max_length=100, default=DEFAULT_PRINCIPAL_NAME)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=models.Q(id=1), name='single_school_profile'),
+        ]
+
+    @classmethod
+    def current(cls):
+        return cls.objects.filter(pk=1).first() or cls()
+
+
 class SchoolYear(models.Model):
     name = models.CharField(max_length=20)
     is_current = models.BooleanField(default=False)

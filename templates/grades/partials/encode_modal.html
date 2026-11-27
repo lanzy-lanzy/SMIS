@@ -20,17 +20,20 @@
     </div>
     {% endif %}
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 max-h-[60vh] overflow-y-auto">
-        {% for assignment in assignments %}
+    <div class="space-y-4 mt-4 max-h-[60vh] overflow-y-auto">
+        {% regroup assignments by section.grade_level as grade_groups %}
+        {% for group in grade_groups %}
+        <h4 class="font-semibold">{{ group.grouper.name }}</h4>
+        {% regroup group.list by section as section_groups %}
+        {% for section_group in section_groups %}
+        <h5 class="text-sm font-medium">{{ section_group.grouper.name }}</h5>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {% for assignment in section_group.list %}
         {% with sub_status=submission_status_by_pk|getitem:assignment.pk %}
         <a href="{% url 'grades:grade_encode' assignment.pk %}?period={{ grading_period.pk }}" 
            class="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-slate-600 hover:border-primary dark:hover:border-primary hover:bg-primary-50 dark:hover:bg-slate-700/50 transition group {% if not grading_period.is_submissions_open %}opacity-60 pointer-events-none{% endif %}">
-            <div class="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                {{ assignment.subject.code|truncatechars:3 }}
-            </div>
             <div class="flex-1 min-w-0">
                 <h4 class="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary transition">{{ assignment.subject.name }}</h4>
-                <p class="text-sm text-gray-500">{{ assignment.section.grade_level }} - {{ assignment.section.name }}</p>
                 {% if sub_status %}
                 <span class="inline-flex mt-2 px-2 py-1 text-xs rounded-full {% if sub_status == 'approved' %}bg-emerald-100 text-emerald-800{% elif sub_status == 'pending' %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endif %}">
                     {% if sub_status == 'pending' %}Under Review{% else %}{{ sub_status|title }}{% endif %}
@@ -42,6 +45,9 @@
             <svg class="w-5 h-5 text-gray-300 group-hover:text-primary transition self-center" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
         </a>
         {% endwith %}
+        {% endfor %}
+        </div>
+        {% endfor %}
         {% endfor %}
     </div>
 

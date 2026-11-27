@@ -83,7 +83,7 @@
                     <select name="subject" class="px-3 py-2">
                         <option value="">All subjects</option>
                         {% for subject in subjects %}
-                        <option value="{{ subject.pk }}" {% if subject_filter == subject.pk|stringformat:"s" %}selected{% endif %}>{{ subject.name }} · {{ subject.grade_level.name }}</option>
+                        <option value="{{ subject.pk }}" {% if subject_filter == subject.pk|stringformat:"s" %}selected{% endif %}>{{ subject.name }}</option>
                         {% endfor %}
                     </select>
                 </label>

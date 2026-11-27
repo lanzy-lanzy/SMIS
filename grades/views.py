@@ -13,6 +13,7 @@ from .models import (
     TRANSMUTATION_BANDS, DESCRIPTOR_BANDS, grade_remarks, scores_missing,
     WW_WEIGHT, PT_WEIGHT, AS_WEIGHT, WW_DOMAIN_SHARES, PT_DOMAIN_SHARES,
 )
+from academics.filters import subject_name_filter
 from academics.models import TeacherAssignment, GradingPeriod, SchoolYear, Section, Subject, GradeLevel
 from .mapeh import MAPEH_COMPONENTS, is_mapeh_subject, mapeh_component, merge_mapeh_grades
 from students.models import Student, ENROLLED_STATUSES
@@ -62,7 +63,11 @@ def grade_list(request):
         assignments = assignments.filter(section_id=section_filter)
     else:
         section_filter = ''
-    if subject_filter in {str(subject.pk) for subject in subjects}:
+    if request.user.is_admin:
+        subjects, subject_filter, subject_ids = subject_name_filter(subjects, subject_filter)
+        if subject_ids:
+            assignments = assignments.filter(subject_id__in=subject_ids)
+    elif subject_filter in {str(subject.pk) for subject in subjects}:
         assignments = assignments.filter(subject_id=subject_filter)
     else:
         subject_filter = ''
@@ -1387,6 +1392,11 @@ def encode_modal(request):
             school_year=current_sy
         ).select_related('teacher', 'subject', 'section', 'section__grade_level')
     
+    assignments = assignments.order_by(
+        'section__grade_level__level', 'section__grade_level_id',
+        'section__name', 'section_id', 'subject__name', 'pk',
+    )
+
     # Get submission statuses for the selected period
     submissions_status = {}
     if current_sy and grading_period:
@@ -1440,6 +1450,11 @@ def grade_encode_select(request):
             school_year=current_sy
         ).select_related('teacher', 'subject', 'section', 'section__grade_level')
     
+    assignments = assignments.order_by(
+        'section__grade_level__level', 'section__grade_level_id',
+        'section__name', 'section_id', 'subject__name', 'pk',
+    )
+
     selected_assignment = None
     assignment_pk = request.GET.get('assignment')
     if assignment_pk:

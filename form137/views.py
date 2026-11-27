@@ -10,7 +10,7 @@ from .models import Form137Record
 from .utils import build_form137_pages, build_grade_blocks
 from students.models import Student
 from grades.models import Grade
-from academics.models import SchoolYear, GradeLevel, GradingPeriod, Subject
+from academics.models import SchoolProfile, SchoolYear, GradeLevel, GradingPeriod, Subject
 from academics.filters import select_school_year
 from accounts.models import AuditLog
 from accounts.decorators import role_required
@@ -22,6 +22,7 @@ def _form137_print_context(student, school_year, record):
         'student': student,
         'school_year': school_year,
         'record': record,
+        'school_head_name': SchoolProfile.current().principal_name,
         **pages,
     }
 

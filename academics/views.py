@@ -5,8 +5,9 @@ from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.utils.http import urlencode
-from .filters import select_school_year
+from .filters import select_school_year, subject_name_filter
 from .models import (
+    SchoolProfile,
     SchoolYear,
     GradeLevel,
     Section,
@@ -15,6 +16,7 @@ from .models import (
     GradingPeriod,
 )
 from .forms import (
+    SchoolProfileForm,
     SchoolYearForm,
     GradeLevelForm,
     SectionForm,
@@ -31,6 +33,27 @@ from students.models import Student
 @admin_required
 def academics_index(request):
     return render(request, "academics/index.html")
+
+
+@admin_required
+def principal_settings(request):
+    profile = SchoolProfile.current()
+    form = SchoolProfileForm(request.POST if request.method == "POST" else None, instance=profile)
+    if request.method == "POST" and form.is_valid():
+        with transaction.atomic():
+            profile, _ = SchoolProfile.objects.update_or_create(
+                pk=1, defaults={"principal_name": form.cleaned_data["principal_name"]},
+            )
+            AuditLog.objects.create(
+                user=request.user,
+                action="update",
+                model_name="SchoolProfile",
+                object_id=str(profile.pk),
+                description=f"Set principal to {profile.principal_name}",
+            )
+        messages.success(request, "Principal name updated.")
+        return redirect("academics:principal_settings")
+    return render(request, "academics/principal_settings.html", {"form": form})
 
 
 @admin_required
@@ -680,10 +703,9 @@ def assignment_list(request):
     subjects = list(Subject.objects.filter(
         pk__in=assignments.order_by().values("subject_id"),
     ).select_related("grade_level"))
-    if subject_filter in {str(subject.pk) for subject in subjects}:
-        assignments = assignments.filter(subject_id=subject_filter)
-    else:
-        subject_filter = ""
+    subjects, subject_filter, subject_ids = subject_name_filter(subjects, subject_filter)
+    if subject_ids:
+        assignments = assignments.filter(subject_id__in=subject_ids)
     if query:
         assignments = assignments.filter(
             Q(teacher__first_name__icontains=query)

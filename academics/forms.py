@@ -2,8 +2,20 @@ from datetime import time as dt_time
 from django import forms
 from accounts.models import User
 from .models import (
-    SchoolYear, GradeLevel, Section, Subject, TeacherAssignment, AssignmentSchedule, GradingPeriod,
+    SchoolProfile, SchoolYear, GradeLevel, Section, Subject, TeacherAssignment, AssignmentSchedule, GradingPeriod,
 )
+
+
+class SchoolProfileForm(forms.ModelForm):
+    class Meta:
+        model = SchoolProfile
+        fields = ('principal_name',)
+        widgets = {
+            'principal_name': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white',
+                'autocomplete': 'off',
+            }),
+        }
 
 
 class SchoolYearForm(forms.ModelForm):

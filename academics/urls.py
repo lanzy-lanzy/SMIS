@@ -5,6 +5,7 @@ app_name = 'academics'
 
 urlpatterns = [
     path('', views.academics_index, name='index'),
+    path('principal/', views.principal_settings, name='principal_settings'),
     path('school-years/', views.school_year_list, name='school_year_list'),
     path('school-years/create/', views.school_year_create, name='school_year_create'),
     path('school-years/<int:pk>/edit/', views.school_year_edit, name='school_year_edit'),

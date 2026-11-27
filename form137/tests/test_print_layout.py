@@ -225,3 +225,20 @@ class Form137PrintViewTests(Python314ContextCopyMixin, TestCase):
         self.assertNotContains(response, '>ESP<')
         self.assertContains(response, '2024-2025')
         self.assertContains(response, '2025-2026')
+
+
+    def test_admin_can_change_the_principal_printed_on_sf10(self):
+        settings_url = reverse('academics:principal_settings')
+        preview_url = reverse('form137:form137_preview', args=[self.record.pk])
+        self.client.force_login(self.registrar)
+        self.assertContains(self.client.get(preview_url), 'EUGENE A. BATILONG')
+        self.assertEqual(self.client.post(settings_url, {'principal_name': 'Unauthorized'}).status_code, 302)
+        self.assertContains(self.client.get(preview_url), 'EUGENE A. BATILONG')
+
+        admin = User.objects.create_user(username='principal_admin', role='admin')
+        self.client.force_login(admin)
+        self.assertContains(self.client.get(settings_url), 'Principal Management')
+        self.assertRedirects(self.client.post(settings_url, {'principal_name': 'MARIA D. CRUZ'}), settings_url)
+        self.assertContains(self.client.get(preview_url), 'MARIA D. CRUZ')
+        self.assertContains(self.client.get(reverse('reports:sf6')), 'MARIA D. CRUZ')
+        self.assertNotContains(self.client.get(reverse('reports:index')), 'Subject Performance')

@@ -17,6 +17,7 @@ from grades.mapeh import (
     merge_mapeh_grades, merge_mapeh_periods,
 )
 from academics.models import (
+    SchoolProfile,
     SchoolYear, GradeLevel, Section, Subject, GradingPeriod, TeacherAssignment,
 )
 from academics.filters import select_school_year
@@ -56,7 +57,6 @@ def _compute_age(birthdate, reference=None):
     return years
 
 
-SCHOOL_HEAD_NAME = 'EUGENE A. BATILONG'
 SCHOOL_NAME = 'PAQUITO S. YU MEMORIAL NATIONAL HIGH SCHOOL'
 SCHOOL_ID = '314235'
 SCHOOL_REGION = 'Region IX'
@@ -363,7 +363,7 @@ def _school_header(school_year):
         'school_division': SCHOOL_DIVISION,
         'school_name': SCHOOL_NAME,
         'school_id': SCHOOL_ID,
-        'school_head_name': SCHOOL_HEAD_NAME,
+        'school_head_name': SchoolProfile.current().principal_name,
         'school_year': school_year,
     }
 
@@ -644,7 +644,7 @@ def _report_card_context(request, student):
         'section_name': section.name.upper() if section else '',
         'grade_level': grade_level.level if grade_level else '',
         'adviser_name': adviser_name,
-        'school_head_name': SCHOOL_HEAD_NAME,
+        'school_head_name': SchoolProfile.current().principal_name,
         'age': _compute_age(student.birthdate),
         'term_labels': term_labels,
         'term_full_labels': term_full_labels,

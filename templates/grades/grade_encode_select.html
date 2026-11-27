@@ -57,28 +57,20 @@
                     </h3>
                 </div>
                 <div class="p-5">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {% for assignment in group.list %}
+                    {% regroup group.list by section as section_groups %}
+                    {% for section_group in section_groups %}
+                    <div class="mb-5 last:mb-0">
+                        <h4 class="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">{{ section_group.grouper.name }}</h4>
+                        <div class="flex flex-wrap gap-2">
+                        {% for assignment in section_group.list %}
                         <a href="?assignment={{ assignment.pk }}&period={{ grading_period.pk }}"
-                           class="group block glass-card transition-all duration-200 p-5">
-                            <div class="flex items-start justify-between mb-3">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center text-white text-sm font-bold shadow-sm">
-                                        {{ assignment.subject.code|truncatechars:3 }}
-                                    </div>
-                                    <div>
-                                        <h4 class="font-semibold text-gray-900 dark:text-white group-hover:text-primary transition">{{ assignment.subject.name }}</h4>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ assignment.section.name }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-1.5 text-sm text-primary font-medium">
-                                <span>Start Encoding</span>
-                                <svg class="w-4 h-4 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
-                            </div>
+                           class="btn btn-secondary">
+                            {{ assignment.subject.name }}
                         </a>
                         {% endfor %}
+                        </div>
                     </div>
+                    {% endfor %}
                 </div>
             </div>
             {% endfor %}

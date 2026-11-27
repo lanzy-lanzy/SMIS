@@ -72,3 +72,35 @@ class ClassFilterTests(TestCase):
         self.assertContains(response, 'Other Section')
         response = self.client.get(url, {'status': 'unsubmitted', 'grade_level': self.level.pk})
         self.assertContains(response, 'No classes match these filters')
+
+
+    def test_admin_subject_filter_combines_grade_levels_and_groups_encoder(self):
+        math = Subject.objects.get(code='MATH7')
+        level8 = GradeLevel.objects.get(level=8)
+        math8 = Subject.objects.create(name='Mathematics', code='MATH8', grade_level=level8)
+        section8 = Section.objects.get(name='Other Section')
+        TeacherAssignment.objects.create(
+            teacher=self.teacher, subject=math8, section=section8, school_year=self.period.school_year,
+        )
+        self.period.is_submissions_open = True
+        self.period.save(update_fields=['is_submissions_open'])
+        self.client.force_login(self.admin)
+
+        response = self.client.get(reverse('grades:grade_list'), {'subject': math.pk})
+        self.assertContains(response, '17 class assignments')
+        self.assertContains(response, f'<option value="{math.pk}" selected>Mathematics</option>')
+        self.assertNotIn(math8.pk, [subject.pk for subject in response.context["subjects"]])
+        response = self.client.get(reverse('academics:assignment_list'), {'subject': math8.pk})
+        self.assertContains(response, f'<option value="{math.pk}" selected>Mathematics</option>')
+        self.assertNotIn(math8.pk, [subject.pk for subject in response.context["subjects"]])
+
+        response = self.client.get(reverse('grades:grade_list'), {'subject': math.pk, 'section': section8.pk})
+        self.assertContains(response, '1 class assignment')
+        self.assertEqual(response.context["assignments"][0].subject_id, math8.pk)
+        self.assertEqual(response.context["subject_filter"], str(math.pk))
+
+        response = self.client.get(reverse('grades:grade_encode_select'), {'period': self.period.pk})
+        self.assertContains(response, '>Nar00</h4>')
+        self.assertContains(response, '>Other Section</h4>')
+        self.assertNotContains(response, 'Start Encoding')
+        self.assertNotContains(response, 'MATH7')
