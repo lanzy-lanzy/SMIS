@@ -216,6 +216,8 @@ class Form137PrintViewTests(Python314ContextCopyMixin, TestCase):
             self.assertContains(response, f'<th class="term">{term}</th>', count=4)
         self.assertNotContains(response, '<th class="term">4</th>')
         self.assertNotContains(response, 'QUARTERLY RATING')
+        self.assertContains(response, '<i>Music and Arts</i>')
+        self.assertContains(response, '<i>Physical Education and Health</i>')
         rows = response.context['front_blocks'][0]['subject_rows']
         gmrc = [row for row in rows if row['display_name'] == 'GMRC/Values Education']
         self.assertEqual(len(gmrc), 1)

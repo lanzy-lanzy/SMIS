@@ -11,7 +11,7 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 from grades.models import Grade
-from grades.mapeh import is_mapeh_subject, mapeh_component, merge_mapeh_grades
+from grades.mapeh import MAPEH_COMPONENTS, is_mapeh_subject, mapeh_component, merge_mapeh_grades
 
 
 # ---------------------------------------------------------------------------
@@ -33,8 +33,11 @@ JHS_SUBJECT_ORDER = [
     "Health",           # MAPEH sub-row
 ]
 
-# Legacy MAPEH subjects folded into the parent row for printing.
+LEGACY_MAPEH_COMPONENTS = {
+    "music": "ma", "arts": "ma", "physical education": "peh", "health": "peh", "peh": "peh",
+}
 MAPEH_SUBS = {"Music", "Arts", "Physical Education", "Health"}
+MAPEH_COMPONENT_LABELS = [label for _, label, _ in MAPEH_COMPONENTS]
 
 VALUES_EDUCATION_ALIASES = {
     "esp", "edukasyon sa pagpapakatao", "values education", "gmrc", "gmrc/values education",
@@ -56,6 +59,7 @@ BLANK_FORM137_SUBJECTS = [
     "GMRC/Values Education",
     "Technology and Livelihood Education (TLE)",
     "MAPEH",
+    *MAPEH_COMPONENT_LABELS,
 ]
 
 
@@ -131,8 +135,8 @@ def build_blank_subject_rows() -> list:
         {
             "subject_name": subject_name,
             "display_name": subject_name,
-            "is_mapeh": subject_name == "MAPEH",
-            "is_mapeh_sub": False,
+            "is_mapeh": subject_name == "MAPEH" or subject_name in MAPEH_COMPONENT_LABELS,
+            "is_mapeh_sub": subject_name in MAPEH_COMPONENT_LABELS,
             "q1": None,
             "q2": None,
             "q3": None,
@@ -148,8 +152,6 @@ def build_printable_subject_rows(subject_rows: list) -> list:
     extras = []
 
     for row in subject_rows:
-        if row["is_mapeh_sub"]:
-            continue
         printable_row = row.copy()
         printable_row["display_name"] = FORM137_SUBJECT_LABELS.get(
             row["subject_name"],
@@ -381,26 +383,39 @@ def build_grade_blocks(student) -> list:
         # --------------------------------------------------------------
         present_subjects: dict = rb["subjects"]   # subject_name -> {order: Grade}
 
-        # Use the combined subject's component results first, followed by
-        # stored MAPEH marks and legacy component subjects for the same term.
-        component_names = sorted(
-            name for name in present_subjects
-            if mapeh_component(name.replace("&", "and")) or name.strip().lower() == "peh"
-        )
-        legacy_names = component_names + [name for name in JHS_SUBJECT_ORDER if name in MAPEH_SUBS]
+        legacy_by_component = {}
+        for name in present_subjects:
+            key = " ".join(name.lower().replace("&", "and").split())
+            component = mapeh_component(key) or LEGACY_MAPEH_COMPONENTS.get(key)
+            if component:
+                legacy_by_component[name] = component
+
+        def merge_marks(grades):
+            return SimpleNamespace(
+                quarter_grade=Decimal(merge_mapeh_grades(grade.quarter_grade for grade in grades)),
+                final_grade=Decimal(merge_mapeh_grades(grade.final_grade for grade in grades)),
+            )
+
         parent_map = present_subjects.get("MAPEH", {}).copy()
         for order in SF10_TERMS:
-            component_grades = list(rb["mapeh_components"].get(order, {}).values())
-            if not component_grades and order not in parent_map:
-                component_grades = [
-                    present_subjects[name][order]
-                    for name in legacy_names if order in present_subjects.get(name, {})
-                ]
-            if component_grades:
-                parent_map[order] = SimpleNamespace(
-                    quarter_grade=Decimal(merge_mapeh_grades(grade.quarter_grade for grade in component_grades)),
-                    final_grade=Decimal(merge_mapeh_grades(grade.final_grade for grade in component_grades)),
-                )
+            recorded = rb["mapeh_components"].get(order, {})
+            component_grades = []
+            for component, label, _ in MAPEH_COMPONENTS:
+                grade = recorded.get(component)
+                if grade is None:
+                    legacy_grades = [
+                        present_subjects[name][order]
+                        for name, key in legacy_by_component.items()
+                        if key == component and order in present_subjects[name]
+                    ]
+                    if legacy_grades:
+                        grade = merge_marks(legacy_grades) if len(legacy_grades) > 1 else legacy_grades[0]
+                if grade is not None:
+                    present_subjects.setdefault(label, {})[order] = grade
+                    component_grades.append(grade)
+
+            if component_grades and (recorded or order not in parent_map):
+                parent_map[order] = merge_marks(component_grades)
         if parent_map:
             present_subjects["MAPEH"] = parent_map
 
@@ -411,7 +426,7 @@ def build_grade_blocks(student) -> list:
         ]
         unknown_names = sorted(
             name for name in present_subjects
-            if name not in set(JHS_SUBJECT_ORDER) and name not in component_names
+            if name not in JHS_SUBJECT_ORDER and name not in legacy_by_component and name not in MAPEH_COMPONENT_LABELS
         )
 
         subject_rows = []
@@ -442,16 +457,9 @@ def build_grade_blocks(student) -> list:
             if name == "MAPEH":
                 # Insert MAPEH composite parent row.
                 subject_rows.append(_build_row("MAPEH", is_mapeh=True, is_mapeh_sub=False))
-                # Immediately follow with sub-rows in canonical sub-order.
-                for sub_name in ["Music", "Arts", "Physical Education", "Health"]:
-                    if sub_name in present_subjects:
-                        subject_rows.append(
-                            _build_row(sub_name, is_mapeh=True, is_mapeh_sub=True)
-                        )
-                for sub_name in component_names:
-                    subject_rows.append(
-                        _build_row(sub_name, is_mapeh=True, is_mapeh_sub=True)
-                    )
+                for label in MAPEH_COMPONENT_LABELS:
+                    if label in present_subjects:
+                        subject_rows.append(_build_row(label, is_mapeh=True, is_mapeh_sub=True))
                 continue
 
             if name in MAPEH_SUBS:

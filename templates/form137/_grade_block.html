@@ -41,8 +41,8 @@
         </thead>
         <tbody>
             {% for row in block.subject_rows %}
-            <tr>
-                <td class="learning-area">{{ row.display_name|default:row.subject_name }}</td>
+            <tr{% if row.is_mapeh %} class="mapeh-row"{% endif %}>
+                <td class="learning-area">{% if row.is_mapeh_sub %}<i>{{ row.display_name|default:row.subject_name }}</i>{% else %}{{ row.display_name|default:row.subject_name }}{% endif %}</td>
                 <td>{% if row.q1 is not None %}{{ row.q1|floatformat:0 }}{% endif %}</td>
                 <td>{% if row.q2 is not None %}{{ row.q2|floatformat:0 }}{% endif %}</td>
                 <td>{% if row.q3 is not None %}{{ row.q3|floatformat:0 }}{% endif %}</td>
