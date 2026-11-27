@@ -15,29 +15,7 @@
         </a>
     </div>
 
-    {% if mapeh_tabs %}
-    <!-- MAPEH inline component tabs: Music & Arts <-> Physical Education & Health.
-         MAPEH is presented as one subject in the class list; these tabs let the
-         teacher switch between the two component subjects for the same class and
-         term without leaving the MAPEH grading screen. -->
-    <div class="glass-card p-3">
-        <div class="flex flex-wrap items-center gap-2" role="tablist" aria-label="MAPEH components">
-            <span class="mr-1 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
-                <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-                MAPEH
-            </span>
-            {% for tab in mapeh_tabs %}
-            {% if tab.is_current %}
-            <span role="tab" aria-selected="true" aria-current="page" class="tab-btn is-active">{{ tab.display }} <span class="opacity-80">({{ tab.code }})</span></span>
-            {% elif tab.available %}
-            <a role="tab" href="{{ tab.url }}" class="tab-btn" title="Switch to {{ tab.display }}">{{ tab.display }} <span class="opacity-70">({{ tab.code }})</span></a>
-            {% else %}
-            <span role="tab" aria-disabled="true" title="Not assigned to this class" class="tab-btn is-disabled">{{ tab.display }} <span class="opacity-70">({{ tab.code }})</span></span>
-            {% endif %}
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
+    {% include 'grades/partials/mapeh_tabs.html' %}
 
     <!-- Class Summary Card -->
     <div class="glass-card p-5">

@@ -1,0 +1,9 @@
+{% if mapeh_tabs %}
+<nav class="glass-card p-3 flex flex-wrap gap-2" aria-label="MAPEH components">
+    {% for tab in mapeh_tabs %}
+    <a href="{{ tab.url }}" class="tab-btn{% if tab.is_current %} is-active{% endif %}"{% if tab.is_current %} aria-current="page"{% endif %}>
+        {{ tab.display }} ({{ tab.code }})
+    </a>
+    {% endfor %}
+</nav>
+{% endif %}

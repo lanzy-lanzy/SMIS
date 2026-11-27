@@ -1,7 +1,11 @@
 {% if selected_assignment %}
+{% include 'grades/partials/mapeh_tabs.html' %}
 <form method="post" action="{% url 'grades:grade_save' selected_assignment.pk %}?period={{ grading_period.pk }}" x-data="{ showConfirm: false }" x-ref="gradeForm">
     {% csrf_token %}
     <input type="hidden" name="period" value="{{ grading_period.pk }}">
+    {% if mapeh_component %}
+    <input type="hidden" name="component" value="{{ mapeh_component }}">
+    {% endif %}
 
     <div class="glass-card overflow-hidden">
         <div class="p-5 border-b border-gray-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -34,6 +38,8 @@
                 </span>
                 {% endif %}
             </div>
+            {% elif mapeh_component and has_draft_grades %}
+            <span class="tab-btn">Draft</span>
             {% endif %}
         </div>
 

@@ -71,7 +71,9 @@
                         <p class="text-sm text-gray-500">{{ assignment.section.grade_level }} - {{ assignment.section.name }}</p>
                     </div>
                 </div>
-                {% if submission %}
+                {% if item.is_mapeh %}
+                <a class="btn btn-secondary" href="{% url 'grades:grade_encode_select' %}?assignment={{ assignment.pk }}&amp;period={{ grading_period.pk }}">Encode MA and PEH</a>
+                {% elif submission %}
                 <span class="px-3 py-1 text-xs rounded-full {% if submission.status == 'pending' %}bg-yellow-100 text-yellow-800{% elif submission.status == 'approved' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
                     {{ submission.get_status_display }}
                 </span>
@@ -89,6 +91,7 @@
                 {% endif %}
             </div>
 
+            {% if not item.is_mapeh %}
             {% if item.locked or item.blocked %}
             <div class="px-4 py-2 text-xs {% if item.locked %}bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300{% else %}bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300{% endif %} border-b border-gray-100 dark:border-slate-700">
                 {% if item.locked %}{{ grading_period.name }} is validated and read-only — immutable until returned by the Registrar.{% else %}{{ grading_period.name }} is not the active term for this class — finish the earlier terms first.{% endif %}
@@ -107,6 +110,7 @@
             <div class="p-8 text-center text-gray-500 text-sm">
                 No active students found in this section.
             </div>
+            {% endif %}
             {% endif %}
         </div>
         {% endwith %}

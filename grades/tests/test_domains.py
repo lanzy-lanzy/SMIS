@@ -12,6 +12,7 @@ from academics.models import (
 )
 from accounts.models import User
 from grades.models import (
+    GradeSubmission,
     Grade, PT_DOMAIN_SHARES, WW_DOMAIN_SHARES,
     grade_remarks, scores_missing, split_domain_weights, weighted_initial_grade,
 )
@@ -216,6 +217,66 @@ class GradeDomainTestCase(TestCase):
             student=self.student, subject=self.subject,
             grading_period=self.period, school_year=self.sy,
         )
+
+
+class MapehEncodingTests(Python314ContextCopyMixin, GradeDomainTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.subject.name = 'MAPEH'
+        cls.subject.save(update_fields=['name'])
+
+    def save_component(self, component, score, action='draft'):
+        data = self._post_data(with_domains=False)
+        data.update(component=component, action=action)
+        data[f'student_{self.student.pk}_written_1'] = score
+        return self.client.post(reverse('grades:grade_save', args=[self.assignment.pk]), data, follow=True)
+
+    def test_drafts_keep_both_component_choices_and_distinct_scores(self):
+        for component, score in [('ma', '8'), ('peh', '6'), ('peh', '7')]:
+            response = self.save_component(component, score)
+            self.assertEqual(response.context['mapeh_component'], component)
+            self.assertContains(response, 'Music &amp; Arts (MA)')
+            self.assertContains(response, 'Physical Education &amp; Health (PEH)')
+            self.assertEqual(response.context['grade_data'][0]['grade'].written_work_1, int(score))
+
+        self.assertEqual(dict(Grade.objects.values_list('component', 'written_work_1')), {'ma': 8, 'peh': 7})
+        response = self.client.get(reverse('grades:grade_encode_all'), {'period': self.period.pk})
+        self.assertContains(response, 'Encode MA and PEH')
+        data = self._post_data(prefix=f'assignment_{self.assignment.pk}_', with_domains=False)
+        self.client.post(reverse('grades:grade_save_all'), data)
+        self.assertEqual(Grade.objects.count(), 2)
+
+    def test_submission_updates_status_and_leaves_other_component_editable(self):
+        self.save_component('peh', '7')
+        response = self.save_component('ma', '8', action='submit')
+        self.assertContains(response, 'Under Review')
+        self.assertFalse(response.context['can_submit'])
+        self.assertEqual(GradeSubmission.objects.get().status, 'pending')
+        self.assertEqual(Grade.objects.get(component='peh').status, 'draft')
+
+        response = self.client.get(response.context['mapeh_tabs'][1]['url'])
+        self.assertTrue(response.context['can_submit'])
+        response = self.save_component('peh', '7', action='submit')
+        self.assertContains(response, 'Under Review')
+        self.assertEqual(GradeSubmission.objects.count(), 1)
+        self.assertEqual(Grade.objects.filter(status='submitted').count(), 2)
+
+    def test_approval_of_ma_leaves_peh_draft_editable(self):
+        self.save_component('peh', '7')
+        self.save_component('ma', '8', action='submit')
+        submission = GradeSubmission.objects.get()
+        registrar = User.objects.create_user(username='registrar', role='registrar')
+        self.client.force_login(registrar)
+        self.client.post(reverse('grades:submission_validate', args=[submission.pk]), {'action': 'validate'})
+        self.assertEqual(Grade.objects.get(component='ma').status, 'validated')
+        self.assertEqual(Grade.objects.get(component='peh').status, 'draft')
+
+        self.client.force_login(self.teacher)
+        response = self.save_component('peh', '7', action='submit')
+        self.assertContains(response, 'Under Review')
+        submission.refresh_from_db()
+        self.assertEqual(submission.status, 'pending')
 
 
 class GradeSaveDomainTests(GradeDomainTestCase):

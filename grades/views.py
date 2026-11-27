@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator
 from django.views.decorators.cache import never_cache
+from django.db import transaction
 from django.db.models import Q, Avg, Count, Exists, Subquery, OuterRef, Case, When, Value, IntegerField, DecimalField
 from django.utils import timezone
 from django.utils.http import urlencode
@@ -398,11 +399,20 @@ def _locked_period_pks(assignment):
             ),
         )
     )
+    required_grades = len(enrolled_ids)
+    if is_mapeh_subject(assignment.subject.name):
+        components = [component for component, _, _ in MAPEH_COMPONENTS]
+        rows = rows.filter(component__in=components).annotate(
+            finalized_components=Count(
+                'id', filter=Q(student_id__in=enrolled_ids, status__in=IMMUTABLE_GRADE_STATUSES),
+            ),
+        )
+        required_grades *= len(components)
     locked = set()
     for row in rows:
         if not (row['total'] and row['total'] == row['finalized']):
             continue
-        if enrolled_ids and row['finalized_students'] < len(enrolled_ids):
+        if row.get('finalized_components', row['finalized_students']) < required_grades:
             continue
         locked.add(row['grading_period_id'])
     return locked
@@ -505,7 +515,7 @@ MAPEH_TAB_META = {
 }
 
 
-def _mapeh_component_tabs(assignment, grading_period, current_component):
+def _mapeh_component_tabs(assignment, grading_period, current_component, *, select=False):
     """Inline tabs that swap between MA and PEH for the same MAPEH class/term.
 
     MAPEH is one Subject/TeacherAssignment but is encoded as two components per
@@ -516,7 +526,10 @@ def _mapeh_component_tabs(assignment, grading_period, current_component):
     """
     if not is_mapeh_subject(assignment.subject.name):
         return None
-    base = reverse('grades:grade_encode', args=[assignment.pk])
+    if select:
+        base = f"{reverse('grades:grade_encode_select')}?assignment={assignment.pk}&"
+    else:
+        base = f"{reverse('grades:grade_encode', args=[assignment.pk])}?"
     tabs = []
     for component, _label, _aliases in MAPEH_COMPONENTS:
         display, code = MAPEH_TAB_META[component]
@@ -525,8 +538,7 @@ def _mapeh_component_tabs(assignment, grading_period, current_component):
             'display': display,
             'code': code,
             'is_current': component == current_component,
-            'available': True,
-            'url': f"{base}?period={grading_period.pk}&component={component}",
+            'url': f"{base}period={grading_period.pk}&component={component}",
         })
     return tabs
 
@@ -612,7 +624,7 @@ def grade_encode(request, assignment_pk):
     context.update(_sequence_context(assignment, all_periods, grading_period))
 
     context['submission'] = GradeSubmission.objects.filter(
-        teacher=request.user,
+        teacher=assignment.teacher,
         subject=assignment.subject,
         section=assignment.section,
         school_year=assignment.school_year,
@@ -637,11 +649,15 @@ def grade_encode(request, assignment_pk):
 
 
 @teacher_or_admin_required
+@transaction.atomic
 def grade_save(request, assignment_pk):
     if request.method != 'POST':
         return HttpResponse(status=405)
     
-    assignment = get_object_or_404(TeacherAssignment, pk=assignment_pk)
+    assignments = TeacherAssignment.objects.select_for_update()
+    if request.user.is_teacher:
+        assignments = assignments.filter(teacher=request.user)
+    assignment = get_object_or_404(assignments, pk=assignment_pk)
     
     period_pk = request.POST.get('period')
     if period_pk:
@@ -657,54 +673,32 @@ def grade_save(request, assignment_pk):
         messages.error(request, 'Grade submissions are not open for this grading period.')
         return redirect('grades:grade_list')
 
-    # Backend enforcement of the strict T1 -> T2 -> T3 sequence: reject edits
-    # to finalized terms or to terms whose prior terms are not yet validated,
-    # even when the current period's submissions are open.
+    mapeh_component_value = _resolve_mapeh_component(assignment, request.POST.get('component'))
+    encode_url = (
+        f'{reverse("grades:grade_encode_select")}?assignment={assignment.pk}&period={grading_period.pk}'
+        + (f'&component={mapeh_component_value}' if mapeh_component_value else '')
+    )
+
     block_msg = _sequential_save_block(assignment, grading_period)
     if block_msg:
         messages.error(request, block_msg)
-        return redirect(f'{reverse("grades:grade_encode", args=[assignment.pk])}?period={grading_period.pk}')
+        return redirect(encode_url)
 
-    # MAPEH component scope: the encode form posts the active component so the
-    # save writes to the correct Grade row (MA vs PEH). Non-MAPEH subjects get
-    # '' and behave exactly as before.
-    mapeh_component_value = _resolve_mapeh_component(assignment, request.POST.get('component'))
-
-    # Prevent duplicate submissions ONLY when every enrolled learner already
-    # has a submitted/validated grade. If grades are not yet fully entered for
-    # all learners, allow the teacher to keep encoding/submitting the remaining
-    # learners while the term remains open.
     incomplete_count, _total_enrolled = _incomplete_student_count(
         assignment, grading_period, mapeh_component_value
     )
     existing_submission = GradeSubmission.objects.filter(
-        teacher=request.user,
+        teacher=assignment.teacher,
         subject=assignment.subject,
         section=assignment.section,
         school_year=assignment.school_year,
         grading_period=grading_period,
     ).first()
-    if existing_submission and existing_submission.status == 'pending' and incomplete_count == 0:
-        messages.warning(
-            request,
-            f'Grades for {grading_period.name} are already submitted and under review by the Registrar. '
-            'Editing and duplicate submissions are locked until a decision is made.'
-        )
-        return redirect(f'{reverse("grades:grade_encode_select")}?assignment={assignment_pk}&period={grading_period.pk}')
-    if existing_submission and existing_submission.status == 'approved' and incomplete_count == 0:
-        messages.warning(
-            request,
-            f'Grades for {grading_period.name} have already been validated by the Registrar. '
-            'Contact the Registrar to return them before editing or resubmitting.'
-        )
-        return redirect(f'{reverse("grades:grade_encode_select")}?assignment={assignment_pk}&period={grading_period.pk}')
+    if not _can_submit(existing_submission, has_incomplete=incomplete_count > 0):
+        messages.warning(request, f'Grades for {grading_period.name} are already submitted.')
+        return redirect(encode_url)
 
     action = request.POST.get('action', 'draft')
-    encode_url = (
-        f'{reverse("grades:grade_encode", args=[assignment.pk])}'
-        f'?period={grading_period.pk}'
-        + (f'&component={mapeh_component_value}' if mapeh_component_value else '')
-    )
 
     weights, weight_error = _parse_weights(request.POST)
     if weight_error:
@@ -912,8 +906,11 @@ def grade_save(request, assignment_pk):
         )
     
     if action == 'submit':
+        if mapeh_component_value and not student_ids_with_data:
+            messages.warning(request, 'Enter grades for this component before submitting.')
+            return redirect(encode_url)
         submission, created = GradeSubmission.objects.get_or_create(
-            teacher=request.user,
+            teacher=assignment.teacher,
             subject=assignment.subject,
             section=assignment.section,
             school_year=assignment.school_year,
@@ -948,7 +945,7 @@ def grade_save(request, assignment_pk):
     else:
         messages.success(request, 'Grades saved as draft.')
     
-    return redirect(f'{reverse("grades:grade_encode_select")}?assignment={assignment_pk}&period={grading_period.pk}')
+    return redirect(encode_url)
 
 
 @role_required('admin', 'registrar', 'teacher')
@@ -1098,13 +1095,18 @@ def submission_validate(request, pk):
             # Approving finalizes the entire class scope for this period, so any
             # grade still in draft/submitted/returned is validated together. This
             # keeps Grade.status in sync with the approved GradeSubmission.
-            Grade.objects.filter(
+            grades_to_validate = Grade.objects.filter(
                 subject=submission.subject,
                 section=submission.section,
                 school_year=submission.school_year,
                 grading_period=submission.grading_period,
                 status__in=['draft', 'submitted', 'returned']
-            ).update(status='validated')
+            )
+            if is_mapeh_subject(submission.subject.name):
+                grades_to_validate = grades_to_validate.filter(
+                    component__in=MAPEH_TAB_META, status='submitted',
+                )
+            grades_to_validate.update(status='validated')
             
             GradeValidation.objects.filter(submission=submission).delete()
             GradeValidation.objects.create(
@@ -1397,6 +1399,7 @@ def grade_encode_select(request):
     }
     
     if selected_assignment:
+        component = _resolve_mapeh_component(selected_assignment, request.GET.get('component'))
         context.update(_sequence_context(selected_assignment, all_periods, grading_period))
 
         students = Student.objects.filter(
@@ -1410,7 +1413,8 @@ def grade_encode_select(request):
                 subject=selected_assignment.subject,
                 section=selected_assignment.section,
                 school_year=selected_assignment.school_year,
-                grading_period=grading_period
+                grading_period=grading_period,
+                component=component,
             ).select_related('student')
         }
         
@@ -1425,20 +1429,24 @@ def grade_encode_select(request):
         maxes = _maxes_from_grades(item['grade'] for item in grade_data)
         
         submission = GradeSubmission.objects.filter(
-            teacher=request.user,
+            teacher=selected_assignment.teacher,
             subject=selected_assignment.subject,
             section=selected_assignment.section,
             school_year=selected_assignment.school_year,
             grading_period=grading_period
         ).first()
         
+        incomplete_count, _ = _incomplete_student_count(selected_assignment, grading_period, component)
         context.update({
+            'mapeh_component': component,
+            'mapeh_tabs': _mapeh_component_tabs(selected_assignment, grading_period, component, select=True),
+            'has_draft_grades': any(grade.status == 'draft' for grade in existing_grades.values()),
             'students': students,
             'grade_data': grade_data,
             'weights': weights,
             'maxes': maxes,
             'submission': submission,
-            'can_submit': _can_submit(submission),
+            'can_submit': _can_submit(submission, has_incomplete=bool(component and incomplete_count)),
         })
         
         if request.headers.get('HX-Request'):
@@ -1496,6 +1504,10 @@ def grade_encode_all(request):
                 period_locked_count[p.pk] += 1
             elif access.get(p.pk) == 'current':
                 period_has_current[p.pk] = True
+
+        if is_mapeh_subject(assignment.subject.name):
+            assignment_data.append({'assignment': assignment, 'is_mapeh': True, 'can_submit': False})
+            continue
 
         students = Student.objects.filter(
             grade_level=assignment.section.grade_level,
@@ -1612,6 +1624,9 @@ def grade_save_all(request):
     under_review_skipped = 0
     
     for assignment in assignments:
+        if is_mapeh_subject(assignment.subject.name):
+            continue
+
         # Backend enforcement of the strict Q1 -> Q2 -> Q3 -> Q4 sequence: skip any
         # assignment whose target quarter is finalized or out of sequence.
         if _sequential_save_block(assignment, grading_period):

@@ -21,7 +21,7 @@
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Grading Period:</span>
             <div class="flex flex-wrap gap-2">
                 {% for period in all_periods %}
-                <a href="?period={{ period.pk }}{% if selected_assignment %}&assignment={{ selected_assignment.pk }}{% endif %}"
+                <a href="?period={{ period.pk }}{% if selected_assignment %}&assignment={{ selected_assignment.pk }}{% endif %}{% if mapeh_component %}&component={{ mapeh_component }}{% endif %}"
                    class="tab-btn {% if grading_period.pk == period.pk %}is-active{% elif period.access_state == 'locked' or period.access_state == 'blocked' or not period.is_submissions_open %}is-disabled{% endif %}"
                    title="{% if period.access_state == 'locked' %}Validated &amp; locked{% elif period.access_state == 'blocked' %}Locked until prior terms are validated{% elif not period.is_submissions_open %}Submissions closed — contact the Registrar/Admin to open this term{% endif %}">
                     {% if period.access_state == 'locked' or period.access_state == 'blocked' %}<svg class="w-3 h-3 inline-block -mt-0.5 mr-0.5 {% if period.access_state == 'blocked' %}opacity-60{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>{% elif not period.is_submissions_open %}<svg class="w-3 h-3 inline-block -mt-0.5 mr-0.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>{% endif %}
@@ -96,7 +96,7 @@
     {% endif %}
 
     <!-- Dynamic Grade Entry Table -->
-    <div id="grade-entry-table">
+    <div id="grade-entry-table" class="space-y-4">
         {% if selected_assignment %}
             {% include 'grades/partials/grade_encode_select_table.html' %}
         {% endif %}
